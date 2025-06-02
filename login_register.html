@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbería Élite - Acceso Barbero</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style1.css">
+</head>
+<body class="login-register-page"> 
+    <div class="container">
+        <div class="flip-card" id="flipCard">
+            <div class="card-front">
+                <div class="brand">ACCESO BARBERO</div>
+                <div class="header">
+                    <button class="header-btn active" data-action="login">Iniciar Sesión</button>
+                    <button class="header-btn" data-action="signup">Registrarse</button>
+                </div>
+
+                <div class="form-container">
+                    <h2 class="form-title">Ingresa a tu cuenta de Barbero</h2>
+                    <form id="login-form">
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="login-email" placeholder=" " required>
+                            <label for="login-email">Email</label>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="login-password" placeholder=" " required>
+                            <label for="login-password">Contraseña</label>
+                        </div>
+                        <button type="submit" class="submit-btn">Iniciar Sesión</button>
+                    </form>
+                </div>
+                 <div class="flip-note" data-action="signup">¿Nuevo barbero? <strong>Regístrate aquí.</strong></div>
+            </div>
+
+            <div class="card-back">
+                <div class="brand">REGISTRO BARBERO</div>
+                <div class="header">
+                    <button class="header-btn" data-action="login">Iniciar Sesión</button>
+                    <button class="header-btn active" data-action="signup">Registrarse</button>
+                </div>
+
+                <div class="form-container">
+                    <h2 class="form-title">Crea tu cuenta de Barbero</h2>
+                    <form id="register-form">
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="register-email" placeholder=" " required>
+                            <label for="register-email">Email</label>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="register-password" placeholder=" " required>
+                            <label for="register-password">Contraseña</label>
+                        </div>
+                        <button type="submit" class="submit-btn">Registrarse</button>
+                    </form>
+                </div>
+                <div class="flip-note" data-action="login">¿Ya tienes cuenta? <strong>Inicia sesión.</strong></div>
+            </div>
+        </div>
+        <div id="auth-forms-status-container" style="display: none;"> {/* Inicialmente oculto */}
+             <p id="auth-status"></p>
+             <button id="logout-button" style="display: none;">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flipCard = document.getElementById('flipCard');
+            const allFlipButtons = document.querySelectorAll('[data-action]');
+            // Los elementos de estado y logout son manejados en auth.js en cuanto a su visibilidad general.
+
+            allFlipButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const action = this.getAttribute('data-action');
+                    const isFlipped = flipCard.classList.contains('flipped');
+
+                    if (action === 'signup' && !isFlipped) {
+                        flipCard.classList.add('flipped');
+                        updateActiveHeaderButtons('signup');
+                    } else if (action === 'login' && isFlipped) {
+                        flipCard.classList.remove('flipped');
+                        updateActiveHeaderButtons('login');
+                    }
+                });
+            });
+
+            function updateActiveHeaderButtons(activeAction) {
+                const headerButtons = document.querySelectorAll('.login-register-page .header-btn'); // Selector más específico
+                headerButtons.forEach(btn => {
+                    if (btn.getAttribute('data-action') === activeAction) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+            updateActiveHeaderButtons('login'); // Inicia con Login activo
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/auth.js"></script> </body>
+</html>

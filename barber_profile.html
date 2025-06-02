@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil del Barbero</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="barber-profile-page">
+    <div class="container">
+        <div class="profile-main-title">Mi Perfil de Barbero</div>
+
+        <div class="profile-section-card">
+            <h2 class="profile-section-title">Datos Básicos</h2>
+            <div id="profile-content">
+                <p>Cargando perfil...</p>
+                </div>
+        </div>
+
+        <div class="profile-section-card">
+            <h2 class="profile-section-title">Mis Servicios y Precios</h2>
+            <div id="services-section">
+                <p>Cargando servicios...</p>
+                </div>
+            <div class="service-item-add-custom">
+                 <h3>Añadir Otro Servicio</h3>
+                 <div class="input-group">
+                    <i class="fas fa-cut"></i>
+                    <input type="text" id="other-service-name" placeholder=" ">
+                    <label for="other-service-name">Nombre del servicio personalizado</label>
+                 </div>
+                 <div class="input-group">
+                    <i class="fas fa-dollar-sign"></i>
+                    <input type="number" id="other-service-price" placeholder=" " step="0.50" min="0">
+                    <label for="other-service-price">Precio (Ej: 10.50)</label>
+                 </div>
+                 <button id="add-other-service-btn" class="profile-submit-btn">Añadir Servicio</button>
+            </div>
+        </div>
+
+        <div class="profile-section-card">
+            <h2 class="profile-section-title">Mi Disponibilidad Semanal</h2>
+            <p class="availability-instructions">Selecciona un día en el calendario para ver o editar los bloques horarios de ese día de la semana. Los cambios se aplicarán a todas las semanas al guardar.</p>
+            
+            <div class="calendar-widget-container">
+                <div class="calendar-widget">
+                    <div class="calendar-front">
+                      <div class="calendar-current-date">
+                        <button id="cal-prev-month-btn" class="cal-nav-btn" aria-label="Mes anterior">&lt;</button>
+                        <div class="calendar-month-year-display">
+                            <h1 id="cal-current-month-year"></h1>
+                        </div>
+                        <button id="cal-next-month-btn" class="cal-nav-btn" aria-label="Mes siguiente">&gt;</button>
+                      </div>
+            
+                      <div class="calendar-current-month">
+                        <ul class="calendar-week-days">
+                          <li>DOM</li>
+                          <li>LUN</li>
+                          <li>MAR</li>
+                          <li>MIÉ</li>
+                          <li>JUE</li>
+                          <li>VIE</li>
+                          <li>SÁB</li>
+                        </ul>
+                        <div class="calendar-weeks" id="calendar-days-grid">
+                          </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="availability-day-editor" style="display: none;">
+                <h3 id="editing-day-title">Editando Horarios para: <span>Día no seleccionado</span></h3>
+                <div id="selected-day-slots-container">
+                    </div>
+                <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
+            </div>
+        </div>
+        
+        <button id="save-all-profile-btn" class="profile-submit-btn save-all-btn"><i class="fas fa-save"></i> Guardar Todos los Cambios</button>
+        <p id="save-status"></p>
+
+        <div class="profile-section-card">
+            <h2 class="profile-section-title">Tu Enlace de Reserva Único</h2>
+            <p>Comparte este enlace con tus clientes para que puedan reservar una cita contigo:</p>
+            <div id="booking-link-container">
+                <p>Cargando enlace...</p>
+            </div>
+        </div>
+        
+        <button id="logout-profile-button" class="profile-logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/barberProfile.js"></script>
+</body>
+</html>

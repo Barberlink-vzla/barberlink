@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbería Élite - Acceso</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        /* --- Variables y Estilos Base --- */
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #3a2d20; /* Tono madera/cuero oscuro */
+            --primary-accent: #c5a686; /* Tono beige/dorado pálido */
+            --secondary-accent: #8B4513; /* Marrón silla */
+            --text-color: #e0e0e0;
+            --input-bg: rgba(0, 0, 0, 0.25);
+            --input-border: #5a4530;
+            --btn-bg: #a07e5f;
+            --btn-hover: #b89a7e;
+            --error-color: #e74c3c;
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Roboto', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            /* Fondo con textura sutil y gradiente */
+            background-image:
+                linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
+                url('https://www.transparenttextures.com/patterns/dark-wood.png'); /* Ejemplo textura, considera una local */
+            font-family: var(--font-body);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        /* --- Contenedor y Tarjeta Flip --- */
+        .container {
+            width: 100%;
+            max-width: 420px; /* Un poco más ancho */
+            perspective: 1500px;
+        }
+
+        .flip-card {
+            width: 100%;
+            height: 620px; /* Aumentado para más espacio */
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .flip-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            background-color: var(--card-bg);
+            border: 1px solid var(--input-border);
+            display: flex;
+            flex-direction: column;
+            padding: 40px;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* --- Cabecera y Botones de Navegación --- */
+        .brand {
+            text-align: center;
+            color: var(--primary-accent);
+            font-family: var(--font-heading);
+            font-size: 28px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 30px;
+            padding: 5px;
+        }
+
+        .header-btn {
+            background: transparent;
+            color: var(--primary-accent);
+            border: none;
+            padding: 10px 30px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .header-btn:hover {
+            color: #fff;
+        }
+
+        .header-btn.active {
+            background: var(--btn-bg);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+        }
+
+        /* --- Contenedor del Formulario --- */
+        .form-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centrar verticalmente */
+        }
+
+        .form-title {
+            color: var(--primary-accent);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: 400;
+        }
+
+        /* --- Grupos de Entrada y Etiquetas Flotantes --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 15px; /* Ajustado */
+            color: var(--primary-accent);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 8px rgba(197, 166, 134, 0.3);
+        }
+
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            top: -10px;
+            left: 10px;
+            font-size: 12px;
+            color: var(--primary-accent);
+            background: var(--card-bg);
+            padding: 0 5px;
+        }
+
+         .input-group input:focus ~ i {
+            color: var(--primary-accent);
+         }
+
+        .input-group label {
+            position: absolute;
+            left: 45px;
+            top: 15px;
+            color: var(--primary-accent);
+            opacity: 0.8;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            background: transparent;
+            padding: 0;
+        }
+
+        /* --- Opciones Adicionales --- */
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            color: var(--primary-accent);
+        }
+
+        .checkbox-group input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+         .checkbox-group label {
+            cursor: pointer;
+         }
+
+        .forgot-link {
+            color: var(--primary-accent);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-link:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        /* --- Botón de Envío --- */
+        .submit-btn {
+            background: linear-gradient(135deg, var(--btn-bg), var(--secondary-accent));
+            color: #FFF;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* --- Decoración y Social Login --- */
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--primary-accent);
+            margin: 25px 0;
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: .5em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: .5em;
+        }
+
+        .social-login {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .social-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-accent);
+            font-size: 18px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .social-btn:hover {
+            background: var(--btn-bg);
+            color: #FFF;
+            transform: scale(1.1);
+            border-color: var(--btn-bg);
+        }
+
+        /* --- Nota de Volteo --- */
+        .flip-note {
+            text-align: center;
+            color: var(--primary-accent);
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: auto; /* Empuja hacia abajo */
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+         .flip-note:hover {
+            color: #fff;
+         }
+
+        /* --- Media Queries --- */
+        @media (max-width: 480px) {
+            .container {
+                max-width: 350px;
+            }
+            .card-front, .card-back {
+                padding: 30px;
+            }
+            .header-btn {
+                padding: 8px 20px;
+                font-size: 14px;
+            }
+            .form-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flip-card" id="flipCard">
+            <div class="card-front">
+                <div class="brand">BARBERÍA ÉLITE</div>
+                <div class="header">
+                    <button class="header-btn active" data-action="login">Login</button>
+                    <button class="header-btn" data-action="signup">Signup</button>
+                </div>
+
+                <div class="form-container">
+                    <h2 class="form-title">Ingresa a tu cuenta</h2>
+
+                    <form>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="login-email" placeholder=" " required>
+                            <label for="login-email">Email</label>
+                        </div>
+
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="login-password" placeholder=" " required>
+                            <label for="login-password">Contraseña</label>
+                        </div>
+
+                        <div class="options">
+                           <div class="checkbox-group">
+                               <input type="checkbox" id="remember">
+                               <label for="remember">Recordarme</label>
+                           </div>
+                           <a href="#" class="forgot-link">¿Olvidaste?</a >
+                        </div>
+
+                        <button type="submit" class="submit-btn">Iniciar Sesión</button>
+                    </form>
+
+                    <div class="divider">O inicia con</div>
+
+                    <div class="social-login">
+                        <a href="#" class="social-btn"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-google"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                 <div class="flip-note" data-action="signup">¿No tienes cuenta? <strong>Regístrate aquí.</strong></div>
+            </div>
+
+            <div class="card-back">
+                <div class="brand">BARBERÍA ÉLITE</div>
+                <div class="header">
+                    <button class="header-btn" data-action="login">Login</button>
+                    <button class="header-btn active" data-action="signup">Signup</button>
+                </div>
+
+                <div class="form-container">
+                    <h2 class="form-title">Crea tu cuenta</h2>
+
+                    <form>
+                         <div class="input-group">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="signup-name" placeholder=" " required>
+                             <label for="signup-name">Nombre completo</label>
+                        </div>
+
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="signup-email" placeholder=" " required>
+                            <label for="signup-email">Email</label>
+                        </div>
+
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="signup-password" placeholder=" " required>
+                            <label for="signup-password">Contraseña</label>
+                        </div>
+
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="signup-confirm" placeholder=" " required>
+                            <label for="signup-confirm">Confirmar contraseña</label>
+                        </div>
+
+                        <button type="submit" class="submit-btn">Registrarse</button>
+                    </form>
+
+                     <div class="divider">O regístrate con</div>
+
+                    <div class="social-login">
+                        <a href="#" class="social-btn"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-google"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="flip-note" data-action="login">¿Ya tienes cuenta? <strong>Inicia sesión.</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flipCard = document.getElementById('flipCard');
+            const allFlipButtons = document.querySelectorAll('[data-action]'); // Selecciona todos los elementos con data-action
+
+            allFlipButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault(); // Previene la acción por defecto si es un link
+                    const action = this.getAttribute('data-action');
+                    const isFlipped = flipCard.classList.contains('flipped');
+
+                    if (action === 'signup' && !isFlipped) {
+                        flipCard.classList.add('flipped');
+                        updateActiveButtons('signup');
+                    } else if (action === 'login' && isFlipped) {
+                        flipCard.classList.remove('flipped');
+                        updateActiveButtons('login');
+                    }
+                });
+            });
+
+            function updateActiveButtons(activeAction) {
+                const headerButtons = document.querySelectorAll('.header-btn');
+                headerButtons.forEach(btn => {
+                    if (btn.getAttribute('data-action') === activeAction) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            // Inicializar botones activos (opcional, pero bueno si empiezas en una vista específica)
+            updateActiveButtons('login');
+        });
+    </script>
+</body>
+</html>

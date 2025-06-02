@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control del Barbero</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="panel-container">
+
+        <header class="panel-header">
+            <h1><i class="fas fa-cog"></i> Panel de Configuración de Reserva</h1>
+            <p>Ajusta tu disponibilidad y los servicios que ofreces para tu formulario de reserva único.</p>
+        </header>
+
+        <section class="config-section disponibilidad-card">
+            <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Configurar Disponibilidad</h2>
+
+            <div class="sub-section">
+                <h3 class="sub-section-title"><i class="fas fa-calendar-day"></i> Días de la Semana</h3>
+                <p class="instruccion">Selecciona los días en los que estarás disponible.</p>
+                <div class="dias-semana-selector">
+                    <button class="dia-toggle active" data-dia="lunes">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Lun
+                    </button>
+                    <button class="dia-toggle" data-dia="martes">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Mar
+                    </button>
+                    <button class="dia-toggle active" data-dia="miercoles">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Mié
+                    </button>
+                    <button class="dia-toggle active" data-dia="jueves">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Jue
+                    </button>
+                    <button class="dia-toggle" data-dia="viernes">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Vie
+                    </button>
+                    <button class="dia-toggle active" data-dia="sabado">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Sáb
+                    </button>
+                    <button class="dia-toggle" data-dia="domingo">
+                        <i class="fas fa-check-circle icon-active"></i><i class="far fa-circle icon-inactive"></i> Dom
+                    </button>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <h3 class="sub-section-title"><i class="fas fa-clock"></i> Horario General de Atención</h3>
+                <p class="instruccion">Establece tu horario laboral principal.</p>
+                <div class="horario-general-inputs">
+                    <div class="input-group">
+                        <label for="hora-inicio"><i class="fas fa-door-open"></i> Hora de Inicio:</label>
+                        <input type="time" id="hora-inicio" name="hora-inicio" value="09:00">
+                    </div>
+                    <div class="input-group">
+                        <label for="hora-fin"><i class="fas fa-door-closed"></i> Hora de Fin:</label>
+                        <input type="time" id="hora-fin" name="hora-fin" value="18:00">
+                    </div>
+                    <div class="input-group">
+                        <label for="duracion-cita"><i class="fas fa-hourglass-half"></i> Duración estándar por cita (minutos):</label>
+                        <input type="number" id="duracion-cita" name="duracion-cita" value="30" min="15" step="15">
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-small"><i class="fas fa-coffee"></i> Definir Descansos</button>
+            </div>
+        </section>
+
+        <section class="config-section servicios-card">
+            <h2 class="section-title"><i class="fas fa-cut"></i> Configurar Servicios</h2>
+
+            <div class="sub-section">
+                <h3 class="sub-section-title"><i class="fas fa-list-ul"></i> Servicios Sugeridos</h3>
+                <p class="instruccion">Activa los servicios que ofreces y ajusta su precio.</p>
+                <div class="servicios-listado">
+                    <div class="servicio-item">
+                        <div class="servicio-info">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="servicio-nombre">Corte de Cabello Clásico</span>
+                        </div>
+                        <div class="servicio-precio-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" placeholder="Precio" value="15.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="servicio-item">
+                        <div class="servicio-info">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="servicio-nombre">Afeitado Clásico (Navaja)</span>
+                        </div>
+                        <div class="servicio-precio-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" placeholder="Precio" value="12.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="servicio-item">
+                        <div class="servicio-info">
+                            <label class="switch">
+                                <input type="checkbox">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="servicio-nombre">Arreglo de Barba</span>
+                        </div>
+                        <div class="servicio-precio-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" placeholder="Precio" value="10.00" min="0" step="0.01" disabled>
+                        </div>
+                    </div>
+                    <div class="servicio-item">
+                        <div class="servicio-info">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="servicio-nombre">Corte Fade / Degradado</span>
+                        </div>
+                        <div class="servicio-precio-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" placeholder="Precio" value="20.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <h3 class="sub-section-title"><i class="fas fa-plus-circle"></i> Añadir Nuevo Servicio Personalizado</h3>
+                <p class="instruccion">Si ofreces un servicio que no está en la lista, añádelo aquí.</p>
+                <div class="nuevo-servicio-form">
+                    <div class="input-group">
+                        <label for="nombre-nuevo-servicio"><i class="fas fa-signature"></i> Nombre del Servicio:</label>
+                        <input type="text" id="nombre-nuevo-servicio" placeholder="Ej: Tinte y Mechas">
+                    </div>
+                    <div class="input-group">
+                        <label for="precio-nuevo-servicio"><i class="fas fa-tags"></i> Precio:</label>
+                        <input type="number" id="precio-nuevo-servicio" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                     <div class="input-group">
+                        <label for="duracion-nuevo-servicio"><i class="fas fa-hourglass-start"></i> Duración (minutos):</label>
+                        <input type="number" id="duracion-nuevo-servicio" placeholder="30" min="15" step="15">
+                    </div>
+                    <button class="btn btn-primary align-self-end"><i class="fas fa-plus"></i> Añadir Servicio</button>
+                </div>
+
+                <div class="servicios-personalizados-listado">
+                    <h4 class="sub-section-title-small"><i class="fas fa-clipboard-list"></i> Mis Servicios Personalizados</h4>
+                    <div class="servicio-item-personalizado">
+                        <span class="nombre">Tinte y Mechas</span>
+                        <span class="precio-display">$45.00</span>
+                        <span class="duracion-display">90 min</span>
+                        <div class="acciones">
+                            <button class="btn-icon btn-edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-delete"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                     <div class="servicio-item-personalizado">
+                        <span class="nombre">Tratamiento Keratina</span>
+                        <span class="precio-display">$60.00</span>
+                        <span class="duracion-display">120 min</span>
+                        <div class="acciones">
+                            <button class="btn-icon btn-edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-delete"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="panel-footer">
+            <button class="btn btn-success btn-large"><i class="fas fa-save"></i> Guardar Cambios</button>
+            <a href="#" class="link-preview"><i class="fas fa-eye"></i> Ver mi formulario de reserva</a>
+        </footer>
+    </div>
+
+    </body>
+</html>
