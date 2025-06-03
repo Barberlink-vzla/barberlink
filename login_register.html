@@ -8,67 +8,60 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style1.css">
 </head>
-<body class="login-register-page">
+<body class="login-register-page"> 
     <div class="container">
         <div class="flip-card" id="flipCard">
-            <div class="flip-card-inner"> {/* Contenedor interno para la animación flip */}
-                <div class="card-front">
-                    <div class="brand">ACCESO BARBERO</div>
-                    <div class="header">
-                        <button class="header-btn active" data-action="login">Iniciar Sesión</button>
-                        <button class="header-btn" data-action="signup">Registrarse</button>
-                    </div>
-
-                    <div class="form-container">
-                        <h2 class="form-title">Ingresa a tu cuenta de Barbero</h2>
-                        <form id="login-form">
-                            <div class="input-group">
-                                <i class="fas fa-envelope"></i>
-                                <input type="email" id="login-email" placeholder=" " required>
-                                <label for="login-email">Email</label>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-lock"></i>
-                                <input type="password" id="login-password" placeholder=" " required>
-                                <label for="login-password">Contraseña</label>
-                            </div>
-                            <button type="submit" class="submit-btn">Iniciar Sesión</button>
-                        </form>
-                    </div>
-                    <div class="flip-note" data-action="signup">¿Nuevo barbero? <strong>Regístrate aquí.</strong></div>
+            <div class="card-front">
+                <div class="brand">ACCESO BARBERO</div>
+                <div class="header">
+                    <button class="header-btn active" data-action="login">Iniciar Sesión</button>
+                    <button class="header-btn" data-action="signup">Registrarse</button>
                 </div>
 
-                <div class="card-back">
-                    <div class="brand">REGISTRO BARBERO</div>
-                    <div class="header">
-                        <button class="header-btn" data-action="login">Iniciar Sesión</button>
-                        <button class="header-btn active" data-action="signup">Registrarse</button>
-                    </div>
-
-                    <div class="form-container">
-                        <h2 class="form-title">Crea tu cuenta de Barbero</h2>
-                        <form id="register-form">
-                            <div class="input-group">
-                                <i class="fas fa-user-plus"></i> {/* Icono diferente para registro si se desea */}
-                                <input type="text" id="register-name" placeholder=" "> {/* Campo de nombre añadido */}
-                                <label for="register-name">Nombre (Opcional)</label>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-envelope"></i>
-                                <input type="email" id="register-email" placeholder=" " required>
-                                <label for="register-email">Email</label>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-lock"></i>
-                                <input type="password" id="register-password" placeholder=" " required>
-                                <label for="register-password">Contraseña</label>
-                            </div>
-                            <button type="submit" class="submit-btn">Registrarse</button>
-                        </form>
-                    </div>
-                    <div class="flip-note" data-action="login">¿Ya tienes cuenta? <strong>Inicia sesión.</strong></div>
+                <div class="form-container">
+                    <h2 class="form-title">Ingresa a tu cuenta de Barbero</h2>
+                    <form id="login-form">
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="login-email" placeholder=" " required>
+                            <label for="login-email">Email</label>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="login-password" placeholder=" " required>
+                            <label for="login-password">Contraseña</label>
+                        </div>
+                        <button type="submit" class="submit-btn">Iniciar Sesión</button>
+                    </form>
                 </div>
-            </div> {/* Fin de flip-card-inner */}
+                 <div class="flip-note" data-action="signup">¿Nuevo barbero? <strong>Regístrate aquí.</strong></div>
+            </div>
+
+            <div class="card-back">
+                <div class="brand">REGISTRO BARBERO</div>
+                <div class="header">
+                    <button class="header-btn" data-action="login">Iniciar Sesión</button>
+                    <button class="header-btn active" data-action="signup">Registrarse</button>
+                </div>
+
+                <div class="form-container">
+                    <h2 class="form-title">Crea tu cuenta de Barbero</h2>
+                    <form id="register-form">
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="register-email" placeholder=" " required>
+                            <label for="register-email">Email</label>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="register-password" placeholder=" " required>
+                            <label for="register-password">Contraseña</label>
+                        </div>
+                        <button type="submit" class="submit-btn">Registrarse</button>
+                    </form>
+                </div>
+                <div class="flip-note" data-action="login">¿Ya tienes cuenta? <strong>Inicia sesión.</strong></div>
+            </div>
         </div>
         <div id="auth-forms-status-container" style="display: none;"> {/* Inicialmente oculto */}
              <p id="auth-status"></p>
@@ -76,42 +69,30 @@
         </div>
     </div>
 
-    <div id="notification-overlay" class="notification-overlay">
-        <div class="notification-box">
-            <h3 id="notification-title">Notificación</h3>
-            <p id="notification-message">Este es un mensaje de prueba.</p>
-            <button id="notification-close-btn" class="notification-close-btn">Entendido</button>
-        </div>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const flipCard = document.getElementById('flipCard');
-            const flipCardInner = flipCard.querySelector('.flip-card-inner'); // Referencia al inner
             const allFlipButtons = document.querySelectorAll('[data-action]');
+            // Los elementos de estado y logout son manejados en auth.js en cuanto a su visibilidad general.
 
             allFlipButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     const action = this.getAttribute('data-action');
-                    const isFlipped = flipCard.classList.contains('flipped'); // o flipCardInner
+                    const isFlipped = flipCard.classList.contains('flipped');
 
                     if (action === 'signup' && !isFlipped) {
-                        flipCard.classList.add('flipped'); // Aplicar a flipCard
-                        // O si quieres que la animación sea en el inner:
-                        // flipCardInner.style.transform = 'rotateY(180deg)';
+                        flipCard.classList.add('flipped');
                         updateActiveHeaderButtons('signup');
                     } else if (action === 'login' && isFlipped) {
-                        flipCard.classList.remove('flipped'); // Aplicar a flipCard
-                        // O si quieres que la animación sea en el inner:
-                        // flipCardInner.style.transform = 'rotateY(0deg)';
+                        flipCard.classList.remove('flipped');
                         updateActiveHeaderButtons('login');
                     }
                 });
             });
 
             function updateActiveHeaderButtons(activeAction) {
-                const headerButtons = document.querySelectorAll('.login-register-page .header-btn');
+                const headerButtons = document.querySelectorAll('.login-register-page .header-btn'); // Selector más específico
                 headerButtons.forEach(btn => {
                     if (btn.getAttribute('data-action') === activeAction) {
                         btn.classList.add('active');
@@ -120,11 +101,10 @@
                     }
                 });
             }
-            updateActiveHeaderButtons('login');
+            updateActiveHeaderButtons('login'); // Inicia con Login activo
         });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/auth.js"></script>
-</body>
+    <script src="js/auth.js"></script> </body>
 </html>
