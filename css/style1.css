@@ -46,44 +46,39 @@ body {
 }
 
 /* === ESTILOS PARA LA PÁGINA DE LOGIN/REGISTRO FLIP CARD === */
+/* Estilo específico para el body de la página de login/registro */
 body.login-register-page {
-    display: flex;
+    display: flex; /* Sobrescribe el display:flex general si es necesario */
     justify-content: center;
-    align-items: center; /* Centrar la tarjeta verticalmente */
+    align-items: center;
     background-image:
         linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
         url('https://www.transparenttextures.com/patterns/dark-wood.png');
-    padding: 20px; /* Padding para que la tarjeta no toque los bordes en pantallas pequeñas */
+    font-family: var(--font-body); /* Usa las variables de :root */
+    color: var(--primary-text-color); /* Usa las variables de :root */
+    padding: 20px; /* Hereda de body general o define específicamente */
 }
 
 .login-register-page .container {
     width: 100%;
     max-width: 450px;
     perspective: 1500px;
-    background-color: transparent; /* El container principal es transparente */
-    box-shadow: none;
-    border: none;
+    /* Hereda background y shadow de .container general a menos que se necesite un estilo diferente */
+    /* Si quieres un fondo diferente para el container de login: */
+    /* background-color: var(--login-card-bg); */ /* Descomentar si es necesario */
 }
 
 .login-register-page .flip-card {
     width: 100%;
-    min-height: 580px; /* Ajusta según el contenido */
-    position: relative;
-    /* La transformación se aplicará al .flip-card-inner para mejor control de perspectiva */
-}
-
-.login-register-page .flip-card.flipped .flip-card-inner {
-    transform: rotateY(180deg);
-}
-
-.login-register-page .flip-card-inner {
-    width: 100%;
-    height: 100%;
+    min-height: 580px;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+.login-register-page .flip-card.flipped {
+    transform: rotateY(180deg);
+}
 
 .login-register-page .card-front,
 .login-register-page .card-back {
@@ -94,8 +89,8 @@ body.login-register-page {
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-    background-color: var(--login-card-bg);
-    border: 1px solid var(--login-input-border);
+    background-color: var(--login-card-bg); /* Específico para la tarjeta */
+    border: 1px solid var(--login-input-border); /* Específico para la tarjeta */
     display: flex;
     flex-direction: column;
     padding: 30px;
@@ -108,7 +103,7 @@ body.login-register-page {
 .login-register-page .brand {
     text-align: center;
     color: var(--login-primary-accent);
-    font-family: var(--heading-font);
+    font-family: var(--font-heading);
     font-size: 26px;
     margin-bottom: 15px;
     letter-spacing: 1.5px;
@@ -135,8 +130,6 @@ body.login-register-page {
     cursor: pointer;
     transition: all 0.4s ease;
     position: relative;
-    flex: 1; /* Para que los botones compartan espacio */
-    text-align: center;
 }
 .login-register-page .header-btn:hover { color: #fff; }
 .login-register-page .header-btn.active {
@@ -156,8 +149,7 @@ body.login-register-page {
 
 .login-register-page .input-group { position: relative; margin-bottom: 20px; }
 .login-register-page .input-group i {
-    position: absolute; left: 15px; top: 50%; transform: translateY(-50%); /* Centrado vertical */
-    color: var(--login-primary-accent);
+    position: absolute; left: 15px; top: 14px; color: var(--login-primary-accent);
     font-size: 15px; transition: all 0.3s ease; z-index: 1;
 }
 .login-register-page .input-group input {
@@ -168,12 +160,12 @@ body.login-register-page {
 }
 .login-register-page .input-group input:focus {
     border-color: var(--login-primary-accent);
-    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3);
+    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3); /* Usando login-primary-accent como base para el shadow */
 }
 .login-register-page .input-group input:focus + label,
 .login-register-page .input-group input:not(:placeholder-shown) + label {
     top: -10px; left: 10px; font-size: 12px; color: var(--login-primary-accent);
-    background: var(--login-card-bg); padding: 0 5px; z-index: 2;
+    background: var(--login-card-bg); padding: 0 5px;
 }
 .login-register-page .input-group input:focus ~ i { color: var(--login-primary-accent); }
 .login-register-page .input-group label {
@@ -199,15 +191,15 @@ body.login-register-page {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 .login-register-page #auth-status {
-    text-align: center; color: var(--login-primary-accent); margin-top: 0;
-    font-size: 14px; min-height: 20px; margin-bottom: 10px;
+    text-align: center; color: var(--login-primary-accent); margin-top: 0; /* Ajustado para estar dentro del contenedor */
+    font-size: 14px; min-height: 20px; margin-bottom: 10px; /* Espacio antes del botón logout */
 }
-.login-register-page button#logout-button {
-    background: var(--danger-color);
+.login-register-page button#logout-button { /* Botón de logout EN la página de login */
+    background: var(--danger-color); /* Usando variable de peligro general */
     border: none; color: #fff; padding: 12px; font-size: 15px; font-weight: 500;
     border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
-    width: auto; min-width: 150px; max-width: 200px;
-    text-transform: uppercase; display: block; margin: 0 auto;
+    width: auto; /* Ajustar al contenido */ min-width: 150px; max-width: 200px;
+    text-transform: uppercase; display: block; margin: 0 auto; /* Centrado */
 }
 .login-register-page button#logout-button:hover { filter: brightness(1.1); }
 
