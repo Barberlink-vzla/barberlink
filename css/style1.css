@@ -3,19 +3,15 @@
 /* === VARIABLES GLOBALES Y ESTILOS BASE === */
 :root {
     --primary-font: 'Roboto', sans-serif;
-    --heading-font: 'Playfair Display', serif; /* Variable consistente para encabezados */
-
-    /* Paleta para el tema general oscuro y elegante */
+    --heading-font: 'Playfair Display', serif; 
     --background-color: #1a1a1a;
     --container-bg: #2c2c2c;
     --primary-text-color: #e0e0e0;
     --accent-color: #c5a47e;
     --accent-hover-color: #a78963;
     --border-color: #444;
-    --danger-color: #b74a4a; /* Rojo más visible para errores */
-    --success-color: #5cb85c; /* Verde estándar para éxito */
-
-    /* Variables específicas para la página de login/registro */
+    --danger-color: #b74a4a;
+    --success-color: #5cb85c;
     --login-card-bg: #3a2d20;
     --login-primary-accent: #c5a686;
     --login-secondary-accent: #8B4513;
@@ -52,7 +48,7 @@ body.login-register-page {
     background-image:
         linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
         url('https://www.transparenttextures.com/patterns/dark-wood.png');
-    font-family: var(--primary-font); /* Corregido para usar la variable correcta */
+    font-family: var(--primary-font);
     color: var(--primary-text-color);
     padding: 20px;
 }
@@ -82,7 +78,7 @@ body.login-register-page {
     height: 100%;
     backface-visibility: hidden;
     border-radius: 20px;
-    overflow: hidden; /* Importante para que el contenido no desborde de forma extraña */
+    overflow: hidden;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
     background-color: var(--login-card-bg);
     border: 1px solid var(--login-input-border);
@@ -98,12 +94,12 @@ body.login-register-page {
 .login-register-page .brand {
     text-align: center;
     color: var(--login-primary-accent);
-    font-family: var(--heading-font); /* Usando la variable :root correcta */
+    font-family: var(--heading-font);
     font-size: 26px;
     margin-bottom: 15px;
     letter-spacing: 1.5px;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-    word-wrap: break-word; /* Para evitar desbordamientos si el texto es largo y la fuente grande */
+    word-wrap: break-word;
 }
 
 .login-register-page .header {
@@ -126,8 +122,8 @@ body.login-register-page {
     cursor: pointer;
     transition: all 0.4s ease;
     position: relative;
-    flex-shrink: 1; /* Permitir que los botones se encojan si no hay espacio */
-    white-space: nowrap; /* Evitar que el texto del botón se rompa en dos líneas */
+    flex-shrink: 1;
+    white-space: nowrap;
 }
 .login-register-page .header-btn:hover { color: #fff; }
 .login-register-page .header-btn.active {
@@ -212,192 +208,134 @@ body.login-register-page {
 
 /* === NOTIFICATION OVERLAY STYLES === */
 .notification-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); display: flex;
+    justify-content: center; align-items: center; z-index: 1000;
+    opacity: 0; visibility: hidden;
     transition: opacity 0.3s ease, visibility 0s linear 0.3s;
     padding: 20px;
 }
 
 .notification-overlay.show {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1; visibility: visible;
     transition: opacity 0.3s ease, visibility 0s linear 0s;
 }
 
 .notification-box {
-    background-color: var(--login-card-bg);
-    padding: 30px 35px;
-    border-radius: 15px;
-    text-align: center;
+    background-color: var(--login-card-bg); padding: 30px 35px;
+    border-radius: 15px; text-align: center;
     box-shadow: 0 15px 40px rgba(0,0,0,0.6);
     border-top: 5px solid var(--login-primary-accent);
-    width: 100%;
-    max-width: 480px;
-    transform: scale(0.95) translateY(-20px);
-    opacity: 0;
+    width: 100%; max-width: 480px;
+    transform: scale(0.95) translateY(-20px); opacity: 0;
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s, opacity 0.3s ease 0.1s;
 }
 
 .notification-overlay.show .notification-box {
-    transform: scale(1) translateY(0);
-    opacity: 1;
+    transform: scale(1) translateY(0); opacity: 1;
 }
 
 .notification-box #notification-title {
-    font-family: var(--heading-font);
-    color: var(--login-primary-accent);
-    font-size: 1.9em;
-    margin-bottom: 15px;
-    letter-spacing: 1px;
+    font-family: var(--heading-font); color: var(--login-primary-accent);
+    font-size: 1.9em; margin-bottom: 15px; letter-spacing: 1px;
 }
 
 #notification-message {
-    font-size: 1.05em;
-    color: var(--primary-text-color);
-    line-height: 1.7;
-    margin-bottom: 30px;
-    min-height: 40px;
+    font-size: 1.05em; color: var(--primary-text-color);
+    line-height: 1.7; margin-bottom: 30px; min-height: 40px;
 }
-#notification-message strong {
-    color: var(--login-primary-accent);
-    font-weight: 500;
-}
+#notification-message strong { color: var(--login-primary-accent); font-weight: 500; }
 
 .notification-close-btn {
-    background: var(--login-btn-bg);
-    color: #fff;
-    border: none;
-    padding: 12px 35px;
-    font-size: 1em;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    background: var(--login-btn-bg); color: #fff; border: none;
+    padding: 12px 35px; font-size: 1em; font-weight: 600;
+    border-radius: 8px; cursor: pointer; text-transform: uppercase;
+    letter-spacing: 1px; transition: background-color 0.3s ease, transform 0.2s ease;
     box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
 
 .notification-close-btn:hover {
-    background-color: var(--login-btn-hover);
-    transform: translateY(-2px);
+    background-color: var(--login-btn-hover); transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0,0,0,0.3);
 }
-.notification-close-btn:active {
-    transform: translateY(0);
-}
-
-.notification-box.success {
-    border-top-color: var(--success-color);
-}
-.notification-box.success #notification-title {
-    color: var(--success-color);
-}
-
-.notification-box.error {
-    border-top-color: var(--danger-color);
-}
-.notification-box.error #notification-title {
-    color: var(--danger-color);
-}
-
-.notification-box.info {
-    border-top-color: var(--accent-color);
-}
-.notification-box.info #notification-title {
-    color: var(--accent-color);
-}
-
+.notification-close-btn:active { transform: translateY(0); }
+.notification-box.success { border-top-color: var(--success-color); }
+.notification-box.success #notification-title { color: var(--success-color); }
+.notification-box.error { border-top-color: var(--danger-color); }
+.notification-box.error #notification-title { color: var(--danger-color); }
+.notification-box.info { border-top-color: var(--accent-color); }
+.notification-box.info #notification-title { color: var(--accent-color); }
 
 /* === MEDIA QUERIES (Ajustes para responsividad) === */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     body.login-register-page {
-        padding: 10px; /* Menos padding en el body para pantallas pequeñas */
+        padding: 15px;
+        align-items: flex-start; /* Permite scroll si el contenido es alto */
     }
 
     .login-register-page .container {
-        max-width: 100%;
-        padding: 0 5px; /* Menos padding horizontal para el contenedor principal */
+        max-width: 400px; /* Limitar el ancho en tabletas */
     }
 
+    /* La corrección más importante: permitir que la altura se ajuste al contenido */
     .login-register-page .flip-card {
-        min-height: auto; /* Permitir que la altura se ajuste al contenido */
+        min-height: auto; 
+        position: static; /* Evita problemas de posicionamiento en algunos navegadores */
+        transform-style: flat;
     }
-
+    
     .login-register-page .card-front,
     .login-register-page .card-back {
-        padding: 20px 15px; /* Reducir padding interno de las tarjetas */
+        position: relative; /* Cambiado de absolute a relative */
+        height: auto;
+        padding: 25px 20px;
+        backface-visibility: visible; /* No es necesario en un layout estático */
     }
+    
+    /* Ocultar la parte trasera y gestionar el 'flip' con display, más simple y seguro */
+    .login-register-page .flip-card .card-back {
+        display: none;
+    }
+    
+    .login-register-page .flip-card.flipped .card-front {
+        display: none;
+    }
+
+    .login-register-page .flip-card.flipped .card-back {
+        display: flex; /* Mostrar la parte trasera cuando esté 'flipped' */
+        transform: none; /* Resetear transformaciones */
+    }
+
+    .login-register-page .flip-card.flipped {
+        transform: none; /* Resetear transformaciones */
+    }
+
 
     .login-register-page .brand {
-        font-size: 1.5em; /* Reducir significativamente el tamaño de fuente del título */
-        margin-bottom: 10px; /* Ajustar margen inferior */
-        letter-spacing: 1px; /* Reducir un poco el espaciado */
+        font-size: 1.8em;
+        margin-bottom: 15px;
     }
 
-    .login-register-page .header {
-        margin-bottom: 15px; /* Ajustar margen */
-        padding: 3px; /* Ajustar padding */
-    }
     .login-register-page .header-btn {
-        padding: 8px 15px; /* Reducir padding de los botones del header */
-        font-size: 0.85em; /* Reducir tamaño de fuente */
+        padding: 10px 20px;
+        font-size: 0.9em;
     }
 
     .login-register-page .form-title {
-        font-size: 1.25em; /* Reducir tamaño de fuente del título del formulario */
-        margin-bottom: 20px;
-    }
-
-    .login-register-page .input-group input {
-        padding: 12px 12px 12px 40px; /* Ajustar padding de inputs */
-        font-size: 14px;
-    }
-    .login-register-page .input-group i {
-        font-size: 14px; /* Iconos un poco más pequeños */
-        left: 12px; /* Ajustar posición de icono */
-        top: 13px;
-    }
-    .login-register-page .input-group label {
-        left: 40px; /* Ajustar posición de label flotante */
-        font-size: 0.9em; /* Tamaño de label base */
-    }
-    .login-register-page .input-group input:focus + label,
-    .login-register-page .input-group input:not(:placeholder-shown) + label {
-        font-size: 0.75em; /* Tamaño de label cuando flota */
-    }
-
-
-    .login-register-page .submit-btn {
-        padding: 12px;
-        font-size: 0.95em; /* Reducir tamaño de fuente del botón principal */
-    }
-    .login-register-page #auth-forms-status-container {
-        padding: 15px;
+        font-size: 1.4em;
     }
 
     .notification-box {
         padding: 25px 20px;
-        max-width: calc(100% - 20px); /* Asegurar que no toque los bordes */
+        max-width: calc(100% - 30px);
     }
     .notification-box #notification-title {
-        font-size: 1.5em; /* Reducir tamaño de título de notificación */
+        font-size: 1.6em;
     }
     #notification-message {
-        font-size: 0.95em; /* Reducir tamaño de mensaje de notificación */
+        font-size: 1em;
     }
     .notification-close-btn {
-        padding: 10px 25px;
-        font-size: 0.9em;
+        padding: 12px 30px;
     }
 }
