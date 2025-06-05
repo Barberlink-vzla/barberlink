@@ -63,13 +63,13 @@
                 <div class="flip-note" data-action="login">¿Ya tienes cuenta? <strong>Inicia sesión.</strong></div>
             </div>
         </div>
-        <div id="auth-forms-status-container" style="display: none;"> {/* Inicialmente oculto */}
+        <div id="auth-forms-status-container" style="display: none;"> 
              <p id="auth-status"></p>
              <button id="logout-button" style="display: none;">Cerrar Sesión</button>
         </div>
     </div>
 
-    {/* === INICIO: HTML PARA EL OVERLAY DE NOTIFICACIÓN === */}
+
     <div class="notification-overlay" id="notification-overlay">
         <div class="notification-box">
             <h2 id="notification-title">Título de Notificación</h2>
@@ -77,7 +77,7 @@
             <button id="notification-close-btn" class="notification-close-btn">Entendido</button>
         </div>
     </div>
-    {/* === FIN: HTML PARA EL OVERLAY DE NOTIFICACIÓN === */}
+  
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -116,6 +116,6 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/auth.js"></script> {/* Asegúrate que esta ruta es correcta */}
+    <script src="js/auth.js"></script> 
 </body>
 </html>
