@@ -6,29 +6,29 @@
     --heading-font: 'Playfair Display', serif;
     
     /* Paleta para el tema general oscuro y elegante */
-    --background-color: #121212;         /* Negro más profundo para el fondo principal */
-    --container-bg: #1e1e1e;         /* Gris muy oscuro para contenedores generales */
-    --primary-text-color: #e0e0e0;   /* Gris claro para el texto general */
-    --secondary-text-color: #b0b0b0; /* Gris un poco más oscuro para texto secundario */
+    --background-color: #121212;         
+    --container-bg: #1e1e1e;         
+    --primary-text-color: #e0e0e0;   
+    --secondary-text-color: #b0b0b0; 
     
-    --accent-color: #c5a47e;          /* Tono dorado/cuero para acentos y botones */
-    --accent-hover-color: #a78963;    /* Un tono más oscuro para el hover */
-    --border-color: #333;             /* Bordes sutiles generales más oscuros */
+    --accent-color: #c5a47e;          
+    --accent-hover-color: #a78963;    
+    --border-color: #333;             
     
-    --danger-color: #e57373;          /* Rojo más suave para peligro */
+    --danger-color: #e57373;          
     --danger-hover-color: #ef5350;
-    --success-color: #81c784;         /* Verde más suave para éxito */
+    --success-color: #81c784;         
     --success-hover-color: #66bb6a;
 
     /* Variables específicas para la página de login/registro y tarjetas de perfil */
-    --login-card-bg: #2a2a2a;             /* Fondo de tarjeta, un poco más claro que el container general */
-    --login-primary-accent: #c5a686;      /* Tono beige/dorado pálido */
-    --login-secondary-accent: #a07e5f;    /* Tono cuero/marrón medio para degradados */
-    --login-input-bg: #333333;            /* Fondo de input más oscuro */
-    --login-input-border: #4f4f4f;        /* Borde de input */
-    --login-input-text: #f0f0f0;          /* Texto del input */
-    --login-btn-bg: var(--accent-color);          /* Color base del botón */
-    --login-btn-hover: var(--accent-hover-color); /* Color hover del botón */
+    --login-card-bg: #2a2a2a;             
+    --login-primary-accent: #c5a686;      
+    --login-secondary-accent: #a07e5f;    
+    --login-input-bg: #333333;            
+    --login-input-border: #4f4f4f;        
+    --login-input-text: #f0f0f0;          
+    --login-btn-bg: var(--accent-color);          
+    --login-btn-hover: var(--accent-hover-color); 
 
     --link-color: var(--accent-color);
     --link-hover-color: var(--accent-hover-color);
@@ -47,16 +47,16 @@ body {
     background-color: var(--background-color);
     color: var(--primary-text-color);
     line-height: 1.6;
-    display: flex; /* Para centrar contenido en páginas simples */
+    display: flex; 
     justify-content: center;
-    align-items: flex-start; /* Para que el scroll funcione bien si el contenido es largo */
+    align-items: flex-start; 
     min-height: 100vh;
-    padding: 20px; /* Margen alrededor del contenido principal */
+    padding: 20px; 
 }
 
 .container {
     width: 100%;
-    max-width: 600px; /* Ancho base, puede ser sobreescrito por páginas específicas */
+    max-width: 600px; 
     background-color: var(--container-bg);
     padding: 25px 30px;
     border-radius: 10px;
@@ -66,7 +66,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--heading-font);
-    color: var(--login-primary-accent); /* Usar el acento para los títulos principales */
+    color: var(--login-primary-accent); 
     margin-bottom: 0.75em;
     line-height: 1.3;
 }
@@ -87,7 +87,6 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Estilo base para inputs y botones (puede ser especializado) */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -112,12 +111,12 @@ input:focus,
 select:focus,
 textarea:focus {
     border-color: var(--login-primary-accent);
-    box-shadow: 0 0 0 3px rgba(197, 166, 134, 0.2); /* Sombra de foco sutil */
+    box-shadow: 0 0 0 3px rgba(197, 166, 134, 0.2); 
 }
 
 button, .style-button {
     background: linear-gradient(135deg, var(--login-btn-bg), var(--login-secondary-accent));
-    color: #0d0d0d; /* Texto oscuro para contraste con botones claros */
+    color: #0d0d0d; 
     border: none;
     padding: 12px 20px;
     font-family: var(--primary-font);
@@ -141,12 +140,11 @@ button:active, .style-button:active {
     box-shadow: 0 3px 8px rgba(0,0,0,0.25);
 }
 
-/* Estilos para mensajes de estado/error */
 .status-message {
     text-align: center;
     margin-top: 15px;
     font-weight: 500;
-    min-height: 20px; /* Evitar saltos de layout */
+    min-height: 20px; 
 }
 .status-message.success { color: var(--success-color); }
 .status-message.error { color: var(--danger-color); }
@@ -158,24 +156,37 @@ body.login-register-page {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden; /* Para evitar barras de scroll por la animación */
+    /* overflow: hidden; Quitamos overflow hidden para depurar si algo se sale */
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
+        url('https://www.transparenttextures.com/patterns/dark-wood.png'); /* Fondo de style1.css */
 }
 
 .login-register-page .container {
-    max-width: 420px; /* Ancho específico para el login card */
-    padding: 0; /* El padding lo manejan las tarjetas internas */
-    background-color: transparent; /* El flip-card tendrá el fondo */
+    max-width: 420px; 
+    padding: 0; 
+    background-color: transparent; 
     box-shadow: none;
     border: none;
 }
 
-.flip-card {
+.login-register-page .flip-card { /* Adaptado para que no necesite .flip-card-inner para la transformación */
     width: 100%;
-    min-height: 580px; /* Altura mínima para el contenido */
+    min-height: 580px; 
     perspective: 1500px;
     position: relative;
+    /* transition y transform-style se aplican aquí si no hay .flip-card-inner para animar */
+    transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Mantenemos como en style1.css */
+    transform-style: preserve-3d; /* Mantenemos como en style1.css */
+}
+/* Si se usa la estructura de style1.css (sin -inner) y style.css se carga, esto manejaría el flip */
+.login-register-page .flip-card.flipped {
+    transform: rotateY(180deg);
 }
 
+
+/* Si .flip-card-inner estuviera presente (estructura original de style.css) */
+/*
 .flip-card-inner {
     width: 100%;
     height: 100%;
@@ -183,189 +194,219 @@ body.login-register-page {
     transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     transform-style: preserve-3d;
 }
-
-.flip-card.flipped .flip-card-inner {
+.flip-card.flipped .flip-card-inner { //Si flip-card-inner se usa
     transform: rotateY(180deg);
 }
+*/
 
-.card-front, .card-back {
+.login-register-page .card-front, 
+.login-register-page .card-back { /* Unificando con style1.css */
     position: absolute;
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    background-color: var(--login-card-bg);
-    border-radius: 15px;
-    padding: 30px 35px;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
+    background-color: var(--login-card-bg); /* De style1.css */
+    border-radius: 20px; /* De style1.css */
+    padding: 30px 35px; /* De style.css, puede ser 30px como en style1.css */
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6); /* De style.css */
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--login-input-border);
+    border: 1px solid var(--login-input-border); /* De style1.css */
+    overflow: hidden; /* Añadido de style1.css */
 }
 
-.card-back {
+.login-register-page .card-back { /* Unificando con style1.css */
     transform: rotateY(180deg);
 }
 
-.login-register-page .brand {
+.login-register-page .brand { /* Combinando y priorizando style1.css para .brand */
     font-family: var(--heading-font);
-    font-size: 1.3em;
+    font-size: 26px; /* Tomado de style1.css */
+    line-height: 1.2;
     color: var(--login-primary-accent);
     text-align: center;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    opacity: 0.8;
+    margin-bottom: 15px; /* Tomado de style1.css */
+    letter-spacing: 1.5px; /* Tomado de style1.css */
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5); /* Tomado de style1.css */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /* text-transform: uppercase; Ya no es necesario si el texto es ACCESO BARBERO */
+    /* opacity: 0.8; */ /* Quitado, el color ya es distintivo */
 }
 
-.login-register-page .header {
+.login-register-page .header { /* Combinando y priorizando style1.css */
     display: flex;
     justify-content: center;
-    margin-bottom: 25px;
-    border: 1px solid var(--login-input-border);
-    border-radius: 8px;
-    overflow: hidden; /* Para que los bordes redondeados afecten a los botones */
+    margin-bottom: 20px; /* Tomado de style1.css */
+    background: rgba(0,0,0,0.2); /* Tomado de style1.css */
+    border-radius: 30px; /* Tomado de style1.css */
+    padding: 5px; /* Tomado de style1.css */
+    /* border: 1px solid var(--login-input-border); */ /* Quitado, el de style1.css es más sutil */
+    /* overflow: hidden; */ /* Quitado, el border-radius en botones lo maneja */
 }
 
-.login-register-page .header-btn {
-    flex: 1;
-    padding: 12px 10px;
+.login-register-page .header-btn { /* Combinando y priorizando style1.css */
+    flex-shrink: 1; /* Añadido de style1.css */
+    white-space: nowrap; /* Añadido de style1.css */
+    padding: 10px 25px; /* Tomado de style1.css */
     background-color: transparent;
     border: none;
     color: var(--login-primary-accent);
-    opacity: 0.7;
-    font-size: 0.95em;
-    font-weight: 500;
+    /* opacity: 0.7; */ /* Quitado, el color ya es distintivo */
+    font-size: 15px; /* Tomado de style1.css */
+    font-weight: 500; /* Tomado de style1.css */
+    border-radius: 30px; /* Tomado de style1.css */
     cursor: pointer;
-    transition: background-color 0.3s, color 0.3s, opacity 0.3s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    transition: all 0.4s ease; /* Tomado de style1.css */
+    position: relative; /* Tomado de style1.css */
+    /* text-transform: uppercase; */ /* Quitado, no tan necesario */
+    /* letter-spacing: 0.5px; */ /* Quitado, no tan necesario */
 }
-
-.login-register-page .header-btn.active {
-    background-color: var(--login-primary-accent);
-    color: var(--login-card-bg); /* Texto oscuro sobre fondo claro */
+.login-register-page .header-btn.active { /* Combinando y priorizando style1.css */
+    background: var(--login-btn-bg); /* Tomado de style1.css */
+    color: #fff; /* Tomado de style1.css */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4); /* Tomado de style1.css */
     opacity: 1;
     font-weight: 600;
 }
 .login-register-page .header-btn:not(.active):hover {
-    background-color: rgba(197, 166, 134, 0.1); /* Hover sutil */
+    color: #fff; /* Tomado de style1.css */
+    /* background-color: rgba(197, 166, 134, 0.1); */ /* Quitado, el cambio de color es suficiente */
 }
 
 
-.login-register-page .form-title {
+.login-register-page .form-title { /* Combinando */
     text-align: center;
-    color: var(--primary-text-color); /* Texto más claro para el título del formulario */
-    font-size: 1.4em;
-    font-weight: 400;
+    color: var(--login-primary-accent); /* De style1.css */
+    font-size: 22px; /* De style1.css */
+    font-weight: 400; /* De style1.css */
     margin-bottom: 25px;
 }
 
-.login-register-page .input-group {
+.login-register-page .input-group { /* Combinando */
     position: relative;
-    margin-bottom: 22px;
+    margin-bottom: 20px; /* De style1.css */
 }
 
-.login-register-page .input-group i.fas {
+.login-register-page .input-group i.fas, /* fas de style.css, i de style1.css, unificamos a i */
+.login-register-page .input-group i { 
     position: absolute;
     left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 14px; /* De style1.css, más preciso que translateY */
+    /* transform: translateY(-50%); */ /* Quitado */
     color: var(--login-primary-accent);
-    font-size: 1em;
+    font-size: 15px; /* De style1.css */
     transition: color 0.3s ease;
+    z-index: 1; /* Añadido de style1.css */
 }
 
-.login-register-page .input-group input {
+.login-register-page .input-group input { /* Combinando */
     width: 100%;
-    padding: 14px 15px 14px 45px; /* Espacio para el icono */
-    background-color: var(--login-input-bg);
-    border: 1px solid var(--login-input-border);
+    padding: 14px 14px 14px 45px; 
+    background-color: var(--login-input-bg); 
+    border: 1px solid var(--login-input-border); 
     border-radius: 8px;
-    color: var(--login-input-text);
-    font-size: 1em;
+    color: var(--login-input-text); /* De style.css, más específico que primary-text-color */
+    font-size: 15px; /* De style1.css */
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    outline: none; /* Añadido de style1.css */
 }
 
-.login-register-page .input-group input:focus {
+.login-register-page .input-group input:focus { /* Combinando */
     border-color: var(--login-primary-accent);
-    box-shadow: 0 0 0 3px rgba(197, 166, 134, 0.2);
+    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3); /* De style1.css */
 }
-.login-register-page .input-group input:focus ~ i.fas {
+.login-register-page .input-group input:focus ~ i.fas,
+.login-register-page .input-group input:focus ~ i {
     color: var(--login-primary-accent);
 }
 
 
-.login-register-page .input-group label {
+.login-register-page .input-group label { /* Combinando */
     position: absolute;
     left: 45px;
     top: 14px;
     color: var(--login-primary-accent);
-    opacity: 0.7;
+    opacity: 0.8; /* De style1.css */
     pointer-events: none;
     transition: all 0.3s ease;
-    background-color: transparent; /* Asegurar que no tapa el input */
+    background-color: transparent; 
     padding: 0;
 }
 
 .login-register-page .input-group input:focus + label,
-.login-register-page .input-group input:not(:placeholder-shown) + label {
+.login-register-page .input-group input:not(:placeholder-shown) + label { /* Combinando */
     top: -10px;
-    left: 12px; /* Ajustar para que quede bien con el padding del input */
-    font-size: 0.8em;
+    left: 10px; /* De style1.css */
+    font-size: 12px; /* De style1.css */
     color: var(--login-primary-accent);
-    background-color: var(--login-card-bg); /* Para que el label "corte" el borde del input */
+    background-color: var(--login-card-bg); 
     padding: 0 5px;
     opacity: 1;
-    z-index: 10;
+    z-index: 10; /* De style.css */
 }
 
-.login-register-page .submit-btn {
+.login-register-page .submit-btn { /* Combinando */
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, var(--login-primary-accent), var(--login-secondary-accent));
-    color: var(--login-card-bg); /* Texto oscuro para contraste */
-    font-size: 1.05em;
+    background: linear-gradient(135deg, var(--login-btn-bg), var(--login-secondary-accent)); /* De style1.css */
+    color: #FFF; /* De style1.css, mejor contraste */
+    font-size: 16px; /* De style1.css */
     font-weight: 600;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: filter 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    letter-spacing: 1px; /* De style1.css */
+    transition: all 0.3s ease; /* De style1.css */
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-.login-register-page .submit-btn:hover {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow: 0 7px 20px rgba(0,0,0,0.35);
+.login-register-page .submit-btn:hover { /* Combinando */
+    transform: translateY(-3px); /* De style1.css */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4); /* De style1.css */
+    filter: brightness(1.1); /* De style1.css */
 }
-.login-register-page .submit-btn:active {
+.login-register-page .submit-btn:active { /* De style.css */
     transform: translateY(0px);
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-
-.login-register-page .text-link {
-    display: block;
-    text-align: center;
-    margin-top: 20px;
-    color: var(--login-primary-accent);
-    opacity: 0.8;
-    font-size: 0.9em;
-    transition: opacity 0.3s;
+/* flip-note de style1.css */
+.login-register-page .flip-note {
+    text-align: center; color: var(--login-primary-accent); font-size: 14px;
+    opacity: 0.8; margin-top: auto; padding-top: 15px; cursor: pointer;
+    transition: color 0.3s ease;
 }
-.login-register-page .text-link:hover {
-    opacity: 1;
-    text-decoration: underline;
-}
+.login-register-page .flip-note:hover { color: #fff; }
+.login-register-page .flip-note strong { font-weight: 500; }
 
-#auth-status {
-    margin-top: 15px;
-    text-align: center;
+
+/* auth-forms-status-container y auth-status de style1.css */
+.login-register-page #auth-forms-status-container {
+    margin-top: 20px; text-align: center; width: 100%; max-width: 450px;
+    padding: 20px; background-color: var(--login-card-bg); border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.login-register-page #auth-status { /* #auth-status de style.css, #auth-status dentro de #auth-forms-status-container de style1.css */
+    text-align: center; color: var(--login-primary-accent);
+    font-size: 14px; min-height: 20px; margin-bottom: 10px;
     font-weight: 500;
-    min-height: 20px;
 }
+.login-register-page button#logout-button {
+    background: var(--danger-color);
+    border: none; color: #fff; padding: 12px; font-size: 15px; font-weight: 500;
+    border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
+    width: auto; min-width: 150px; max-width: 200px;
+    text-transform: uppercase; display: block; margin: 0 auto;
+}
+.login-register-page button#logout-button:hover { filter: brightness(1.1); }
+
+
+/* El resto de style.css (booking, profile, etc.) sigue igual */
+/* ... (resto de .booking-page, .barber-profile-page, .calendar-widget, etc. de style.css) ... */
+/* Asegúrate de copiar todo el contenido restante de tu style.css original aquí */
+
 
 /* === ESTILOS PÁGINA DE RESERVA (booking-page) === */
 body.booking-page {
@@ -470,14 +511,13 @@ body.booking-page {
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Estilo para inputs dentro del formulario de reserva */
 #barberBookingForm .input-group {
     position: relative;
     margin-bottom: 25px;
 }
-#barberBookingForm .input-group label { /* Labels flotantes para booking form */
+#barberBookingForm .input-group label { 
     position: absolute;
-    left: 15px; /* Alineado con padding del input */
+    left: 15px; 
     top: 13px;
     color: var(--login-primary-accent);
     opacity: 0.7;
@@ -488,21 +528,21 @@ body.booking-page {
 }
 #barberBookingForm .input-group input:focus + label,
 #barberBookingForm .input-group input:not(:placeholder-shown) + label,
-#barberBookingForm .input-group select:focus + label, /* Para selects */
-#barberBookingForm .input-group select:valid + label { /* Para selects con valor */
+#barberBookingForm .input-group select:focus + label, 
+#barberBookingForm .input-group select:valid + label { 
     top: -10px;
     left: 10px;
     font-size: 0.8em;
     color: var(--login-primary-accent);
-    background-color: var(--login-card-bg); /* Fondo de la tarjeta del paso */
+    background-color: var(--login-card-bg); 
     padding: 0 5px;
     opacity: 1;
     z-index: 1;
 }
 #barberBookingForm .input-group input[type="date"],
 #barberBookingForm .input-group select {
-    padding: 12px 15px; /* No necesitan padding extra para icono */
-    color-scheme: dark; /* Para que el widget de fecha se vea bien en tema oscuro en Firefox */
+    padding: 12px 15px; 
+    color-scheme: dark; 
 }
 #barberBookingForm input.invalid,
 #barberBookingForm select.invalid {
@@ -521,7 +561,7 @@ body.booking-page {
     margin-top: 25px;
 }
 #barberBookingForm .navigation-buttons .style-button {
-    flex-basis: 48%; /* Para que ocupen casi la mitad con espacio */
+    flex-basis: 48%; 
 }
 
 #booking-summary p {
@@ -537,7 +577,7 @@ body.booking-page {
     display: inline-block;
     margin-top: 20px;
     padding: 12px 25px;
-    background-color: #25D366; /* Color WhatsApp */
+    background-color: #25D366; 
     color: white;
     text-align: center;
     border-radius: 6px;
@@ -549,7 +589,6 @@ body.booking-page {
     text-decoration: none;
 }
 
-/* Estilos para date picker en tema oscuro (mejora) */
 body:not(.login-register-page) input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(0.8) sepia(0.5) saturate(2) hue-rotate(300deg) brightness(0.9);
     cursor: pointer;
@@ -560,8 +599,6 @@ body:not(.login-register-page) input[type="date"]:hover::-webkit-calendar-picker
     filter: invert(1) sepia(1) saturate(5) hue-rotate(330deg) brightness(1);
 }
 
-
-/* === ESTILOS PARA BARBER PROFILE PAGE (Desde la respuesta anterior) === */
 body.barber-profile-page {
     font-family: var(--primary-font);
     background-color: var(--background-color);
@@ -637,7 +674,7 @@ body.barber-profile-page {
     background: var(--login-input-bg);
     border: 1px solid var(--login-input-border);
     border-radius: 8px;
-    color: var(--login-input-text); /* Asegurar color de texto del input */
+    color: var(--login-input-text); 
     font-size: 1em;
     outline: none;
     transition: all 0.3s ease;
@@ -685,7 +722,7 @@ body.barber-profile-page {
 .barber-profile-page .profile-submit-btn,
 .barber-profile-page .profile-action-btn {
     background: linear-gradient(135deg, var(--login-btn-bg), var(--login-secondary-accent));
-    color: #0d0d0d; /* Texto oscuro para contraste */
+    color: #0d0d0d; 
     border: none;
     padding: 12px 20px;
     font-size: 1em;
@@ -758,9 +795,9 @@ body.barber-profile-page {
     transform: scale(1.2);
     accent-color: var(--login-primary-accent);
 }
-.barber-profile-page .service-item input[type="number"] { /* Input de precio */
-    width: 100px; /* Ancho fijo para precio */
-    padding: 8px 10px; /* Padding más pequeño */
+.barber-profile-page .service-item input[type="number"] { 
+    width: 100px; 
+    padding: 8px 10px; 
     margin-left: 10px;
     background-color: var(--login-input-bg);
     border: 1px solid var(--login-input-border);
@@ -789,7 +826,7 @@ body.barber-profile-page {
 
 .barber-profile-page .availability-instructions {
     font-size: 0.95em;
-    color: var(--secondary-text-color); /* Usar texto secundario */
+    color: var(--secondary-text-color); 
     margin-bottom: 20px;
     text-align: center;
 }
@@ -844,7 +881,7 @@ body.barber-profile-page {
 }
 .barber-profile-page #add-slot-to-selected-day-btn:hover {
     background: var(--success-hover-color);
-    filter: brightness(1.05); /* Ajuste leve, ya que el color base cambia */
+    filter: brightness(1.05); 
 }
 
 .calendar-widget-container {
@@ -937,21 +974,21 @@ body.barber-profile-page {
   border-radius: 50%;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
-  line-height: 1.5em; /* (altura de línea base del texto del día) */
-  height: calc(1.5em + 20px); /* alto total = padding-top + padding-bottom + line-height */
+  line-height: 1.5em; 
+  height: calc(1.5em + 20px); 
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.calendar-weeks .calendar-day.other-month { /* Estilo para días de otros meses */
+.calendar-weeks .calendar-day.other-month { 
   opacity: .3;
   pointer-events: none;
 }
 
 .calendar-weeks .calendar-day:not(.other-month):hover {
   background-color: var(--login-btn-hover);
-  color: var(--login-card-bg); /* Texto oscuro sobre hover claro */
+  color: var(--login-card-bg); 
   font-weight: 500;
   transform: scale(1.05);
 }
@@ -992,15 +1029,15 @@ body.barber-profile-page {
 }
 #booking-link-container button#copy-link-btn {
     background: var(--login-btn-bg);
-    color: #0d0d0d; /* Texto oscuro */
+    color: #0d0d0d; 
     padding: 8px 15px;
     font-size: 0.9em;
     margin-top: 15px;
     width: auto;
 }
 
-#save-status { /* Usar .status-message.success o .error en el JS en lugar de estilizar directamente #save-status */
-    color: var(--login-primary-accent); /* Por defecto, el JS le dará color específico */
+#save-status { 
+    color: var(--login-primary-accent); 
     min-height: 20px;
     text-align: center;
     font-weight: bold;
@@ -1008,13 +1045,12 @@ body.barber-profile-page {
 }
 
 .barber-profile-page .input-group input[type="file"] {
-    padding: 10px; /* Ajustar padding */
-    line-height: 1.5; /* Mejorar alineación del texto del botón */
+    padding: 10px; 
+    line-height: 1.5; 
 }
-/* Estilo del botón de selección de archivo */
 .barber-profile-page .input-group input[type="file"]::file-selector-button {
     background: var(--login-btn-bg);
-    color: #0d0d0d; /* Texto oscuro */
+    color: #0d0d0d; 
     border: none;
     padding: 8px 12px;
     border-radius: 5px;
@@ -1030,19 +1066,20 @@ body.barber-profile-page {
 
 
 /* === MEDIA QUERIES === */
+/* Media Query para tabletas y dispositivos medianos */
 @media (max-width: 768px) {
     .container {
         padding: 20px;
     }
-    /* Ajustes específicos para login/registro en móvil si es necesario */
-    .login-register-page .container {
-        max-width: 90%;
-        padding: 0;
+    .login-register-page .container { /* Hereda de .container general */
+        max-width: 90%; /* Ajuste de style.css original */
+        padding: 0; /* Heredado de la unificación */
     }
-    .flip-card {
-        min-height: 550px; /* Un poco menos de altura en móvil */
+    .login-register-page .flip-card { /* .flip-card de style.css, no .login-register-page .flip-card */
+        min-height: 550px; 
     }
-    .card-front, .card-back {
+    .login-register-page .card-front, 
+    .login-register-page .card-back {
         padding: 25px 20px;
     }
     .login-register-page .form-title {
@@ -1050,44 +1087,91 @@ body.barber-profile-page {
     }
 }
 
+/* Media Query para móviles */
 @media (max-width: 480px) {
     body {
-        padding: 10px; /* Menos padding en móviles */
+        padding: 10px; 
     }
-    .container { /* Para containers generales en móvil */
+    .container { 
         padding: 15px;
     }
-    /* Login */
+    
+    /* Login Page en Móvil (Unificado y priorizando style1.css) */
     .login-register-page .container {
-        padding: 0; /* Ya manejado por el .flip-card */
+        max-width: 100%; /* Permitir que ocupe todo el ancho */
+        padding: 0 5px; /* Pequeño padding para que no toque los bordes */
     }
-    .flip-card {
-        min-height: auto; /* Permitir que la altura se ajuste al contenido */
+    .login-register-page .flip-card {
+        min-height: auto; 
     }
-     .card-front, .card-back {
-        padding: 20px 15px; /* Menos padding interno en las tarjetas */
+     .login-register-page .card-front, 
+     .login-register-page .card-back {
+        padding: 20px 15px; 
     }
     .login-register-page .brand {
-        font-size: 1.1em;
+        font-size: 1.3em; /* Reducido aún más */
+        margin-bottom: 10px;
+        letter-spacing: normal; /* Quitar espaciado extra */
+        line-height: 1.3; /* Ajustar altura de línea */
+    }
+    .login-register-page .header {
         margin-bottom: 15px;
+        padding: 3px;
     }
     .login-register-page .header-btn {
-        font-size: 0.85em;
+        font-size: 0.8em; /* Reducido */
+        padding: 8px 10px; /* Reducido */
+        white-space: normal; /* Permitir salto de línea */
+        text-align: center;
     }
     .login-register-page .form-title {
-        font-size: 1.2em;
+        font-size: 1.15em; /* Reducido */
         margin-bottom: 20px;
     }
     .login-register-page .input-group input {
-        padding-left: 40px; /* Ajuste si el icono se superpone */
+        padding: 12px 12px 12px 40px; /* Ajustado */
+        font-size: 14px;
+    }
+    .login-register-page .input-group i { /* Selector corregido para coincidir con HTML y style1 */
+        left: 12px;
+        top: 13px;
+        font-size: 14px;
     }
     .login-register-page .input-group label {
-        left: 40px; /* Ajuste si el icono se superpone */
+        left: 40px; 
+        font-size: 0.9em;
+    }
+     .login-register-page .input-group input:focus + label,
+     .login-register-page .input-group input:not(:placeholder-shown) + label {
+        font-size: 0.75em;
+    }
+    .login-register-page .submit-btn {
+        padding: 12px;
+        font-size: 0.95em;
+    }
+    .login-register-page #auth-forms-status-container { /* De style1.css */
+        padding: 15px;
+    }
+
+    /* Notification Box en Móvil (De style1.css) */
+    .notification-box {
+        padding: 25px 20px;
+        max-width: calc(100% - 20px);
+    }
+    .notification-box #notification-title {
+        font-size: 1.5em;
+    }
+    #notification-message { /* Es un ID, no necesita .notification-box antes si es único */
+        font-size: 0.95em;
+    }
+    .notification-close-btn {
+        padding: 10px 25px;
+        font-size: 0.9em;
     }
     
     /* Booking Page en Móvil */
     .booking-page .container.booking-container {
-        max-width: 100%; /* Usar todo el ancho disponible */
+        max-width: 100%; 
     }
     .booking-page h1#barber-name-title {
         font-size: 1.6em;
@@ -1096,7 +1180,7 @@ body.barber-profile-page {
         font-size: 1.3em;
     }
     .booking-page .progress-bar-step::after {
-        display: none; /* Ocultar texto de la barra de progreso en móviles */
+        display: none; 
     }
     #barberBookingForm .navigation-buttons {
         flex-direction: column;
@@ -1117,25 +1201,25 @@ body.barber-profile-page {
         font-size: 1.5em;
     }
     .calendar-current-date h1 {
-        font-size: 1.1em; /* Ajuste para el título del mes/año del calendario */
+        font-size: 1.1em; 
     }
     .calendar-week-days {
-        font-size: 0.75em; /* Días de la semana más pequeños */
+        font-size: 0.75em; 
     }
     .calendar-weeks .calendar-day {
-        padding: 8px 0; /* Menos padding en los días */
+        padding: 8px 0; 
         line-height: 1.3em;
         height: calc(1.3em + 16px);
         font-size: 0.9em;
     }
     .barber-profile-page .time-slot {
-        flex-direction: column; /* Apilar inputs de hora en móvil */
+        flex-direction: column; 
         align-items: stretch;
     }
     .barber-profile-page .time-slot input[type="time"] {
-        width: 100%; /* Ancho completo para inputs de hora */
+        width: 100%; 
     }
     .barber-profile-page .time-slot span {
-        display: none; /* Ocultar el guion separador */
+        display: none; 
     }
 }
