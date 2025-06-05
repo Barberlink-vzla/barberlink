@@ -3,35 +3,32 @@
 /* === VARIABLES GLOBALES Y ESTILOS BASE === */
 :root {
     --primary-font: 'Roboto', sans-serif;
-    --heading-font: 'Playfair Display', serif;
+    --heading-font: 'Playfair+Display', serif;
     
     /* Paleta para el tema general oscuro y elegante */
-    --background-color: #121212;         
-    --container-bg: #1e1e1e;         
-    --primary-text-color: #e0e0e0;   
-    --secondary-text-color: #b0b0b0; 
+    --background-color: #121212;
+    --container-bg: #1e1e1e;
+    --primary-text-color: #e0e0e0;
+    --secondary-text-color: #b0b0b0;
     
-    --accent-color: #c5a47e;          
-    --accent-hover-color: #a78963;    
-    --border-color: #333;             
+    --accent-color: #c5a47e;
+    --accent-hover-color: #a78963;
+    --border-color: #333;
     
-    --danger-color: #e57373;          
+    --danger-color: #e57373;
     --danger-hover-color: #ef5350;
-    --success-color: #81c784;         
+    --success-color: #81c784;
     --success-hover-color: #66bb6a;
 
-    /* Variables específicas para la página de login/registro y tarjetas de perfil */
-    --login-card-bg: #2a2a2a;             
-    --login-primary-accent: #c5a686;      
-    --login-secondary-accent: #a07e5f;    
-    --login-input-bg: #333333;            
-    --login-input-border: #4f4f4f;        
-    --login-input-text: #f0f0f0;          
-    --login-btn-bg: var(--accent-color);          
-    --login-btn-hover: var(--accent-hover-color); 
-
-    --link-color: var(--accent-color);
-    --link-hover-color: var(--accent-hover-color);
+    /* Variables unificadas para tarjetas, inputs y botones */
+    --card-bg: #2a2a2a;
+    --primary-accent: #c5a686;
+    --secondary-accent: #a07e5f;
+    --input-bg: #333333;
+    --input-border: #4f4f4f;
+    --input-text: #f0f0f0;
+    --btn-bg: var(--accent-color);
+    --btn-hover: var(--accent-hover-color);
 }
 
 * {
@@ -47,16 +44,16 @@ body {
     background-color: var(--background-color);
     color: var(--primary-text-color);
     line-height: 1.6;
-    display: flex; 
+    display: flex;
     justify-content: center;
-    align-items: flex-start; 
+    align-items: flex-start;
     min-height: 100vh;
-    padding: 20px; 
+    padding: 20px;
 }
 
 .container {
     width: 100%;
-    max-width: 600px; 
+    max-width: 600px;
     background-color: var(--container-bg);
     padding: 25px 30px;
     border-radius: 10px;
@@ -66,7 +63,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--heading-font);
-    color: var(--login-primary-accent); 
+    color: var(--primary-accent);
     margin-bottom: 0.75em;
     line-height: 1.3;
 }
@@ -77,46 +74,36 @@ p {
 }
 
 a {
-    color: var(--link-color);
+    color: var(--accent-color);
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 a:hover {
-    color: var(--link-hover-color);
+    color: var(--accent-hover-color);
     text-decoration: underline;
 }
 
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="tel"],
-input[type="number"],
-input[type="date"],
-input[type="time"],
-select,
-textarea {
+input, select, textarea {
     width: 100%;
     padding: 12px 15px;
-    background: var(--login-input-bg);
-    border: 1px solid var(--login-input-border);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 6px;
-    color: var(--login-input-text);
+    color: var(--input-text);
     font-family: var(--primary-font);
     font-size: 1em;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-    border-color: var(--login-primary-accent);
-    box-shadow: 0 0 0 3px rgba(197, 166, 134, 0.2); 
+input:focus, select:focus, textarea:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(197, 166, 134, 0.2);
 }
 
 button, .style-button {
-    background: linear-gradient(135deg, var(--login-btn-bg), var(--login-secondary-accent));
-    color: #0d0d0d; 
+    background: linear-gradient(135deg, var(--btn-bg), var(--secondary-accent));
+    color: #0d0d0d;
     border: none;
     padding: 12px 20px;
     font-family: var(--primary-font);
@@ -124,7 +111,7 @@ button, .style-button {
     font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
@@ -135,6 +122,7 @@ button:hover, .style-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0,0,0,0.3);
 }
+
 button:active, .style-button:active {
     transform: translateY(0px);
     box-shadow: 0 3px 8px rgba(0,0,0,0.25);
@@ -144,506 +132,219 @@ button:active, .style-button:active {
     text-align: center;
     margin-top: 15px;
     font-weight: 500;
-    min-height: 20px; 
+    min-height: 20px;
 }
 .status-message.success { color: var(--success-color); }
 .status-message.error { color: var(--danger-color); }
 
 
-/* === ESTILOS LOGIN/REGISTER PAGE === */
+/* === ESTILOS LOGIN/REGISTER PAGE (CORREGIDO Y RESPONSIVE) === */
 body.login-register-page {
-    display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    /* overflow: hidden; Quitamos overflow hidden para depurar si algo se sale */
-    background-image:
-        linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
-        url('https://www.transparenttextures.com/patterns/dark-wood.png'); /* Fondo de style1.css */
+    background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('https://www.transparenttextures.com/patterns/dark-wood.png');
 }
 
 .login-register-page .container {
-    max-width: 420px; 
-    padding: 0; 
-    background-color: transparent; 
+    width: 95%; /* FLEXIBLE para adaptarse a cualquier pantalla */
+    max-width: 420px; /* ANCHO MÁXIMO para pantallas grandes */
+    padding: 0;
+    background-color: transparent;
     box-shadow: none;
     border: none;
+    perspective: 1500px;
 }
 
-.login-register-page .flip-card { /* Adaptado para que no necesite .flip-card-inner para la transformación */
+.login-register-page .flip-card {
     width: 100%;
-    min-height: 580px; 
-    perspective: 1500px;
+    min-height: 580px;
     position: relative;
-    /* transition y transform-style se aplican aquí si no hay .flip-card-inner para animar */
-    transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Mantenemos como en style1.css */
-    transform-style: preserve-3d; /* Mantenemos como en style1.css */
+    transform-style: preserve-3d;
+    transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-/* Si se usa la estructura de style1.css (sin -inner) y style.css se carga, esto manejaría el flip */
+
 .login-register-page .flip-card.flipped {
     transform: rotateY(180deg);
 }
 
-
-/* Si .flip-card-inner estuviera presente (estructura original de style.css) */
-/*
-.flip-card-inner {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-    transform-style: preserve-3d;
-}
-.flip-card.flipped .flip-card-inner { //Si flip-card-inner se usa
-    transform: rotateY(180deg);
-}
-*/
-
-.login-register-page .card-front, 
-.login-register-page .card-back { /* Unificando con style1.css */
+.login-register-page .card-front,
+.login-register-page .card-back {
     position: absolute;
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    background-color: var(--login-card-bg); /* De style1.css */
-    border-radius: 20px; /* De style1.css */
-    padding: 30px 35px; /* De style.css, puede ser 30px como en style1.css */
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6); /* De style.css */
+    background-color: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px 25px;
+    box-shadow: 0 15px 45px rgba(0,0,0,0.6);
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--login-input-border); /* De style1.css */
-    overflow: hidden; /* Añadido de style1.css */
+    border: 1px solid var(--input-border);
+    overflow: hidden;
 }
 
-.login-register-page .card-back { /* Unificando con style1.css */
+.login-register-page .card-back {
     transform: rotateY(180deg);
 }
 
-.login-register-page .brand { /* Combinando y priorizando style1.css para .brand */
+.login-register-page .brand {
     font-family: var(--heading-font);
-    font-size: 26px; /* Tomado de style1.css */
-    line-height: 1.2;
-    color: var(--login-primary-accent);
+    font-size: 1.8em;
+    color: var(--primary-accent);
     text-align: center;
-    margin-bottom: 15px; /* Tomado de style1.css */
-    letter-spacing: 1.5px; /* Tomado de style1.css */
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5); /* Tomado de style1.css */
-    word-wrap: break-word;
+    margin-bottom: 15px;
+    letter-spacing: 1.5px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
     overflow-wrap: break-word;
-    /* text-transform: uppercase; Ya no es necesario si el texto es ACCESO BARBERO */
-    /* opacity: 0.8; */ /* Quitado, el color ya es distintivo */
+    line-height: 1.2;
 }
 
-.login-register-page .header { /* Combinando y priorizando style1.css */
+.login-register-page .header {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px; /* Tomado de style1.css */
-    background: rgba(0,0,0,0.2); /* Tomado de style1.css */
-    border-radius: 30px; /* Tomado de style1.css */
-    padding: 5px; /* Tomado de style1.css */
-    /* border: 1px solid var(--login-input-border); */ /* Quitado, el de style1.css es más sutil */
-    /* overflow: hidden; */ /* Quitado, el border-radius en botones lo maneja */
+    margin-bottom: 20px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 30px;
+    padding: 5px;
 }
 
-.login-register-page .header-btn { /* Combinando y priorizando style1.css */
-    flex-shrink: 1; /* Añadido de style1.css */
-    white-space: nowrap; /* Añadido de style1.css */
-    padding: 10px 25px; /* Tomado de style1.css */
+.login-register-page .header-btn {
+    flex-shrink: 1;
+    white-space: nowrap;
+    padding: 10px 20px;
     background-color: transparent;
     border: none;
-    color: var(--login-primary-accent);
-    /* opacity: 0.7; */ /* Quitado, el color ya es distintivo */
-    font-size: 15px; /* Tomado de style1.css */
-    font-weight: 500; /* Tomado de style1.css */
-    border-radius: 30px; /* Tomado de style1.css */
-    cursor: pointer;
-    transition: all 0.4s ease; /* Tomado de style1.css */
-    position: relative; /* Tomado de style1.css */
-    /* text-transform: uppercase; */ /* Quitado, no tan necesario */
-    /* letter-spacing: 0.5px; */ /* Quitado, no tan necesario */
-}
-.login-register-page .header-btn.active { /* Combinando y priorizando style1.css */
-    background: var(--login-btn-bg); /* Tomado de style1.css */
-    color: #fff; /* Tomado de style1.css */
-    box-shadow: 0 2px 10px rgba(0,0,0,0.4); /* Tomado de style1.css */
-    opacity: 1;
-    font-weight: 600;
-}
-.login-register-page .header-btn:not(.active):hover {
-    color: #fff; /* Tomado de style1.css */
-    /* background-color: rgba(197, 166, 134, 0.1); */ /* Quitado, el cambio de color es suficiente */
-}
-
-
-.login-register-page .form-title { /* Combinando */
-    text-align: center;
-    color: var(--login-primary-accent); /* De style1.css */
-    font-size: 22px; /* De style1.css */
-    font-weight: 400; /* De style1.css */
-    margin-bottom: 25px;
-}
-
-.login-register-page .input-group { /* Combinando */
-    position: relative;
-    margin-bottom: 20px; /* De style1.css */
-}
-
-.login-register-page .input-group i.fas, /* fas de style.css, i de style1.css, unificamos a i */
-.login-register-page .input-group i { 
-    position: absolute;
-    left: 15px;
-    top: 14px; /* De style1.css, más preciso que translateY */
-    /* transform: translateY(-50%); */ /* Quitado */
-    color: var(--login-primary-accent);
-    font-size: 15px; /* De style1.css */
-    transition: color 0.3s ease;
-    z-index: 1; /* Añadido de style1.css */
-}
-
-.login-register-page .input-group input { /* Combinando */
-    width: 100%;
-    padding: 14px 14px 14px 45px; 
-    background-color: var(--login-input-bg); 
-    border: 1px solid var(--login-input-border); 
-    border-radius: 8px;
-    color: var(--login-input-text); /* De style.css, más específico que primary-text-color */
-    font-size: 15px; /* De style1.css */
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    outline: none; /* Añadido de style1.css */
-}
-
-.login-register-page .input-group input:focus { /* Combinando */
-    border-color: var(--login-primary-accent);
-    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3); /* De style1.css */
-}
-.login-register-page .input-group input:focus ~ i.fas,
-.login-register-page .input-group input:focus ~ i {
-    color: var(--login-primary-accent);
-}
-
-
-.login-register-page .input-group label { /* Combinando */
-    position: absolute;
-    left: 45px;
-    top: 14px;
-    color: var(--login-primary-accent);
-    opacity: 0.8; /* De style1.css */
-    pointer-events: none;
-    transition: all 0.3s ease;
-    background-color: transparent; 
-    padding: 0;
-}
-
-.login-register-page .input-group input:focus + label,
-.login-register-page .input-group input:not(:placeholder-shown) + label { /* Combinando */
-    top: -10px;
-    left: 10px; /* De style1.css */
-    font-size: 12px; /* De style1.css */
-    color: var(--login-primary-accent);
-    background-color: var(--login-card-bg); 
-    padding: 0 5px;
-    opacity: 1;
-    z-index: 10; /* De style.css */
-}
-
-.login-register-page .submit-btn { /* Combinando */
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--login-btn-bg), var(--login-secondary-accent)); /* De style1.css */
-    color: #FFF; /* De style1.css, mejor contraste */
-    font-size: 16px; /* De style1.css */
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 1px; /* De style1.css */
-    transition: all 0.3s ease; /* De style1.css */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-.login-register-page .submit-btn:hover { /* Combinando */
-    transform: translateY(-3px); /* De style1.css */
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4); /* De style1.css */
-    filter: brightness(1.1); /* De style1.css */
-}
-.login-register-page .submit-btn:active { /* De style.css */
-    transform: translateY(0px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-
-/* flip-note de style1.css */
-.login-register-page .flip-note {
-    text-align: center; color: var(--login-primary-accent); font-size: 14px;
-    opacity: 0.8; margin-top: auto; padding-top: 15px; cursor: pointer;
-    transition: color 0.3s ease;
-}
-.login-register-page .flip-note:hover { color: #fff; }
-.login-register-page .flip-note strong { font-weight: 500; }
-
-
-/* auth-forms-status-container y auth-status de style1.css */
-.login-register-page #auth-forms-status-container {
-    margin-top: 20px; text-align: center; width: 100%; max-width: 450px;
-    padding: 20px; background-color: var(--login-card-bg); border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-.login-register-page #auth-status { /* #auth-status de style.css, #auth-status dentro de #auth-forms-status-container de style1.css */
-    text-align: center; color: var(--login-primary-accent);
-    font-size: 14px; min-height: 20px; margin-bottom: 10px;
+    color: var(--primary-accent);
+    font-size: 1em;
     font-weight: 500;
-}
-.login-register-page button#logout-button {
-    background: var(--danger-color);
-    border: none; color: #fff; padding: 12px; font-size: 15px; font-weight: 500;
-    border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
-    width: auto; min-width: 150px; max-width: 200px;
-    text-transform: uppercase; display: block; margin: 0 auto;
-}
-.login-register-page button#logout-button:hover { filter: brightness(1.1); }
-
-
-/* El resto de style.css (booking, profile, etc.) sigue igual */
-/* ... (resto de .booking-page, .barber-profile-page, .calendar-widget, etc. de style.css) ... */
-/* Asegúrate de copiar todo el contenido restante de tu style.css original aquí */
-
-
-/* === ESTILOS PÁGINA DE RESERVA (booking-page) === */
-body.booking-page {
-    /* Ya usa el body general, no necesita mucho más */
-}
-.booking-page .container.booking-container {
-    max-width: 700px; /* Un poco más ancho para el formulario de reserva */
-    /* Ya usa --container-bg */
-}
-.booking-page .barber-image-header {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    overflow: hidden;
-    margin: 0 auto 20px auto;
-    border: 3px solid var(--login-primary-accent);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
-.booking-page .barber-image-header img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.4s ease;
 }
 
-.booking-page h1#barber-name-title {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 2em;
+.login-register-page .header-btn.active {
+    background: var(--btn-bg);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
 }
 
-.booking-page .progress-bar-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 30px;
-    padding: 0 10px; /* Pequeño padding para que no toque los bordes */
-}
-.booking-page .progress-bar-step {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background-color: var(--login-input-bg);
-    border: 2px solid var(--login-input-border);
-    color: var(--secondary-text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    position: relative;
-    transition: all 0.3s ease;
-}
-.booking-page .progress-bar-step.active {
-    background-color: var(--login-primary-accent);
-    border-color: var(--login-primary-accent);
-    color: var(--login-card-bg);
-    transform: scale(1.1);
-}
-.booking-page .progress-bar-step.completed {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
+.login-register-page .header-btn:not(.active):hover {
     color: #fff;
 }
 
-.booking-page .progress-bar-step::after { /* Nombre del paso */
-    content: attr(data-step-name);
-    position: absolute;
-    bottom: -22px; /* Posición debajo del círculo */
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.75em;
-    color: var(--secondary-text-color);
-    white-space: nowrap;
-}
-.booking-page .progress-bar-step.active::after,
-.booking-page .progress-bar-step.completed::after {
-    color: var(--primary-text-color);
-}
-
-
-.booking-page .progress-bar-line {
-    flex-grow: 1;
-    height: 3px;
-    background-color: var(--login-input-border);
-    margin: 0 5px; /* Reducido margen */
-    position: relative;
-    transition: background-color 0.3s ease;
-}
-.booking-page .progress-bar-line.active {
-    background-color: var(--login-primary-accent);
-}
-
-#barberBookingForm .form-step {
-    display: none; /* Ocultar pasos por defecto */
-    padding: 20px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--login-card-bg); /* Fondo de tarjeta para cada paso */
-    animation: fadeIn 0.5s ease-in-out;
-}
-#barberBookingForm .form-step.active-step {
-    display: block;
-}
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-#barberBookingForm .input-group {
-    position: relative;
+.login-register-page .form-title {
+    text-align: center;
+    color: var(--primary-accent);
+    font-size: 1.4em;
+    font-weight: 400;
     margin-bottom: 25px;
 }
-#barberBookingForm .input-group label { 
+
+.login-register-page .input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.login-register-page .input-group i {
     position: absolute;
-    left: 15px; 
-    top: 13px;
-    color: var(--login-primary-accent);
-    opacity: 0.7;
+    left: 15px;
+    top: 14px;
+    color: var(--primary-accent);
+    font-size: 15px;
+    z-index: 1;
+}
+
+.login-register-page .input-group input {
+    width: 100%;
+    padding: 14px 14px 14px 45px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--input-text);
+    font-size: 1em;
+}
+
+.login-register-page .input-group input:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3);
+}
+
+.login-register-page .input-group input:focus ~ i {
+    color: var(--primary-accent);
+}
+
+.login-register-page .input-group label {
+    position: absolute;
+    left: 45px;
+    top: 14px;
+    color: var(--primary-accent);
+    opacity: 0.8;
     pointer-events: none;
     transition: all 0.3s ease;
-    background-color: transparent;
-    padding: 0;
 }
-#barberBookingForm .input-group input:focus + label,
-#barberBookingForm .input-group input:not(:placeholder-shown) + label,
-#barberBookingForm .input-group select:focus + label, 
-#barberBookingForm .input-group select:valid + label { 
+
+.login-register-page .input-group input:focus + label,
+.login-register-page .input-group input:not(:placeholder-shown) + label {
     top: -10px;
     left: 10px;
     font-size: 0.8em;
-    color: var(--login-primary-accent);
-    background-color: var(--login-card-bg); 
+    color: var(--primary-accent);
+    background-color: var(--card-bg);
     padding: 0 5px;
-    opacity: 1;
-    z-index: 1;
-}
-#barberBookingForm .input-group input[type="date"],
-#barberBookingForm .input-group select {
-    padding: 12px 15px; 
-    color-scheme: dark; 
-}
-#barberBookingForm input.invalid,
-#barberBookingForm select.invalid {
-    border-color: var(--danger-color) !important;
-    box-shadow: 0 0 0 3px rgba(229, 115, 115, 0.2) !important;
 }
 
-#barberBookingForm h2 {
+.login-register-page .submit-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 1em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 15px;
+}
+
+.login-register-page .flip-note {
     text-align: center;
-    margin-bottom: 25px;
-    font-size: 1.6em;
-}
-#barberBookingForm .navigation-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 25px;
-}
-#barberBookingForm .navigation-buttons .style-button {
-    flex-basis: 48%; 
-}
-
-#booking-summary p {
-    margin-bottom: 10px;
-    font-size: 1.05em;
-    color: var(--primary-text-color);
-}
-#booking-summary p strong {
-    color: var(--login-primary-accent);
-}
-
-#whatsapp-link-container a.whatsapp-confirm-button {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 12px 25px;
-    background-color: #25D366; 
-    color: white;
-    text-align: center;
-    border-radius: 6px;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-#whatsapp-link-container a.whatsapp-confirm-button:hover {
-    background-color: #1DAE50;
-    text-decoration: none;
-}
-
-body:not(.login-register-page) input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.8) sepia(0.5) saturate(2) hue-rotate(300deg) brightness(0.9);
+    color: var(--primary-accent);
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-top: auto;
+    padding-top: 15px;
     cursor: pointer;
-    transform: scale(1.1);
-    transition: filter 0.2s;
 }
-body:not(.login-register-page) input[type="date"]:hover::-webkit-calendar-picker-indicator {
-    filter: invert(1) sepia(1) saturate(5) hue-rotate(330deg) brightness(1);
-}
+.login-register-page .flip-note:hover { color: #fff; }
 
-body.barber-profile-page {
-    font-family: var(--primary-font);
-    background-color: var(--background-color);
-    color: var(--primary-text-color);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 20px;
-}
 
-.barber-profile-page .container {
-    background-color: transparent;
+/* === ESTILOS PÁGINA DE PERFIL (barber-profile-page) === */
+body.barber-profile-page .container {
+    max-width: 700px;
+    background: transparent;
     padding: 0;
     box-shadow: none;
-    width: 100%;
-    max-width: 700px;
+    border: none;
 }
 
 .barber-profile-page .profile-main-title {
-    font-family: var(--heading-font);
-    color: var(--login-primary-accent);
-    text-align: center;
     font-size: 2.5em;
+    text-align: center;
     margin-bottom: 30px;
     letter-spacing: 1.5px;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 }
 
 .profile-section-card {
-    background-color: var(--login-card-bg);
+    background-color: var(--card-bg);
     padding: 25px 30px;
     border-radius: 12px;
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 10px 35px rgba(0,0,0,0.7);
     margin-bottom: 30px;
-    border: 1px solid var(--login-input-border);
+    border: 1px solid var(--input-border);
 }
 
 .barber-profile-page .profile-section-title {
-    font-family: var(--heading-font);
-    color: var(--login-primary-accent);
     text-align: left;
     margin-bottom: 25px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--login-input-border);
+    border-bottom: 1px solid var(--input-border);
     font-size: 1.8em;
 }
 
@@ -651,16 +352,16 @@ body.barber-profile-page {
     position: relative;
     margin-bottom: 20px;
 }
+
 .barber-profile-page .input-group i.fas {
     position: absolute;
     left: 15px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--login-primary-accent);
+    color: var(--primary-accent);
     font-size: 1em;
-    transition: all 0.3s ease;
-    z-index: 1;
 }
+
 .barber-profile-page .input-group input[type="text"],
 .barber-profile-page .input-group input[type="email"],
 .barber-profile-page .input-group input[type="password"],
@@ -669,152 +370,74 @@ body.barber-profile-page {
 .barber-profile-page .input-group input[type="file"],
 .barber-profile-page .input-group input[type="time"],
 .barber-profile-page .input-group select {
-    width: 100%;
     padding: 14px 14px 14px 45px;
-    background: var(--login-input-bg);
-    border: 1px solid var(--login-input-border);
-    border-radius: 8px;
-    color: var(--login-input-text); 
-    font-size: 1em;
-    outline: none;
-    transition: all 0.3s ease;
-    font-family: var(--primary-font);
-}
-
-.barber-profile-page .input-group input:focus {
-    border-color: var(--login-primary-accent);
-    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3);
-}
-
-.barber-profile-page .input-group input:focus + label,
-.barber-profile-page .input-group input:not(:placeholder-shown) + label {
-    top: -10px;
-    left: 10px;
-    font-size: 0.85em;
-    color: var(--login-primary-accent);
-    background: var(--login-card-bg);
-    padding: 0 5px;
-    z-index: 2;
-}
-.barber-profile-page .input-group input:focus ~ i.fas {
-    color: var(--login-primary-accent);
-}
-.barber-profile-page .input-group label {
-    position: absolute;
-    left: 45px;
-    top: 14px;
-    color: var(--login-primary-accent);
-    opacity: 0.8;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    background: transparent;
-    padding: 0;
-    font-size: 1em;
-}
-
-.profile-img-preview {
-    width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
-    margin: 10px auto 20px auto; display: block;
-    border: 3px solid var(--login-primary-accent);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
 .barber-profile-page .profile-submit-btn,
 .barber-profile-page .profile-action-btn {
-    background: linear-gradient(135deg, var(--login-btn-bg), var(--login-secondary-accent));
-    color: #0d0d0d; 
-    border: none;
-    padding: 12px 20px;
-    font-size: 1em;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease, transform 0.2s ease;
-    width: 100%;
-    margin-top: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    text-transform: uppercase;
-    letter-spacing: 1px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-}
-.barber-profile-page .profile-submit-btn:hover,
-.barber-profile-page .profile-action-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    filter: brightness(1.1);
-}
-.barber-profile-page .profile-submit-btn.save-all-btn {
-    padding: 15px 25px;
-    font-size: 1.1em;
-    margin-top: 20px;
+    width: 100%;
+    margin-top: 10px;
 }
 
 .barber-profile-page .profile-logout-btn {
     background: transparent;
     color: var(--danger-color);
     border: 1px solid var(--danger-color);
-    padding: 12px 20px;
-    font-size: 1em;
-    font-weight: 500;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    margin-top: 20px;
-    text-transform: uppercase;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    width: 100%;
+    margin-top: 20px;
 }
+
 .barber-profile-page .profile-logout-btn:hover {
     background: var(--danger-color);
     color: #fff;
 }
 
-.barber-profile-page .service-item {
+.profile-img-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 10px auto 20px auto;
+    display: block;
+    border: 3px solid var(--primary-accent);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+/* Estilos de Servicios */
+.service-item {
     background-color: rgba(0,0,0,0.2);
     padding: 15px;
     border-radius: 6px;
     margin-bottom: 15px;
-    border: 1px solid var(--login-input-border);
+    border: 1px solid var(--input-border);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
 }
-.barber-profile-page .service-item label {
+.service-item label {
     color: var(--primary-text-color);
     margin-left: 8px;
     flex-grow: 1;
 }
-.barber-profile-page .service-item input[type="checkbox"] {
+.service-item input[type="checkbox"] {
     transform: scale(1.2);
-    accent-color: var(--login-primary-accent);
+    accent-color: var(--primary-accent);
 }
-.barber-profile-page .service-item input[type="number"] { 
-    width: 100px; 
-    padding: 8px 10px; 
+.service-item input[type="number"] {
+    width: 100px;
+    padding: 8px 10px;
     margin-left: 10px;
-    background-color: var(--login-input-bg);
-    border: 1px solid var(--login-input-border);
-    color: var(--login-input-text);
-    font-family: var(--primary-font);
 }
-.barber-profile-page .service-item-add-custom {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px dashed var(--login-input-border);
-}
-.barber-profile-page .service-item-add-custom h3 {
-    color: var(--login-primary-accent);
-    margin-bottom: 15px;
-    font-size: 1.2em;
-}
-.barber-profile-page .remove-custom-service {
+.remove-custom-service {
     background-color: var(--danger-color);
     color: white;
     border: none;
@@ -824,26 +447,15 @@ body.barber-profile-page {
     font-size: 0.8em;
 }
 
-.barber-profile-page .availability-instructions {
-    font-size: 0.95em;
-    color: var(--secondary-text-color); 
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.barber-profile-page #availability-day-editor {
+/* Estilos de Disponibilidad */
+#availability-day-editor {
     background-color: rgba(0,0,0,0.15);
     padding: 20px;
     border-radius: 8px;
     margin-top: 25px;
-    border: 1px solid var(--login-input-border);
+    border: 1px solid var(--input-border);
 }
-.barber-profile-page #editing-day-title {
-    color: var(--login-primary-accent);
-    margin-bottom: 15px;
-    font-size: 1.3em;
-}
-.barber-profile-page .time-slot {
+.time-slot {
     display: flex;
     gap: 10px;
     margin-bottom: 10px;
@@ -852,18 +464,11 @@ body.barber-profile-page {
     padding: 10px;
     border-radius: 6px;
 }
-.barber-profile-page .time-slot input[type="time"] {
+.time-slot input[type="time"] {
     width: 120px;
     padding: 8px 10px;
-    background-color: var(--login-input-bg);
-    border: 1px solid var(--login-input-border);
-    color: var(--login-input-text);
-    font-family: var(--primary-font);
 }
-.barber-profile-page .time-slot span {
-    color: var(--primary-text-color);
-}
-.barber-profile-page .remove-slot-btn {
+.remove-slot-btn {
     background-color: var(--danger-color);
     color: white;
     border: none;
@@ -872,354 +477,231 @@ body.barber-profile-page {
     border-radius: 4px;
     font-size: 0.9em;
 }
-.barber-profile-page #add-slot-to-selected-day-btn {
-    width: auto;
-    padding: 10px 18px;
-    font-size: 0.95em;
-    margin-top: 10px;
+#add-slot-to-selected-day-btn {
     background: var(--success-color);
 }
-.barber-profile-page #add-slot-to-selected-day-btn:hover {
+#add-slot-to-selected-day-btn:hover {
     background: var(--success-hover-color);
-    filter: brightness(1.05); 
 }
 
-.calendar-widget-container {
-  align-items: center;
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 20px auto;
-  width: 100%;
-  max-width: 480px;
-}
-
+/* Estilos de Calendario */
 .calendar-widget {
-  background: var(--login-card-bg);
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, .5);
-  width: 100%;
-  border: 1px solid var(--login-input-border);
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.5);
+    width: 100%;
+    border: 1px solid var(--input-border);
 }
-
-.calendar-front {
-  padding-bottom: 15px;
-}
-
 .calendar-current-date {
-  border-bottom: 1px solid var(--login-input-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-}
-.calendar-month-year-display {
-    text-align: center;
-    flex-grow: 1;
+    border-bottom: 1px solid var(--input-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
 }
 .calendar-current-date h1 {
-  color: var(--login-primary-accent);
-  font-size: 1.3em;
-  font-weight: 500;
-  text-transform: capitalize;
-  margin: 0;
+    font-size: 1.3em;
+    margin: 0;
 }
 .cal-nav-btn {
     background: transparent;
     border: none;
-    color: var(--login-primary-accent);
+    color: var(--primary-accent);
     font-size: 1.5em;
     cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 4px;
     transition: background-color 0.3s ease;
 }
 .cal-nav-btn:hover {
-    background-color: var(--login-input-bg);
+    background-color: var(--input-bg);
 }
-
 .calendar-week-days {
-  color: var(--login-primary-accent);
-  opacity: 0.8;
-  display: flex;
-  justify-content: space-around;
-  font-weight: 600;
-  padding: 15px 10px 10px 10px;
-  font-size: 0.85em;
-  border-bottom: 1px solid var(--login-input-border);
+    color: var(--primary-accent);
+    opacity: 0.8;
+    display: flex;
+    justify-content: space-around;
+    font-weight: 600;
+    padding: 15px 10px 10px;
+    font-size: 0.85em;
+    border-bottom: 1px solid var(--input-border);
 }
 .calendar-week-days li {
     width: 14.28%;
     text-align: center;
 }
-
 .calendar-weeks {
-  color: var(--primary-text-color);
-  display: flex;
-  flex-direction: column;
-  padding: 10px 10px 0 10px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 10px 0;
 }
-
 .calendar-weeks .calendar-week-row {
-  display: flex;
-  font-size: 1em;
-  font-weight: 300;
-  justify-content: space-around;
-  margin-bottom: 8px;
-  width: 100%;
+    display: flex;
+    font-size: 1em;
+    justify-content: space-around;
+    margin-bottom: 8px;
 }
 .calendar-weeks .calendar-day {
-  padding: 10px 0;
-  width: 14.28%;
-  text-align: center;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
-  line-height: 1.5em; 
-  height: calc(1.5em + 20px); 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    padding: 10px 0;
+    width: 14.28%;
+    text-align: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.5em;
+    height: calc(1.5em + 20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
-.calendar-weeks .calendar-day.other-month { 
-  opacity: .3;
-  pointer-events: none;
+.calendar-weeks .calendar-day.other-month {
+    opacity: .3;
+    pointer-events: none;
 }
-
 .calendar-weeks .calendar-day:not(.other-month):hover {
-  background-color: var(--login-btn-hover);
-  color: var(--login-card-bg); 
-  font-weight: 500;
-  transform: scale(1.05);
+    background-color: var(--btn-hover);
+    color: var(--card-bg);
+    font-weight: 500;
+    transform: scale(1.05);
 }
-
 .calendar-weeks .calendar-day.selected-day {
-  background: linear-gradient(135deg, var(--login-primary-accent), var(--login-secondary-accent));
-  color: var(--login-card-bg) !important;
-  font-weight: 700 !important;
-  transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(197, 164, 126, 0.6);
+    background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+    color: var(--card-bg) !important;
+    font-weight: 700 !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(197, 164, 126, 0.6);
 }
-
 .calendar-weeks .calendar-day.today {
-    border: 1.5px solid var(--login-primary-accent);
+    border: 1.5px solid var(--primary-accent);
     font-weight: 700;
-    color: var(--login-primary-accent);
+    color: var(--primary-accent);
     background-color: rgba(197, 164, 126, 0.1);
 }
-
-
-#booking-link-container {
-    background-color: rgba(0,0,0,0.2);
-    padding: 20px;
-    border-radius: 8px;
-    word-wrap: break-word;
-    border: 1px dashed var(--login-primary-accent);
+#save-status {
     text-align: center;
+    font-weight: bold;
+    margin-top: 15px;
 }
-#booking-link-container p {
-    margin-bottom: 10px;
+
+
+/* === ESTILOS PÁGINA DE RESERVA (booking-page) === */
+body.booking-page .container { max-width: 700px; }
+.booking-page .barber-image-header {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    border: 3px solid var(--primary-accent);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    overflow: hidden;
+}
+.booking-page .barber-image-header img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.booking-page .progress-bar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding: 0 10px;
+}
+.booking-page .progress-bar-step {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: var(--input-bg);
+    border: 2px solid var(--input-border);
     color: var(--secondary-text-color);
-}
-#booking-link-container a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: bold;
-    color: var(--login-primary-accent);
-    font-size: 1.1em;
-    word-break: break-all;
+    position: relative;
+    transition: all 0.3s ease;
 }
-#booking-link-container button#copy-link-btn {
-    background: var(--login-btn-bg);
-    color: #0d0d0d; 
-    padding: 8px 15px;
-    font-size: 0.9em;
-    margin-top: 15px;
-    width: auto;
+.booking-page .progress-bar-step.active {
+    background-color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    color: var(--card-bg);
+    transform: scale(1.1);
 }
-
-#save-status { 
-    color: var(--login-primary-accent); 
-    min-height: 20px;
-    text-align: center;
-    font-weight: bold;
-    margin-top: 15px;
+.booking-page .progress-bar-step.completed {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: #fff;
 }
-
-.barber-profile-page .input-group input[type="file"] {
-    padding: 10px; 
-    line-height: 1.5; 
+.booking-page .progress-bar-step::after {
+    content: attr(data-step-name);
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75em;
+    color: var(--secondary-text-color);
+    white-space: nowrap;
 }
-.barber-profile-page .input-group input[type="file"]::file-selector-button {
-    background: var(--login-btn-bg);
-    color: #0d0d0d; 
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-right: 10px;
-    transition: background-color 0.3s ease;
-    font-family: var(--primary-font);
-    font-weight: 500;
+.booking-page .progress-bar-line {
+    flex-grow: 1;
+    height: 3px;
+    background-color: var(--input-border);
+    margin: 0 5px;
 }
-.barber-profile-page .input-group input[type="file"]::file-selector-button:hover {
-    background-color: var(--login-btn-hover);
+#barberBookingForm .form-step {
+    display: none;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--card-bg);
+    animation: fadeIn 0.5s ease-in-out;
+}
+#barberBookingForm .form-step.active-step {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+#barberBookingForm .navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
 }
 
 
 /* === MEDIA QUERIES === */
-/* Media Query para tabletas y dispositivos medianos */
 @media (max-width: 768px) {
     .container {
         padding: 20px;
     }
-    .login-register-page .container { /* Hereda de .container general */
-        max-width: 90%; /* Ajuste de style.css original */
-        padding: 0; /* Heredado de la unificación */
-    }
-    .login-register-page .flip-card { /* .flip-card de style.css, no .login-register-page .flip-card */
-        min-height: 550px; 
-    }
-    .login-register-page .card-front, 
-    .login-register-page .card-back {
-        padding: 25px 20px;
-    }
-    .login-register-page .form-title {
-        font-size: 1.3em;
-    }
 }
-
-/* Media Query para móviles */
 @media (max-width: 480px) {
     body {
-        padding: 10px; 
+        padding: 10px;
     }
-    .container { 
+    .container {
         padding: 15px;
     }
     
-    /* Login Page en Móvil (Unificado y priorizando style1.css) */
-    .login-register-page .container {
-        max-width: 100%; /* Permitir que ocupe todo el ancho */
-        padding: 0 5px; /* Pequeño padding para que no toque los bordes */
-    }
-    .login-register-page .flip-card {
-        min-height: auto; 
-    }
-     .login-register-page .card-front, 
-     .login-register-page .card-back {
-        padding: 20px 15px; 
-    }
-    .login-register-page .brand {
-        font-size: 1.3em; /* Reducido aún más */
-        margin-bottom: 10px;
-        letter-spacing: normal; /* Quitar espaciado extra */
-        line-height: 1.3; /* Ajustar altura de línea */
-    }
-    .login-register-page .header {
-        margin-bottom: 15px;
-        padding: 3px;
-    }
-    .login-register-page .header-btn {
-        font-size: 0.8em; /* Reducido */
-        padding: 8px 10px; /* Reducido */
-        white-space: normal; /* Permitir salto de línea */
-        text-align: center;
-    }
-    .login-register-page .form-title {
-        font-size: 1.15em; /* Reducido */
-        margin-bottom: 20px;
-    }
-    .login-register-page .input-group input {
-        padding: 12px 12px 12px 40px; /* Ajustado */
-        font-size: 14px;
-    }
-    .login-register-page .input-group i { /* Selector corregido para coincidir con HTML y style1 */
-        left: 12px;
-        top: 13px;
-        font-size: 14px;
-    }
-    .login-register-page .input-group label {
-        left: 40px; 
-        font-size: 0.9em;
-    }
-     .login-register-page .input-group input:focus + label,
-     .login-register-page .input-group input:not(:placeholder-shown) + label {
-        font-size: 0.75em;
-    }
-    .login-register-page .submit-btn {
-        padding: 12px;
-        font-size: 0.95em;
-    }
-    .login-register-page #auth-forms-status-container { /* De style1.css */
-        padding: 15px;
-    }
+    /* Login Page en Móvil */
+    .login-register-page .flip-card { min-height: auto; }
+    .login-register-page .card-front, .login-register-page .card-back { padding: 25px 20px; }
+    .login-register-page .brand { font-size: 1.5em; letter-spacing: normal; }
+    .login-register-page .header-btn { font-size: 0.9em; padding: 8px 15px; white-space: normal; text-align: center; }
+    .login-register-page .form-title { font-size: 1.2em; }
 
-    /* Notification Box en Móvil (De style1.css) */
-    .notification-box {
-        padding: 25px 20px;
-        max-width: calc(100% - 20px);
-    }
-    .notification-box #notification-title {
-        font-size: 1.5em;
-    }
-    #notification-message { /* Es un ID, no necesita .notification-box antes si es único */
-        font-size: 0.95em;
-    }
-    .notification-close-btn {
-        padding: 10px 25px;
-        font-size: 0.9em;
-    }
-    
     /* Booking Page en Móvil */
-    .booking-page .container.booking-container {
-        max-width: 100%; 
-    }
-    .booking-page h1#barber-name-title {
-        font-size: 1.6em;
-    }
-    #barberBookingForm h2 {
-        font-size: 1.3em;
-    }
-    .booking-page .progress-bar-step::after {
-        display: none; 
-    }
-    #barberBookingForm .navigation-buttons {
-        flex-direction: column;
-        gap: 15px;
-    }
-    #barberBookingForm .navigation-buttons .style-button {
-        width: 100%;
-    }
+    .booking-page .progress-bar-step::after { display: none; }
+    #barberBookingForm .navigation-buttons { flex-direction: column; gap: 15px; }
+    #barberBookingForm .navigation-buttons .style-button { flex-basis: 100%; }
 
     /* Barber Profile Page en Móvil */
-    .barber-profile-page .container {
-        max-width: 100%;
-    }
-    .barber-profile-page .profile-main-title {
-        font-size: 2em;
-    }
-    .barber-profile-page .profile-section-title {
-        font-size: 1.5em;
-    }
-    .calendar-current-date h1 {
-        font-size: 1.1em; 
-    }
-    .calendar-week-days {
-        font-size: 0.75em; 
-    }
-    .calendar-weeks .calendar-day {
-        padding: 8px 0; 
-        line-height: 1.3em;
-        height: calc(1.3em + 16px);
-        font-size: 0.9em;
-    }
-    .barber-profile-page .time-slot {
-        flex-direction: column; 
-        align-items: stretch;
-    }
-    .barber-profile-page .time-slot input[type="time"] {
-        width: 100%; 
-    }
-    .barber-profile-page .time-slot span {
-        display: none; 
-    }
+    .barber-profile-page .container { max-width: 100%; }
+    .barber-profile-page .profile-main-title { font-size: 2em; }
+    .barber-profile-page .profile-section-title { font-size: 1.5em; }
+    .calendar-current-date h1 { font-size: 1.1em; }
+    .calendar-week-days { font-size: 0.75em; }
+    .calendar-weeks .calendar-day { padding: 8px 0; line-height: 1.3em; height: calc(1.3em + 16px); font-size: 0.9em; }
+    .barber-profile-page .time-slot { flex-direction: column; align-items: stretch; }
+    .barber-profile-page .time-slot input[type="time"] { width: 100%; }
+    .barber-profile-page .time-slot span { display: none; }
 }
