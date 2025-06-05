@@ -3,7 +3,7 @@
 /* === VARIABLES GLOBALES Y ESTILOS BASE === */
 :root {
     --primary-font: 'Roboto', sans-serif;
-    --heading-font: 'Playfair Display', serif;
+    --heading-font: 'Playfair Display', serif; /* Variable consistente para encabezados */
 
     /* Paleta para el tema general oscuro y elegante */
     --background-color: #1a1a1a;
@@ -39,33 +39,28 @@ body {
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
-    margin: 0; /* Quitamos el margen por defecto del body para que el overlay cubra todo */
-    /* padding: 20px; Se gestiona por .login-register-page si es necesario */
+    margin: 0;
     box-sizing: border-box;
     font-weight: 300;
 }
 
 /* === ESTILOS PARA LA PÁGINA DE LOGIN/REGISTRO FLIP CARD === */
-/* Estilo específico para el body de la página de login/registro */
 body.login-register-page {
-    display: flex; /* Sobrescribe el display:flex general si es necesario */
+    display: flex;
     justify-content: center;
     align-items: center;
     background-image:
         linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
         url('https://www.transparenttextures.com/patterns/dark-wood.png');
-    font-family: var(--font-body); /* Usa las variables de :root */
-    color: var(--primary-text-color); /* Usa las variables de :root */
-    padding: 20px; /* Hereda de body general o define específicamente */
+    font-family: var(--primary-font); /* Corregido para usar la variable correcta */
+    color: var(--primary-text-color);
+    padding: 20px;
 }
 
 .login-register-page .container {
     width: 100%;
     max-width: 450px;
     perspective: 1500px;
-    /* Hereda background y shadow de .container general a menos que se necesite un estilo diferente */
-    /* Si quieres un fondo diferente para el container de login: */
-    /* background-color: var(--login-card-bg); */ /* Descomentar si es necesario */
 }
 
 .login-register-page .flip-card {
@@ -87,10 +82,10 @@ body.login-register-page {
     height: 100%;
     backface-visibility: hidden;
     border-radius: 20px;
-    overflow: hidden;
+    overflow: hidden; /* Importante para que el contenido no desborde de forma extraña */
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-    background-color: var(--login-card-bg); /* Específico para la tarjeta */
-    border: 1px solid var(--login-input-border); /* Específico para la tarjeta */
+    background-color: var(--login-card-bg);
+    border: 1px solid var(--login-input-border);
     display: flex;
     flex-direction: column;
     padding: 30px;
@@ -103,11 +98,12 @@ body.login-register-page {
 .login-register-page .brand {
     text-align: center;
     color: var(--login-primary-accent);
-    font-family: var(--font-heading);
+    font-family: var(--heading-font); /* Usando la variable :root correcta */
     font-size: 26px;
     margin-bottom: 15px;
     letter-spacing: 1.5px;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    word-wrap: break-word; /* Para evitar desbordamientos si el texto es largo y la fuente grande */
 }
 
 .login-register-page .header {
@@ -130,6 +126,8 @@ body.login-register-page {
     cursor: pointer;
     transition: all 0.4s ease;
     position: relative;
+    flex-shrink: 1; /* Permitir que los botones se encojan si no hay espacio */
+    white-space: nowrap; /* Evitar que el texto del botón se rompa en dos líneas */
 }
 .login-register-page .header-btn:hover { color: #fff; }
 .login-register-page .header-btn.active {
@@ -160,7 +158,7 @@ body.login-register-page {
 }
 .login-register-page .input-group input:focus {
     border-color: var(--login-primary-accent);
-    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3); /* Usando login-primary-accent como base para el shadow */
+    box-shadow: 0 0 8px rgba(197, 166, 134, 0.3);
 }
 .login-register-page .input-group input:focus + label,
 .login-register-page .input-group input:not(:placeholder-shown) + label {
@@ -191,15 +189,15 @@ body.login-register-page {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 .login-register-page #auth-status {
-    text-align: center; color: var(--login-primary-accent); margin-top: 0; /* Ajustado para estar dentro del contenedor */
-    font-size: 14px; min-height: 20px; margin-bottom: 10px; /* Espacio antes del botón logout */
+    text-align: center; color: var(--login-primary-accent); margin-top: 0;
+    font-size: 14px; min-height: 20px; margin-bottom: 10px;
 }
-.login-register-page button#logout-button { /* Botón de logout EN la página de login */
-    background: var(--danger-color); /* Usando variable de peligro general */
+.login-register-page button#logout-button {
+    background: var(--danger-color);
     border: none; color: #fff; padding: 12px; font-size: 15px; font-weight: 500;
     border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
-    width: auto; /* Ajustar al contenido */ min-width: 150px; max-width: 200px;
-    text-transform: uppercase; display: block; margin: 0 auto; /* Centrado */
+    width: auto; min-width: 150px; max-width: 200px;
+    text-transform: uppercase; display: block; margin: 0 auto;
 }
 .login-register-page button#logout-button:hover { filter: brightness(1.1); }
 
@@ -219,15 +217,15 @@ body.login-register-page {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.85); /* Más oscuro para mayor énfasis */
+    background-color: rgba(0, 0, 0, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0s linear 0.3s; /* Transición para ocultar */
-    padding: 20px; /* Padding para que el box no toque bordes en pantallas pequeñas */
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    padding: 20px;
 }
 
 .notification-overlay.show {
@@ -237,14 +235,14 @@ body.login-register-page {
 }
 
 .notification-box {
-    background-color: var(--login-card-bg); /* Usar el mismo fondo que las tarjetas */
+    background-color: var(--login-card-bg);
     padding: 30px 35px;
-    border-radius: 15px; /* Mismo borde que las tarjetas */
+    border-radius: 15px;
     text-align: center;
     box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-    border-top: 5px solid var(--login-primary-accent); /* Borde superior por defecto */
+    border-top: 5px solid var(--login-primary-accent);
     width: 100%;
-    max-width: 480px; /* Ancho máximo del cuadro de notificación */
+    max-width: 480px;
     transform: scale(0.95) translateY(-20px);
     opacity: 0;
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s, opacity 0.3s ease 0.1s;
@@ -255,23 +253,23 @@ body.login-register-page {
     opacity: 1;
 }
 
-.notification-box #notification-title { /* Título para notificación */
+.notification-box #notification-title {
     font-family: var(--heading-font);
     color: var(--login-primary-accent);
-    font-size: 1.9em; /* Un poco más grande */
+    font-size: 1.9em;
     margin-bottom: 15px;
     letter-spacing: 1px;
 }
 
 #notification-message {
-    font-size: 1.05em; /* Ligeramente más grande para legibilidad */
+    font-size: 1.05em;
     color: var(--primary-text-color);
-    line-height: 1.7; /* Mejor espaciado de línea */
-    margin-bottom: 30px; /* Más espacio antes del botón */
-    min-height: 40px; /* Evitar saltos si el mensaje es corto */
+    line-height: 1.7;
+    margin-bottom: 30px;
+    min-height: 40px;
 }
 #notification-message strong {
-    color: var(--login-primary-accent); /* Resaltar partes del mensaje */
+    color: var(--login-primary-accent);
     font-weight: 500;
 }
 
@@ -279,13 +277,13 @@ body.login-register-page {
     background: var(--login-btn-bg);
     color: #fff;
     border: none;
-    padding: 12px 35px; /* Botón un poco más ancho */
+    padding: 12px 35px;
     font-size: 1em;
-    font-weight: 600; /* Más grueso */
+    font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
     text-transform: uppercase;
-    letter-spacing: 1px; /* Similar a submit-btn */
+    letter-spacing: 1px;
     transition: background-color 0.3s ease, transform 0.2s ease;
     box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
@@ -299,7 +297,6 @@ body.login-register-page {
     transform: translateY(0);
 }
 
-/* Styling for success */
 .notification-box.success {
     border-top-color: var(--success-color);
 }
@@ -307,7 +304,6 @@ body.login-register-page {
     color: var(--success-color);
 }
 
-/* Styling for error */
 .notification-box.error {
     border-top-color: var(--danger-color);
 }
@@ -315,37 +311,90 @@ body.login-register-page {
     color: var(--danger-color);
 }
 
-/* Styling for info (optional, if needed for other types of messages) */
 .notification-box.info {
-    border-top-color: var(--accent-color); /* O algún color neutral */
+    border-top-color: var(--accent-color);
 }
 .notification-box.info #notification-title {
     color: var(--accent-color);
 }
 
 
-/* === MEDIA QUERIES (Simplificado para style1.css) === */
+/* === MEDIA QUERIES (Ajustes para responsividad) === */
 @media (max-width: 480px) {
-    .login-register-page .container { max-width: 100%; padding: 0 10px; }
-    .login-register-page .flip-card { min-height: auto; /* Ajustar a contenido */ }
+    body.login-register-page {
+        padding: 10px; /* Menos padding en el body para pantallas pequeñas */
+    }
+
+    .login-register-page .container {
+        max-width: 100%;
+        padding: 0 5px; /* Menos padding horizontal para el contenedor principal */
+    }
+
+    .login-register-page .flip-card {
+        min-height: auto; /* Permitir que la altura se ajuste al contenido */
+    }
+
     .login-register-page .card-front,
-    .login-register-page .card-back { padding: 25px 20px; }
-    .login-register-page .header-btn { padding: 8px 15px; font-size: 14px; }
-    .login-register-page .form-title { font-size: 20px; margin-bottom: 20px; }
-    .login-register-page .input-group input { padding: 12px 12px 12px 40px; font-size: 14px; }
-    .login-register-page .input-group i { font-size: 14px; }
-    .login-register-page .input-group label { left: 40px; }
-    .login-register-page .submit-btn { padding: 12px; font-size: 15px; }
-    .login-register-page #auth-forms-status-container { padding: 15px; }
+    .login-register-page .card-back {
+        padding: 20px 15px; /* Reducir padding interno de las tarjetas */
+    }
+
+    .login-register-page .brand {
+        font-size: 1.5em; /* Reducir significativamente el tamaño de fuente del título */
+        margin-bottom: 10px; /* Ajustar margen inferior */
+        letter-spacing: 1px; /* Reducir un poco el espaciado */
+    }
+
+    .login-register-page .header {
+        margin-bottom: 15px; /* Ajustar margen */
+        padding: 3px; /* Ajustar padding */
+    }
+    .login-register-page .header-btn {
+        padding: 8px 15px; /* Reducir padding de los botones del header */
+        font-size: 0.85em; /* Reducir tamaño de fuente */
+    }
+
+    .login-register-page .form-title {
+        font-size: 1.25em; /* Reducir tamaño de fuente del título del formulario */
+        margin-bottom: 20px;
+    }
+
+    .login-register-page .input-group input {
+        padding: 12px 12px 12px 40px; /* Ajustar padding de inputs */
+        font-size: 14px;
+    }
+    .login-register-page .input-group i {
+        font-size: 14px; /* Iconos un poco más pequeños */
+        left: 12px; /* Ajustar posición de icono */
+        top: 13px;
+    }
+    .login-register-page .input-group label {
+        left: 40px; /* Ajustar posición de label flotante */
+        font-size: 0.9em; /* Tamaño de label base */
+    }
+    .login-register-page .input-group input:focus + label,
+    .login-register-page .input-group input:not(:placeholder-shown) + label {
+        font-size: 0.75em; /* Tamaño de label cuando flota */
+    }
+
+
+    .login-register-page .submit-btn {
+        padding: 12px;
+        font-size: 0.95em; /* Reducir tamaño de fuente del botón principal */
+    }
+    .login-register-page #auth-forms-status-container {
+        padding: 15px;
+    }
 
     .notification-box {
         padding: 25px 20px;
+        max-width: calc(100% - 20px); /* Asegurar que no toque los bordes */
     }
     .notification-box #notification-title {
-        font-size: 1.6em;
+        font-size: 1.5em; /* Reducir tamaño de título de notificación */
     }
     #notification-message {
-        font-size: 1em;
+        font-size: 0.95em; /* Reducir tamaño de mensaje de notificación */
     }
     .notification-close-btn {
         padding: 10px 25px;
