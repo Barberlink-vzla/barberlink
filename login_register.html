@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style1.css"> 
+</head>
 <body class="login-register-page">
     <div class="container">
         <div class="flip-card" id="flipCard">
@@ -82,8 +83,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const flipCard = document.getElementById('flipCard');
             const allFlipButtons = document.querySelectorAll('[data-action]');
-            // Los elementos de estado y logout son manejados en auth.js en cuanto a su visibilidad general.
-
+            
             allFlipButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -101,7 +101,7 @@
             });
 
             function updateActiveHeaderButtons(activeAction) {
-                const headerButtons = document.querySelectorAll('.login-register-page .header-btn'); // Selector más específico
+                const headerButtons = document.querySelectorAll('.login-register-page .header-btn');
                 headerButtons.forEach(btn => {
                     if (btn.getAttribute('data-action') === activeAction) {
                         btn.classList.add('active');
@@ -110,7 +110,7 @@
                     }
                 });
             }
-            updateActiveHeaderButtons('login'); // Inicia con Login activo
+            updateActiveHeaderButtons('login');
         });
     </script>
 
