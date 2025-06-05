@@ -6,9 +6,9 @@
     <title>Barbería Élite - Acceso Barbero</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style1.css">
+    <link rel="stylesheet" href="css/style1.css"> {/* Asegúrate que esta ruta es correcta */}
 </head>
-<body class="login-register-page"> 
+<body class="login-register-page">
     <div class="container">
         <div class="flip-card" id="flipCard">
             <div class="card-front">
@@ -69,6 +69,16 @@
         </div>
     </div>
 
+    {/* === INICIO: HTML PARA EL OVERLAY DE NOTIFICACIÓN === */}
+    <div class="notification-overlay" id="notification-overlay">
+        <div class="notification-box">
+            <h2 id="notification-title">Título de Notificación</h2>
+            <p id="notification-message">Este es el mensaje de la notificación.</p>
+            <button id="notification-close-btn" class="notification-close-btn">Entendido</button>
+        </div>
+    </div>
+    {/* === FIN: HTML PARA EL OVERLAY DE NOTIFICACIÓN === */}
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const flipCard = document.getElementById('flipCard');
@@ -106,5 +116,6 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/auth.js"></script> </body>
+    <script src="js/auth.js"></script> {/* Asegúrate que esta ruta es correcta */}
+</body>
 </html>
