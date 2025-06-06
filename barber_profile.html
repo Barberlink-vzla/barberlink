@@ -3,95 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil del Barbero</title>
+    <title>Panel del Barbero</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos adicionales para el layout del dashboard */
+        body.barber-profile-page {
+            align-items: stretch; /* Permitir que el contenido se estire */
+        }
+        .dashboard-layout {
+            display: flex;
+            width: 100%;
+            max-width: 1200px; /* Más ancho para el dashboard */
+            min-height: 80vh;
+            background-color: var(--container-bg);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .dashboard-menu {
+            width: 240px;
+            background-color: var(--login-card-bg);
+            padding: 20px;
+            border-right: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .dashboard-menu .brand {
+            font-family: var(--heading-font);
+            color: var(--login-primary-accent);
+            font-size: 1.5em;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .dashboard-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+        .dashboard-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            color: var(--primary-text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dashboard-menu li a:hover, .dashboard-menu li a.active {
+            background-color: var(--login-btn-bg);
+            color: #fff;
+        }
+        .dashboard-menu .logout-link {
+            position: absolute;
+            bottom: 20px;
+            width: 200px;
+        }
+        .dashboard-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        
+        /* Estilos para el Panel de Control */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+        .stat-card { background: var(--login-card-bg); padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid var(--accent-color); }
+        .stat-card .stat-icon { font-size: 2.5em; color: var(--accent-color); margin-bottom: 10px; }
+        .stat-card .stat-value { font-size: 2.2em; font-weight: 700; color: #fff; }
+        .stat-card .stat-label { font-size: 1em; color: var(--secondary-text-color); }
+
+        /* Estilos para Gestión de Reservas */
+        .booking-management-layout { display: flex; gap: 20px; }
+        .calendar-container { flex: 1; min-width: 400px; }
+        .bookings-for-day-container { flex: 1; }
+        .booking-item { background-color: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid var(--login-primary-accent); }
+        .booking-item h4 { color: #fff; margin-bottom: 5px; }
+        .booking-item p { margin: 0; font-size: 0.9em; color: var(--secondary-text-color); }
+        .calendar-day.has-bookings::after { content: ''; display: block; width: 6px; height: 6px; background: var(--success-color); border-radius: 50%; margin: 2px auto 0; }
+
+        @media (max-width: 992px) {
+            .booking-management-layout { flex-direction: column; }
+        }
+        @media (max-width: 768px) {
+            .dashboard-layout { flex-direction: column; }
+            .dashboard-menu { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .dashboard-menu .logout-link { position: relative; bottom: auto; margin-top: 10px; width: 100%; }
+        }
+    </style>
 </head>
 <body class="barber-profile-page">
-    <div class="container">
-        <div class="profile-main-title">Mi Perfil de Barbero</div>
 
-        <div class="profile-section-card">
-            <h2 class="profile-section-title">Datos Básicos</h2>
-            <div id="profile-content">
-                <p>Cargando perfil...</p>
+    <div class="dashboard-layout">
+        <nav class="dashboard-menu">
+            <div class="brand">Barber Panel</div>
+            <ul>
+                <li><a href="#" class="menu-link active" data-target="dashboard"><i class="fas fa-tachometer-alt"></i> Panel de Control</a></li>
+                <li><a href="#" class="menu-link" data-target="reservas"><i class="fas fa-calendar-check"></i> Gestión de Reservas</a></li>
+                <li><a href="#" class="menu-link" data-target="configuracion"><i class="fas fa-cog"></i> Configuración</a></li>
+            </ul>
+            <a href="#" id="logout-profile-button" class="logout-link"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </nav>
+
+        <main class="dashboard-content">
+            <section id="dashboard" class="content-section active">
+                <h2 class="profile-section-title">Panel de Control</h2>
+                <div id="dashboard-loading-status">Cargando estadísticas...</div>
+                <div class="stats-grid" id="dashboard-stats-grid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="stat-value" id="stat-active-bookings">0</div>
+                        <div class="stat-label">Reservas Activas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-value" id="stat-unique-clients">0</div>
+                        <div class="stat-label">Clientes Totales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="stat-value" id="stat-monthly-income">0</div>
+                        <div class="stat-label">Ingresos (Mes Actual)</div>
+                    </div>
                 </div>
-        </div>
+            </section>
 
-        <div class="profile-section-card">
-            <h2 class="profile-section-title">Mis Servicios y Precios</h2>
-            <div id="services-section">
-                <p>Cargando servicios...</p>
-                </div>
-            <div class="service-item-add-custom">
-                 <h3>Añadir Otro Servicio</h3>
-                 <div class="input-group">
-                    <i class="fas fa-cut"></i>
-                    <input type="text" id="other-service-name" placeholder=" ">
-                    <label for="other-service-name">Nombre del servicio personalizado</label>
-                 </div>
-                 <div class="input-group">
-                    <i class="fas fa-dollar-sign"></i>
-                    <input type="number" id="other-service-price" placeholder=" " step="0.50" min="0">
-                    <label for="other-service-price">Precio (Ej: 10.50)</label>
-                 </div>
-                 <button id="add-other-service-btn" class="profile-submit-btn">Añadir Servicio</button>
-            </div>
-        </div>
-
-        <div class="profile-section-card">
-            <h2 class="profile-section-title">Mi Disponibilidad Semanal</h2>
-            <p class="availability-instructions">Selecciona un día en el calendario para ver o editar los bloques horarios de ese día de la semana. Los cambios se aplicarán a todas las semanas al guardar.</p>
-            
-            <div class="calendar-widget-container">
-                <div class="calendar-widget">
-                    <div class="calendar-front">
-                      <div class="calendar-current-date">
-                        <button id="cal-prev-month-btn" class="cal-nav-btn" aria-label="Mes anterior">&lt;</button>
-                        <div class="calendar-month-year-display">
-                            <h1 id="cal-current-month-year"></h1>
+            <section id="reservas" class="content-section">
+                <h2 class="profile-section-title">Gestión de Reservas y Disponibilidad</h2>
+                <div class="booking-management-layout">
+                    <div class="calendar-container">
+                        <h3>Calendario</h3>
+                        <p class="availability-instructions">Selecciona un día para ver las reservas y editar tu disponibilidad semanal.</p>
+                         <div class="calendar-widget-container">
+                             <div class="calendar-widget">
+                                 <div class="calendar-front">
+                                     <div class="calendar-current-date">
+                                         <button id="cal-prev-month-btn" class="cal-nav-btn">&lt;</button>
+                                         <div class="calendar-month-year-display"><h1 id="cal-current-month-year"></h1></div>
+                                         <button id="cal-next-month-btn" class="cal-nav-btn">&gt;</button>
+                                     </div>
+                                     <div class="calendar-current-month">
+                                         <ul class="calendar-week-days"><li>DOM</li><li>LUN</li><li>MAR</li><li>MIÉ</li><li>JUE</li><li>VIE</li><li>SÁB</li></ul>
+                                         <div class="calendar-weeks" id="calendar-days-grid"></div>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+                    <div class="bookings-for-day-container">
+                        <div id="bookings-for-selected-day">
+                            <h3>Reservas para: <span id="selected-day-heading">--</span></h3>
+                            <div id="bookings-list">Selecciona un día para ver las citas.</div>
                         </div>
-                        <button id="cal-next-month-btn" class="cal-nav-btn" aria-label="Mes siguiente">&gt;</button>
-                      </div>
-            
-                      <div class="calendar-current-month">
-                        <ul class="calendar-week-days">
-                          <li>DOM</li>
-                          <li>LUN</li>
-                          <li>MAR</li>
-                          <li>MIÉ</li>
-                          <li>JUE</li>
-                          <li>VIE</li>
-                          <li>SÁB</li>
-                        </ul>
-                        <div class="calendar-weeks" id="calendar-days-grid">
-                          </div>
-                      </div>
+                        <hr style="margin: 20px 0;">
+                        <div id="availability-day-editor">
+                             <h3 id="editing-day-title">Editando Horarios para: <span>Día no seleccionado</span></h3>
+                             <div id="selected-day-slots-container"></div>
+                             <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div id="availability-day-editor" style="display: none;">
-                <h3 id="editing-day-title">Editando Horarios para: <span>Día no seleccionado</span></h3>
-                <div id="selected-day-slots-container">
+            <section id="configuracion" class="content-section">
+                <h2 class="profile-section-title">Configuración de Perfil y Servicios</h2>
+                
+                <div class="profile-section-card">
+                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Datos Básicos</h3>
+                    <div id="profile-content"><p>Cargando perfil...</p></div>
+                </div>
+
+                <div class="profile-section-card">
+                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Mis Servicios y Precios</h3>
+                    <div id="services-section"><p>Cargando servicios...</p></div>
+                    <div class="service-item-add-custom">
+                        <h4>Añadir Otro Servicio</h4>
+                        <div class="input-group"><i class="fas fa-cut"></i><input type="text" id="other-service-name" placeholder=" "><label for="other-service-name">Nombre del servicio</label></div>
+                        <div class="input-group"><i class="fas fa-dollar-sign"></i><input type="number" id="other-service-price" placeholder=" " step="0.50" min="0"><label for="other-service-price">Precio</label></div>
+                        <button id="add-other-service-btn" class="profile-submit-btn" style="width: auto; padding: 10px 15px;">Añadir Servicio</button>
                     </div>
-                <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
-            </div>
-        </div>
-        
-        <button id="save-all-profile-btn" class="profile-submit-btn save-all-btn"><i class="fas fa-save"></i> Guardar Todos los Cambios</button>
-        <p id="save-status"></p>
+                </div>
+                
+                <div class="profile-section-card">
+                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Tu Enlace de Reserva Único</h3>
+                    <p>Comparte este enlace con tus clientes para que puedan reservar una cita contigo:</p>
+                    <div id="booking-link-container"><p>Cargando enlace...</p></div>
+                </div>
 
-        <div class="profile-section-card">
-            <h2 class="profile-section-title">Tu Enlace de Reserva Único</h2>
-            <p>Comparte este enlace con tus clientes para que puedan reservar una cita contigo:</p>
-            <div id="booking-link-container">
-                <p>Cargando enlace...</p>
-            </div>
-        </div>
-        
-        <button id="logout-profile-button" class="profile-logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+                <button id="save-all-profile-btn" class="profile-submit-btn save-all-btn"><i class="fas fa-save"></i> Guardar Todos los Cambios</button>
+                <p id="save-status"></p>
+            </section>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
