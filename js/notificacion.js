@@ -113,55 +113,56 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Configura y suscribe al canal de notificaciones de forma robusta.
      */
-    function setupRealtimeConnection() {
-        clearRealtimeConnection(); // Limpiamos cualquier conexión anterior
 
-        if (!currentUserId) return;
 
-        const channelName = `notifications-for-user-${currentUserId}`;
-        console.log(`📡 Sintonizando nuevo canal: ${channelName}`);
+function setupRealtimeConnection() {
+    clearRealtimeConnection(); // Limpiamos cualquier conexión anterior
+    if (!currentUserId) return;
 
-        notificationChannel = supabaseClient.channel(channelName, {
-            config: {
-                broadcast: { self: false }, // No necesitamos recibir nuestros propios broadcasts
+    const channelName = `realtime-notifications-for-${currentUserId}`; // Un nombre único para este canal
+    console.log(`📡 Sintonizando canal de Base de Datos: ${channelName}`);
+
+    notificationChannel = supabaseClient
+        .channel(channelName)
+        .on(
+            'postgres_changes', // Escuchamos cambios en la base de datos
+            { 
+                event: 'INSERT', // Específicamente para nuevas filas
+                schema: 'public', 
+                table: 'notificaciones', // En la tabla de notificaciones
+                filter: `barbero_id=eq.${currentUserId}` // Solo para este barbero
             },
-        });
+            (payload) => {
+                console.log('🎉 ¡Cambio en DB detectado! Nueva notificación recibida:', payload);
+                const newNotification = payload.new;
+                
+                // 1. Añadimos la nueva notificación al inicio de la lista en memoria
+                allNotifications.unshift(newNotification);
 
-        // Listener para notificaciones de nuevas reservas
-        notificationChannel.on('broadcast', { event: 'new_booking' }, ({ payload }) => {
-            console.log("🎉 ¡Broadcast de nueva reserva recibido!", payload);
-            showToastNotification({
-                tipo: 'nueva_reserva',
-                mensaje: '¡Acabas de recibir una nueva reserva!'
-            });
-            // Recargamos todo para mantener la consistencia
-            setTimeout(() => {
-                loadInitialNotifications();
+                // 2. Volvemos a renderizar toda la UI de notificaciones
+                renderNotifications();
+
+                // 3. Mostramos una alerta "toast" en la esquina
+                showToastNotification(newNotification);
+
+                // 4. Notificamos a otros módulos para que refresquen sus datos
                 document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
-            }, 1500);
-        });
-        
-        // Suscripción al canal con manejo de estados
-        notificationChannel.subscribe((status, err) => {
-            console.log(`🚦 Estado del canal: ${status}`);
-
+            }
+        )
+        .subscribe((status, err) => {
+            console.log(`🚦 Estado del canal de DB: ${status}`);
             if (status === 'SUBSCRIBED') {
-                console.log('✅ ¡Suscripción a Broadcast exitosa!');
-                // Si había un timer de reconexión, lo limpiamos porque ya estamos conectados.
+                console.log('✅ ¡Suscripción a cambios de DB exitosa!');
                 if (reconnectionTimer) {
                     clearTimeout(reconnectionTimer);
                     reconnectionTimer = null;
                 }
             }
-            
-            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || (err && err.message.includes('expired'))) {
-                console.error(`❌ Error en el canal: ${status}.`, err || '');
-                // No reintentamos inmediatamente para evitar bucles.
-                // Supabase intentará reconectar automáticamente. Si falla permanentemente,
-                // un refresco de página es la solución más segura.
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.error(`❌ Error en el canal de DB: ${status}.`, err || '');
             }
         });
-    }
+}
     
     // --- Funciones de Utilidad ---
 
