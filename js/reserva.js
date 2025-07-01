@@ -285,7 +285,6 @@ async function handleBookingSubmit(e) {
             estado: 'pendiente'
         };
 
-        // 1. Guardar la cita en la base de datos (esto no cambia, es para la robustez)
         const { data: bookingResult, error: bookingError } = await supabaseClient
             .from('citas')
             .insert(bookingData)
@@ -303,16 +302,31 @@ async function handleBookingSubmit(e) {
             throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
         }
         
-        const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
-        const notificationMessage = `¡Nueva reserva! ${bookingResult.cliente_nombre} agendó un ${serviceName}.`;
+        // ===================================================================
+        // ===== INICIO DE LA MEJORA: Mensaje de Notificación Detallado =====
+        // ===================================================================
 
-        // 2. Guardar la notificación en la base de datos (esto tampoco cambia)
+        // Formatear la fecha y hora para que sea más legible para el barbero.
+        const date = new Date(bookingResult.fecha_cita + 'T12:00:00'); // Se añade hora para evitar errores de zona horaria.
+        const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+        
+        const time = new Date(`1970-01-01T${bookingResult.hora_inicio_cita}`);
+        const formattedTime = time.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        // Construir el nuevo mensaje de notificación mucho más informativo.
+        const notificationMessage = `¡Nueva reserva de ${bookingResult.cliente_nombre}! Agendado para el ${formattedDate} a las ${formattedTime}.`;
+        
+        // =================================================================
+        // ===== FIN DE LA MEJORA ==========================================
+        // =================================================================
+
+        // 2. Guardar la notificación en la base de datos (usando el nuevo mensaje).
         const { data: persistentNotification, error: notifError } = await supabaseClient
             .from('notificaciones')
             .insert({
                 barbero_id: barberId,
                 cita_id: bookingResult.id,
-                mensaje: notificationMessage,
+                mensaje: notificationMessage, // <--- Aquí se usa el mensaje mejorado.
                 tipo: 'nueva_reserva',
                 leido: false
             })
@@ -323,19 +337,15 @@ async function handleBookingSubmit(e) {
             console.error("Error al crear la notificación persistente:", notifError);
         }
 
-        // =============================================================
-        // ===== INICIO DE LA MODIFICACIÓN: ENVIAR BROADCAST REALTIME =====
-        // =============================================================
-        // Creamos un canal único para el barbero. Es crucial que el nombre sea el mismo que escucha el barbero.
         const channel = supabaseClient.channel(`notifications-channel-for-${barberId}`);
 
-        // Preparamos el mensaje de broadcast. Debe ser ligero y con la información necesaria para el "toast".
+        // Preparamos el payload del broadcast con el mensaje detallado.
         const broadcastPayload = {
             event: 'nueva_reserva',
             payload: {
                 id: persistentNotification.id,
                 created_at: persistentNotification.created_at,
-                mensaje: notificationMessage,
+                mensaje: notificationMessage, // <--- El mensaje mejorado también se envía en tiempo real.
                 tipo: 'nueva_reserva'
             }
         };
@@ -343,13 +353,10 @@ async function handleBookingSubmit(e) {
         // Enviamos el mensaje por el canal.
         channel.send({
             type: 'broadcast',
-            event: 'new-notification', // Un nombre para el tipo de evento
+            event: 'new-notification',
             payload: broadcastPayload,
         });
         console.log(`🚀 Mensaje de Broadcast enviado al canal: notifications-channel-for-${barberId}`);
-        // =============================================================
-        // ===== FIN DE LA MODIFICACIÓN: ENVIAR BROADCAST REALTIME =====
-        // =============================================================
 
         form.style.display = 'none';
         successMessageContainer.style.display = 'block';
@@ -363,8 +370,7 @@ async function handleBookingSubmit(e) {
         alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
         fetchAvailability(dateInput.value);
     }
-};
-
+}
     const generateWhatsAppLink = (booking) => {
         const barberPhone = barberData.telefono.replace(/\D/g, '');
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
