@@ -309,7 +309,7 @@ const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).
             throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
         }
 
-        const channel = supabaseClient.channel(`notifications-channel-for-${barberId}`);
+        const channel = supabaseClient.channel(`notifications-for-user-${barberId}`);
         await channel.send({
             type: 'broadcast',
             event: 'new_booking',
