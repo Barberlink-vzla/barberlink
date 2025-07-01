@@ -258,7 +258,8 @@ let availableSlots = [];
 
     // Reemplaza la función completa en tu archivo js/reserva.js
 
-const handleBookingSubmit = async (e) => {
+
+async function handleBookingSubmit(e) {
     e.preventDefault();
     statusMessage.textContent = 'Procesando reserva...';
     statusMessage.className = 'status-message';
@@ -266,15 +267,9 @@ const handleBookingSubmit = async (e) => {
     try {
         const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
         const startTime = timeSelect.value;
-
-        // ===== INICIO DE LA CORRECCIÓN =====
-        // Se corrige la creación del objeto Date para que sea válida.
         const bookingDate = new Date(`${dateInput.value}T${startTime}`);
-        // ===== FIN DE LA CORRECCIÓN =====
-        
-        // Se calcula la duración dinámicamente o se usa 30 min por defecto.
-const durationInMinutes = selectedService.duracion_minutos || 30; // Usar la variable global
-const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).toTimeString().slice(0, 8);
+        const durationInMinutes = selectedService.duracion_minutos || 30;
+        const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).toTimeString().slice(0, 8);
 
         await getClientIdForBooking();
 
@@ -287,7 +282,7 @@ const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).
             hora_inicio_cita: startTime,
             hora_fin_cita: endTime,
             precio_final: serviceData.precio,
-            estado: 'pendiente' // El estado inicial siempre es pendiente
+            estado: 'pendiente'
         };
 
         const { data: bookingResult, error: bookingError } = await supabaseClient
@@ -297,24 +292,39 @@ const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).
             .single();
 
         if (bookingError) {
-            // Se detecta específicamente el error de cita duplicada.
-            if (bookingError.code === '23505') { // Código de error de PostgreSQL para violación de unicidad
+            if (bookingError.code === '23505') {
                 throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
             }
             throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
         }
 
-        // Se asegura que bookingResult no sea nulo antes de continuar
         if (!bookingResult) {
             throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
         }
+        
+        // ================== INICIO DE LA CORRECCIÓN ✅ ==================
+        // Hemos quitado el código de "broadcast" y lo reemplazamos por esto.
+        // Ahora guardamos la notificación de forma persistente.
+        
+        const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
+        const notificationMessage = `¡Nueva reserva! ${bookingResult.cliente_nombre} agendó un ${serviceName}.`;
 
-        const channel = supabaseClient.channel(`notifications-for-user-${barberId}`);
-        await channel.send({
-            type: 'broadcast',
-            event: 'new_booking',
-            payload: { cita_id: bookingResult.id }
-        });
+        const { error: notifError } = await supabaseClient
+            .from('notificaciones')
+            .insert({
+                barbero_id: barberId,
+                cita_id: bookingResult.id,
+                mensaje: notificationMessage,
+                tipo: 'nueva_reserva',
+                leido: false
+            });
+
+        if (notifError) {
+            // No detenemos el flujo del cliente, pero sí lo registramos.
+            console.error("Error al crear la notificación persistente:", notifError);
+        }
+        // =================== FIN DE LA CORRECCIÓN ====================
+
 
         form.style.display = 'none';
         successMessageContainer.style.display = 'block';
@@ -323,13 +333,10 @@ const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).
 
     } catch (error) {
         console.error("Error en el proceso de reserva:", error);
-        // El mensaje de error ahora es mucho más claro para el usuario.
         statusMessage.textContent = `Error: ${error.message}`;
         statusMessage.className = 'status-message error';
-
-        // Sugerencia para recargar horarios disponibles
         alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
-        fetchAvailability(dateInput.value); // Recarga los horarios para la fecha seleccionada
+        fetchAvailability(dateInput.value);
     }
 };
     
