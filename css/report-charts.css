@@ -1,0 +1,181 @@
+/* css/report-charts.css */
+
+.report-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.stat-chart-card {
+    background: var(--login-card-bg);
+    border-radius: 12px;
+    padding: 20px 25px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-chart-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+}
+
+.stat-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.stat-chart-main-value .stat-value {
+    font-family: var(--primary-font);
+    font-weight: 700;
+    font-size: 2.4em;
+    color: var(--primary-text-color);
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+
+.stat-chart-main-value .stat-label {
+    font-size: 0.95em;
+    color: var(--secondary-text-color);
+    margin: 0;
+}
+
+.stat-chart-percentage {
+    display: flex;
+    align-items: center;
+    font-size: 1.1em;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.4s ease;
+}
+
+.stat-chart-percentage.positive {
+    color: var(--success-color);
+    background-color: rgba(129, 199, 132, 0.1);
+}
+
+.stat-chart-percentage.negative {
+    color: var(--danger-color);
+    background-color: rgba(229, 115, 115, 0.1);
+}
+
+.stat-chart-percentage.neutral {
+    color: var(--secondary-text-color);
+    background-color: rgba(176, 176, 176, 0.1);
+}
+
+.stat-chart-percentage svg {
+    margin-right: 5px;
+    width: 16px;
+    height: 16px;
+}
+
+
+.report-controls {
+    margin-bottom: 25px;
+    display: flex;
+    gap: 10px;
+}
+
+.report-btn {
+    background-color: var(--login-card-bg);
+    color: var(--primary-text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.report-btn:hover {
+    background-color: var(--border-color);
+}
+
+.report-btn.active {
+    background-color: var(--login-primary-accent);
+    color: #111;
+    border-color: var(--login-primary-accent);
+    font-weight: bold;
+}
+
+
+/* ===== INICIO: ESTILOS PARA LA LISTA DE TRANSACCIONES ===== */
+
+.transaction-list-container {
+    margin-top: 40px;
+    background: var(--login-card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 20px 25px;
+}
+
+.transaction-list-title {
+    color: var(--login-primary-accent);
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    font-size: 1.4em;
+}
+
+.transaction-list-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr 1fr;
+    gap: 15px;
+    padding: 0 15px 10px 15px;
+    border-bottom: 2px solid var(--login-primary-accent);
+    font-weight: bold;
+    color: var(--secondary-text-color);
+    font-size: 0.9em;
+    text-transform: uppercase;
+}
+
+.transaction-item {
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr 1fr;
+    gap: 15px;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+    font-size: 0.95em;
+    transition: background-color 0.2s;
+}
+
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-item:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.transaction-item span {
+    color: var(--primary-text-color);
+}
+
+.transaction-item .service-name {
+    color: var(--secondary-text-color);
+    font-style: italic;
+}
+
+.transaction-item .align-right {
+    font-weight: bold;
+    color: var(--success-color);
+}
+
+.align-right {
+    text-align: right;
+}
+
+.no-transactions {
+    text-align: center;
+    padding: 30px;
+    color: var(--secondary-text-color);
+    font-style: italic;
+}
+
+/* ===== FIN: ESTILOS PARA LA LISTA DE TRANSACCIONES ===== */

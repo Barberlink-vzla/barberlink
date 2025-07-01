@@ -1,0 +1,383 @@
+/*
+==============================================
+NUEVOS ESTILOS PARA EL PANEL DEL BARBERO
+css/dashboard_styles.css
+==============================================
+*/
+
+/* --- VARIABLES --- */
+:root {
+    --dashboard-bg: #0f0f1b;
+    --card-bg: #1a1a2e;
+    --border-color-light: rgba(255, 255, 255, 0.1);
+    --primary-accent: #e44d26; 
+    --primary-accent-hover: #f56545;
+    --text-primary: #ffffff;
+    --text-secondary: #a9a9b3;
+    --success: #28a745;
+    --danger: #dc3545;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --font-body: 'Roboto', sans-serif;
+    --font-heading: 'Playfair Display', serif;
+}
+
+
+/* --- LAYOUT GENERAL Y RESPONSIVO --- */
+
+body.barber-profile-page {
+    background-color: var(--dashboard-bg);
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    align-items: stretch; /* Permite que el layout ocupe toda la altura */
+}
+
+.dashboard-layout {
+    display: flex;
+    width: 100%;
+    max-width: 1400px; /* Un poco más de espacio */
+    min-height: 100vh; /* Ocupa toda la altura de la pantalla */
+    margin: 0 auto;
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    overflow: hidden;
+    position: relative;
+}
+
+.dashboard-menu {
+    width: 240px;
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-right: 1px solid var(--border-color-light);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+    z-index: 1001;
+}
+
+.dashboard-content {
+    flex-grow: 1;
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+    background-color: var(--dashboard-bg);
+}
+
+.content-section {
+    display: none;
+}
+.content-section.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-style {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color-light);
+    box-shadow: 0 4px 15px var(--shadow-color);
+    margin-bottom: 25px;
+}
+
+/* --- ESTILOS RESPONSIVOS --- */
+@media (max-width: 992px) {
+    .dashboard-menu {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        transform: translateX(-100%);
+        z-index: 1050;
+    }
+
+    .dashboard-menu.menu-open {
+        transform: translateX(0);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+    }
+    
+    .dashboard-layout {
+        padding-top: 65px; /* Altura del mobile-header */
+    }
+
+    .dashboard-content {
+        padding: 20px 15px;
+    }
+
+    .booking-management-layout {
+        flex-direction: column;
+    }
+}
+
+/* --- MENÚ LATERAL --- */
+.dashboard-menu .brand {
+    font-family: var(--font-heading);
+    color: var(--primary-accent);
+    font-size: 1.8em;
+    text-align: center;
+    margin-bottom: 40px;
+}
+.dashboard-menu ul {
+    list-style: none;
+    padding: 0;
+    flex-grow: 1;
+}
+.dashboard-menu li a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+    font-weight: 500;
+}
+.dashboard-menu li a .fa-fw {
+    font-size: 1.1em;
+    width: 20px;
+    text-align: center;
+}
+
+.dashboard-menu li a:hover {
+    background-color: rgba(228, 77, 38, 0.1);
+    color: var(--primary-accent);
+    transform: translateX(5px);
+}
+.dashboard-menu li a.active {
+    background: linear-gradient(90deg, var(--primary-accent) 0%, var(--primary-accent-hover) 100%);
+    color: var(--text-primary);
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(228, 77, 38, 0.3);
+}
+
+.dashboard-menu .logout-link {
+    padding: 15px;
+    border-top: 1px solid var(--border-color-light);
+    margin-top: 20px;
+}
+
+
+/* --- CABECERA DE CONTENIDO --- */
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+#content-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 2em;
+}
+
+/* --- SECCIÓN CONFIGURACIÓN --- */
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+}
+.profile-section-card {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color-light);
+    box-shadow: 0 4px 15px var(--shadow-color);
+}
+.profile-section-card.full-span {
+    grid-column: 1 / -1;
+}
+.card-header-title {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1.2em;
+    padding-bottom: 15px;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color-light);
+}
+#add-custom-service-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: end;
+}
+#add-custom-service-form .style-button {
+    height: 50px;
+}
+.save-button-container {
+    margin-top: 30px;
+    text-align: right;
+}
+
+/* --- SECCIÓN RESERVAS Y DISPONIBILIDAD --- */
+.booking-management-layout {
+    display: flex;
+    gap: 25px;
+}
+.calendar-container {
+    flex: 1.2;
+    min-width: 300px;
+}
+.bookings-for-day-container {
+    flex: 1;
+    min-width: 300px;
+}
+.booking-item {
+    background-color: rgba(0,0,0,0.2);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 4px solid var(--primary-accent);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.booking-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px var(--shadow-color);
+}
+
+.booking-item h4 {
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.booking-item p {
+    margin: 4px 0;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    border: 2px dashed var(--border-color-light);
+    border-radius: 10px;
+    margin-top: 20px;
+}
+.empty-state i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+#bookings-list .empty-state {
+    border: none;
+}
+
+/* --- SECCIÓN REPORTES --- */
+.report-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+.report-btn {
+    background-color: transparent;
+    border: 1px solid var(--border-color-light);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.report-btn:hover {
+    background-color: var(--border-color-light);
+    color: var(--text-primary);
+}
+.report-btn.active {
+    background-color: var(--primary-accent);
+    color: var(--text-primary);
+    border-color: var(--primary-accent);
+    font-weight: 700;
+}
+
+/* Transacciones */
+.transaction-list-container {
+    margin-top: 30px;
+}
+
+.transaction-list-title {
+    font-size: 1.3em;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.transaction-list-header, .transaction-item {
+    display: grid;
+    grid-template-columns: 100px 1fr 1.5fr 80px;
+    gap: 15px;
+    padding: 15px;
+    align-items: center;
+}
+.transaction-list-header {
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.transaction-list-body .transaction-item {
+    background-color: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.transaction-list-body .transaction-item:last-child {
+    margin-bottom: 0;
+}
+
+.transaction-item .service-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.transaction-item .align-right {
+    font-weight: 700;
+    color: var(--success);
+}
+
+.align-right { text-align: right; }
+
+@media (max-width: 767px) {
+    .d-none.d-md-block { display: none; }
+    .transaction-list-header, .transaction-item {
+        grid-template-columns: 80px 1fr 80px;
+        font-size: 0.9em;
+    }
+}
+
+
+/* --- SECCIÓN CLIENTES (Mejoras Visuales) --- */
+.add-client-card {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+.add-client-card h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-family: var(--font-body);
+    font-weight: 500;
+}
+.add-client-card .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.add-client-card .style-button {
+    width: auto;
+    padding-left: 25px;
+    padding-right: 25px;
+}
