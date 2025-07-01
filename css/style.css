@@ -6,29 +6,29 @@
     --heading-font: 'Playfair Display', serif;
     
     /* Paleta para el tema general oscuro y elegante */
-    --background-color: #121212;         /* Negro más profundo para el fondo principal */
-    --container-bg: #1e1e1e;         /* Gris muy oscuro para contenedores generales */
-    --primary-text-color: #e0e0e0;   /* Gris claro para el texto general */
-    --secondary-text-color: #b0b0b0; /* Gris un poco más oscuro para texto secundario */
+    --background-color: #121212;
+    --container-bg: #1e1e1e;
+    --primary-text-color: #e0e0e0;
+    --secondary-text-color: #b0b0b0;
     
-    --accent-color: #c5a47e;          /* Tono dorado/cuero para acentos y botones */
-    --accent-hover-color: #a78963;    /* Un tono más oscuro para el hover */
-    --border-color: #333;             /* Bordes sutiles generales más oscuros */
+    --accent-color: #c5a47e;
+    --accent-hover-color: #a78963;
+    --border-color: #333;
     
-    --danger-color: #e57373;          /* Rojo más suave para peligro */
+    --danger-color: #e57373;
     --danger-hover-color: #ef5350;
-    --success-color: #81c784;         /* Verde más suave para éxito */
+    --success-color: #81c784;
     --success-hover-color: #66bb6a;
 
     /* Variables específicas para la página de login/registro y tarjetas de perfil */
-    --login-card-bg: #2a2a2a;             /* Fondo de tarjeta, un poco más claro que el container general */
-    --login-primary-accent: #c5a686;      /* Tono beige/dorado pálido */
-    --login-secondary-accent: #a07e5f;    /* Tono cuero/marrón medio para degradados */
-    --login-input-bg: #333333;            /* Fondo de input más oscuro */
-    --login-input-border: #4f4f4f;        /* Borde de input */
-    --login-input-text: #f0f0f0;          /* Texto del input */
-    --login-btn-bg: var(--accent-color);          /* Color base del botón */
-    --login-btn-hover: var(--accent-hover-color); /* Color hover del botón */
+    --login-card-bg: #2a2a2a;
+    --login-primary-accent: #c5a686;
+    --login-secondary-accent: #a07e5f;
+    --login-input-bg: #333333;
+    --login-input-border: #4f4f4f;
+    --login-input-text: #f0f0f0;
+    --login-btn-bg: var(--accent-color);
+    --login-btn-hover: var(--accent-hover-color);
 
     --link-color: var(--accent-color);
     --link-hover-color: var(--accent-hover-color);
@@ -47,11 +47,11 @@ body {
     background-color: var(--background-color);
     color: var(--primary-text-color);
     line-height: 1.6;
-    display: flex; /* Para centrar contenido en páginas simples */
+    display: flex;
     justify-content: center;
-    align-items: flex-start; /* Para que el scroll funcione bien si el contenido es largo */
+    align-items: flex-start;
     min-height: 100vh;
-    padding: 20px; /* Margen alrededor del contenido principal */
+    padding: 20px;
 }
 
 .container {
@@ -1042,7 +1042,7 @@ body.barber-profile-page {
     .flip-card {
         min-height: 550px; /* Un poco menos de altura en móvil */
     }
-    .card-front, .card-back {
+     .card-front, .card-back {
         padding: 25px 20px;
     }
     .login-register-page .form-title {
@@ -1137,5 +1137,673 @@ body.barber-profile-page {
     }
     .barber-profile-page .time-slot span {
         display: none; /* Ocultar el guion separador */
+    }
+}
+
+/* ===== INICIO: ESTILOS PARA NOTIFICACIONES ===== */
+
+/* ===== INICIO: ESTILOS PARA NOTIFICACIONES (Revisados) ===== */
+
+/* Contenedor general en el header de escritorio */
+.dashboard-content > .notification-bell-container {
+    position: absolute;
+    top: 25px;
+    right: 30px;
+    z-index: 100;
+}
+
+/* El icono de la campana */
+#notification-bell-icon {
+    font-size: 1.8em;
+    color: var(--login-primary-accent);
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
+}
+#notification-bell-icon:hover {
+    color: #fff;
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* El contador de notificaciones */
+.notification-count {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.8em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--login-card-bg); /* El color del fondo donde se apoya */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* El panel desplegable */
+.notification-panel {
+    position: absolute;
+    top: 140%;
+    right: 0;
+    width: 350px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: var(--login-card-bg);
+    border: 1px solid var(--login-input-border);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.95);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    z-index: 1000;
+}
+.notification-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* ... (El resto de los estilos del panel de notificaciones) ... */
+.notification-panel-header {
+    padding: 15px;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--login-primary-accent);
+    border-bottom: 1px solid var(--login-input-border);
+    background-color: rgba(0,0,0,0.2);
+}
+
+#notification-list {
+    padding: 0;
+    list-style: none;
+}
+
+.notification-item {
+    border-bottom: 1px solid var(--login-input-border);
+    transition: background-color 0.3s ease;
+}
+
+.notification-item a {
+    display: block;
+    padding: 15px;
+    text-decoration: none;
+}
+.notification-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread a {
+    background-color: rgba(197, 166, 134, 0.1);
+    border-left: 3px solid var(--login-primary-accent);
+    padding-left: 12px;
+}
+
+.notification-item p {
+    margin: 0 0 5px 0;
+    color: var(--primary-text-color);
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.notification-item .notification-time {
+    font-size: 0.8em;
+    color: var(--secondary-text-color);
+}
+
+.notification-item.no-notifications {
+    text-align: center;
+    color: var(--secondary-text-color);
+    padding: 25px 15px;
+}
+
+
+.mobile-header, .mobile-menu-toggle, .menu-overlay {
+    display: none; /* Oculto en escritorio por defecto */
+}
+
+.menu-overlay.active {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+}
+
+/* Media query para activar la vista móvil */
+@media (max-width: 768px) {
+    body {
+        padding: 0;
+    }
+
+    /* La nueva barra de navegación superior fija */
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15px;
+        height: 65px; /* Altura fija para la barra */
+        background-color: var(--login-card-bg);
+        border-bottom: 1px solid var(--border-color);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1010;
+    }
+
+    .mobile-header-brand {
+        font-family: var(--heading-font);
+        font-size: 1.2em;
+        color: var(--login-primary-accent);
+    }
+    
+    /* Botón de menú (hamburguesa) */
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--primary-text-color);
+        width: 45px;
+        height: 45px;
+        font-size: 1.5em;
+        cursor: pointer;
+        transition: color 0.3s, transform 0.3s;
+    }
+    .mobile-menu-toggle:hover {
+        color: var(--login-primary-accent);
+        transform: scale(1.1);
+    }
+
+    /* Menú lateral deslizable */
+    .dashboard-menu {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        width: 250px;
+        height: 100%;
+        z-index: 1050;
+        transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        border-right: 1px solid var(--border-color);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+    }
+    .dashboard-menu.menu-open {
+        left: 0;
+    }
+
+    /* Contenido principal */
+    .dashboard-layout {
+        width: 100%;
+        height: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+        border: none;
+        margin-top: 65px;
+    }
+    .dashboard-content {
+        padding: 20px 15px;
+    }
+
+    /* Icono de notificación dentro del header móvil */
+    .mobile-header .notification-bell-container {
+        position: relative;
+    }
+
+    .mobile-header .notification-count {
+        border-color: var(--login-card-bg);
+    }
+
+    .mobile-header .notification-panel {
+        position: fixed;
+        top: 60px;
+        right: 15px;
+        width: calc(100vw - 30px);
+        max-width: 400px;
+    }
+
+    /* Ocultar la campana de notificación del contenido principal en móvil */
+    .dashboard-content > .notification-bell-container {
+        display: none;
+    }
+}
+/* ===== FIN: ESTILOS ACTUALIZADOS ===== */
+
+/* ===== INICIO: ESTILOS PARA MODAL DE ALERTA DE CITA ===== */
+
+.alert-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 2000; /* Muy alto para estar por encima de todo */
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.alert-modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+}
+
+.alert-modal {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    background: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    padding: 30px;
+    transform: scale(0.9);
+    transition: transform 0.3s ease-in-out;
+}
+.alert-modal-overlay.active .alert-modal {
+    transform: scale(1);
+}
+
+.alert-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: var(--secondary-text-color);
+    font-size: 2em;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.3s, transform 0.3s;
+}
+.alert-modal-close:hover {
+    color: var(--primary-text-color);
+    transform: rotate(90deg);
+}
+
+.alert-modal h3 {
+    font-family: var(--heading-font);
+    color: var(--login-primary-accent);
+    margin-bottom: 10px;
+    font-size: 1.6em;
+    text-align: center;
+}
+
+.alert-modal #alert-modal-subtitle {
+    color: var(--secondary-text-color);
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 0.95em;
+}
+
+.alert-modal textarea {
+    width: 100%;
+    padding: 12px;
+    background: var(--login-input-bg);
+    border: 1px solid var(--login-input-border);
+    border-radius: 8px;
+    color: var(--login-input-text);
+    font-family: var(--primary-font);
+    font-size: 1em;
+    resize: vertical;
+    margin-bottom: 20px;
+    min-height: 100px;
+}
+
+.alert-modal a.whatsapp-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    text-decoration: none;
+    background: #25D366; /* Color de WhatsApp */
+    color: white;
+    font-weight: bold;
+}
+.alert-modal a.whatsapp-button:hover {
+    background: #1DAE50;
+    filter: none; /* Quitar filtro de brillo si lo hereda */
+}
+
+/* ===== FIN: NUEVOS ESTILOS PARA MODAL ===== */
+
+/* ===== INICIO: NUEVOS ESTILOS PARA MODAL DE CONFIRMACIÓN ===== */
+.confirmation-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+.confirmation-buttons .style-button {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #fff; /* Texto blanco para mayor contraste */
+}
+.confirmation-buttons .style-button.confirm-btn {
+    background: var(--success-color);
+}
+.confirmation-buttons .style-button.confirm-btn:hover {
+    background: var(--success-hover-color);
+    filter: brightness(1.1);
+}
+.confirmation-buttons .style-button.noshow-btn {
+    background: var(--danger-color);
+}
+.confirmation-buttons .style-button.noshow-btn:hover {
+    background: var(--danger-hover-color);
+    filter: brightness(1.1);
+}
+#confirmation-modal p {
+    text-align: center;
+    font-size: 1.1em;
+    color: var(--primary-text-color);
+    margin-bottom: 0;
+}
+/* ===== FIN: NUEVOS ESTILOS PARA MODAL DE CONFIRMACIÓN ===== */
+/* ===================================================================== */
+/* ===== INICIO: REGLAS PARA VISIBILIDAD DE CAMPANA DE NOTIFICACIÓN ==== */
+/* ===================================================================== */
+
+/* Contenedor de la campana en el contenido principal (Escritorio) */
+.dashboard-content .desktop-bell {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    z-index: 100;
+    display: block; /* Visible por defecto */
+}
+
+/* El header móvil y su campana */
+.mobile-header .mobile-bell {
+    position: relative;
+    display: none; /* Oculta por defecto */
+}
+
+/* En pantallas móviles (igual o menor a 768px de ancho) */
+@media (max-width: 768px) {
+    /* Ocultamos la campana de escritorio */
+    .dashboard-content .desktop-bell {
+        display: none;
+    }
+    
+    /* Mostramos la campana móvil */
+    .mobile-header .mobile-bell {
+        display: block;
+    }
+
+    /* Ajustamos el panel de notificaciones para la vista móvil */
+    .mobile-header .mobile-bell .notification-panel {
+        position: fixed;
+        top: 65px; /* Altura del header móvil */
+        right: 15px;
+        width: calc(100vw - 30px);
+        max-width: 400px;
+    }
+}
+
+/* MEJORA: Estilos para que los campos deshabilitados se vean correctamente */
+
+/* Estilo general para inputs deshabilitados */
+input:disabled,
+select:disabled,
+textarea:disabled {
+    background-color: #2a2a2a; /* Un fondo un poco más oscuro */
+    opacity: 0.5; /* Hacerlo semi-transparente */
+    cursor: not-allowed; /* Mostrar un cursor de "no permitido" */
+    border-color: var(--login-input-border);
+}
+
+/* Estilo específico para los precios de servicios deshabilitados */
+.service-item .service-price-input:disabled {
+    opacity: 0.4;
+    background-color: #333;
+}
+
+/* ================================================= */
+/* ===== INICIO: ESTILOS PARA NOTIFICACIÓN TOAST ===== */
+/* ================================================= */
+
+.toast-notification {
+    position: fixed; /* Para que se mantenga fija aunque se haga scroll */
+    top: 25px;
+    right: 25px;
+    background-color: var(--login-card-bg);
+    color: var(--primary-text-color);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--login-input-border);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
+    z-index: 9999; /* Un valor muy alto para que aparezca por encima de todo */
+    
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Espacio entre el icono y el texto */
+    
+    /* Para la animación de entrada y salida */
+    opacity: 0;
+    transform: translateX(110%); /* Empieza fuera de la pantalla a la derecha */
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s ease;
+}
+
+/* Cuando la notificación tiene la clase 'show', se hace visible */
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(0); /* Se mueve a su posición final */
+}
+
+/* Estilos para el icono dentro del toast */
+.toast-notification i {
+    font-size: 1.4em;
+    color: var(--login-primary-accent);
+}
+
+/* Estilos para el párrafo dentro del toast */
+.toast-notification p {
+    margin: 0; /* Quitamos el margen por defecto del párrafo */
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+/* ===== INICIO: ESTILOS PARA MODAL DE PAGO ===== */
+.payment-options { margin: 25px 0; }
+.payment-options p { font-size: 1.1em; color: var(--primary-text-color); margin-bottom: 15px; }
+.payment-options .radio-group { display: flex; align-items: center; margin-bottom: 15px; background-color: rgba(0,0,0,0.1); padding: 12px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: border-color 0.3s; }
+.payment-options .radio-group:hover { border-color: var(--login-input-border); }
+.payment-options input[type="radio"] { margin-right: 12px; transform: scale(1.3); accent-color: var(--login-primary-accent); cursor: pointer; }
+.payment-options label { display: flex; align-items: center; gap: 10px; font-size: 1.05em; color: var(--secondary-text-color); width: 100%; cursor: pointer; }
+#payment-deadline-container label.active {
+    top: -10px; left: 10px; font-size: 0.8em; color: var(--login-primary-accent); background-color: var(--container-bg); padding: 0 5px; opacity: 1; z-index: 1;
+}
+/* ===== FIN: ESTILOS PARA MODAL DE PAGO ===== */
+
+
+/* =============================================== */
+/* FIX DEFINITIVO PARA LA VISIBILIDAD DE LA CAMPANA */
+/* =============================================== */
+
+/* --- ESTADO POR DEFECTO (ESCRITORIO / PANTALLAS GRANDES) --- */
+/* Ocultamos la barra superior de móvil por completo */
+header.mobile-header {
+    display: none;
+}
+
+/* Mostramos la campana de escritorio y la posicionamos correctamente */
+.notification-bell-container.desktop-bell {
+    display: block; /* Aseguramos que sea visible */
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    z-index: 1000;
+}
+
+/* --- ESTADO PARA MÓVIL (PANTALLAS PEQUEÑAS) --- */
+@media (max-width: 768px) {
+    /* Mostramos la barra superior de móvil */
+    header.mobile-header {
+        display: flex; /* La hacemos visible y flexible */
+    }
+
+    /* Ocultamos por completo la campana de escritorio */
+    .notification-bell-container.desktop-bell {
+        display: none;
+    }
+}
+
+/* === INICIO: ESTILOS PARA BÚSQUEDA EN REPORTES === */
+.transaction-search-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: rgba(0,0,0,0.15);
+    border-radius: 8px;
+    border: 1px solid var(--login-input-border);
+}
+
+.search-input-wrapper {
+    position: relative;
+    flex-grow: 1;
+}
+
+.search-input-wrapper i.fas {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary-text-color);
+    font-size: 1em;
+}
+
+#transaction-search-input {
+    width: 100%;
+    padding: 10px 15px 10px 40px; /* Espacio para el icono */
+    font-size: 1em;
+    background-color: var(--login-input-bg);
+    border: 1px solid var(--login-input-border);
+    border-radius: 6px;
+    color: var(--login-input-text);
+    transition: all 0.3s ease;
+}
+
+#transaction-search-input:focus {
+    border-color: var(--login-primary-accent);
+    box-shadow: 0 0 0 3px rgba(197, 166, 134, 0.2);
+}
+
+.debt-filter-btn {
+    padding: 10px 15px;
+    font-size: 0.9em;
+    background: var(--secondary-text-color);
+    color: #fff;
+    text-transform: none; /* Quitar mayúsculas si las hereda */
+    letter-spacing: 0; /* Quitar espaciado si lo hereda */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.debt-filter-btn.active {
+    background: linear-gradient(135deg, var(--danger-color), #c62828);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(229, 115, 115, 0.3);
+}
+
+.debt-filter-btn i.fas {
+    transition: transform 0.3s ease;
+}
+
+.debt-filter-btn.active i.fas {
+    transform: scale(1.1);
+}
+/* === FIN: ESTILOS PARA BÚSQUEDA EN REPORTES === */
+
+/* ============================================================= */
+/* ===== ESTILOS PARA CALENDARIO RESPONSIVO Y MODAL (NUEVO) ===== */
+/* ============================================================= */
+
+/* Ajustes para el contenedor principal del calendario */
+.calendar-widget-container {
+    width: 100%;
+    max-width: none; /* Quitamos el ancho máximo que causaba el problema */
+}
+
+/* Estilos para el nuevo Modal de Acciones */
+#modal-selected-date-text {
+    color: var(--login-primary-accent);
+}
+
+#modal-content-view .back-button {
+    background: var(--secondary-text-color);
+    width: auto;
+    padding: 8px 15px;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+}
+
+.modal-content-viewer {
+    display: none; /* Ocultamos los visores por defecto */
+    margin-top: 15px;
+}
+
+.modal-content-viewer.active {
+    display: block;
+}
+
+#bookings-list .booking-item {
+    background-color: rgba(0,0,0,0.3);
+}
+
+/* --- Media Queries para hacer el calendario responsivo --- */
+@media (max-width: 480px) {
+    /* Hacemos los días de la semana más cortos en texto */
+    .calendar-week-days {
+        font-size: 0.8em;
+        padding: 10px 5px;
+    }
+    
+    /* Reducimos el padding y tamaño de los días */
+    .calendar-weeks .calendar-day {
+        padding: 6px 0;
+        line-height: 1.2em;
+        height: calc(1.2em + 12px); /* altura = padding*2 + line-height */
+        font-size: 0.9em;
+    }
+
+    .calendar-current-date h1 {
+        font-size: 1.1em;
+    }
+}
+
+@media (max-width: 380px) {
+    /* Para pantallas muy pequeñas, hacemos el texto aún más compacto */
+    .calendar-week-days {
+        font-size: 0.7em;
+    }
+    .calendar-weeks .calendar-day {
+        font-size: 0.8em;
+        height: calc(1.2em + 10px);
+        padding: 5px 0;
     }
 }
