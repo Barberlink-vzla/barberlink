@@ -1807,3 +1807,71 @@ header.mobile-header {
         padding: 5px 0;
     }
 }
+
+
+/* ============================================================= */
+/* ===== INICIO: MEJORA RESPONSIVE PARA MODAL DE ACCIONES    ===== */
+/* ============================================================= */
+
+/*
+ * Hacemos el modal de acciones de calendario más robusto para
+ * manejar contenido largo (como muchas citas en un día) en
+ * dispositivos móviles.
+ */
+#calendar-action-modal {
+    display: flex;
+    flex-direction: column;
+    /* Usamos vh (viewport height) para limitar la altura del modal
+       y asegurar que no se salga de la pantalla. */
+    max-height: 85vh;
+    padding: 20px; /* Reducimos padding en móvil */
+}
+
+/* El título del modal y la vista de botones inicial no deben crecer. */
+#calendar-action-modal-title,
+#modal-action-buttons-view {
+    flex-shrink: 0;
+}
+
+/*
+ * Este es el contenedor principal del contenido (citas o editor de horario).
+ * Lo hacemos crecer para ocupar el espacio disponible y le permitimos
+ * tener su propia barra de scroll si el contenido se desborda.
+ */
+#modal-content-view {
+    flex-grow: 1; /* Permite que este elemento ocupe el espacio sobrante */
+    overflow-y: auto; /* AÑADE LA BARRA DE SCROLL VERTICAL CUANDO SEA NECESARIO */
+    min-height: 0; /* Un truco de flexbox para que overflow funcione correctamente */
+    margin-top: 15px; /* Espacio respecto al botón de "Volver" */
+    padding-right: 10px; /* Espacio para la barra de scroll para que no pegue al borde */
+}
+
+/* Hacemos un poco más pequeño el botón de volver */
+#modal-content-view .back-button {
+    margin-bottom: 15px;
+    padding: 8px 12px;
+}
+
+/* Personalización de la barra de scroll para un look más integrado (opcional pero bueno) */
+#modal-content-view::-webkit-scrollbar {
+    width: 8px;
+}
+
+#modal-content-view::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+#modal-content-view::-webkit-scrollbar-thumb {
+    background-color: var(--login-input-border);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+#modal-content-view::-webkit-scrollbar-thumb:hover {
+    background-color: var(--login-primary-accent);
+}
+
+/* ===== FIN: MEJORA RESPONSIVE PARA MODAL DE ACCIONES      ===== */
+/* ============================================================= */
