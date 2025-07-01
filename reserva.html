@@ -4,95 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reservar Cita</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    </head>
-<body class="booking-page"> <div class="container booking-container"> <div class="barber-image-header" id="booking-barber-image-header" style="display: none;">
-            <img src="" alt="Foto del Barbero" id="booking-barber-image">
-        </div>
-        <h1 id="barber-name-title">Reservar Cita con</h1>
+</head>
+<body class="booking-page">
 
+    <div class="container booking-container">
+        <div class="barber-image-header">
+            <img id="barber-profile-img" src="" alt="Foto del Barbero">
+        </div>
+        <h1 id="barber-name-title">Reservar con [Barbero]</h1>
+        
         <div class="progress-bar-container">
-            <div class="progress-bar-step active" data-step-name="Servicio y Fecha">1</div>
+            <div class="progress-bar-step active" data-step="1" data-step-name="Servicio">1</div>
             <div class="progress-bar-line"></div>
-            <div class="progress-bar-step" data-step-name="Hora">2</div>
+            <div class="progress-bar-step" data-step="2" data-step-name="Fecha y Hora">2</div>
             <div class="progress-bar-line"></div>
-            <div class="progress-bar-step" data-step-name="Tus Datos">3</div>
+            <div class="progress-bar-step" data-step="3" data-step-name="Tus Datos">3</div>
             <div class="progress-bar-line"></div>
-            <div class="progress-bar-step" data-step-name="Confirmar">4</div>
+            <div class="progress-bar-step" data-step="4" data-step-name="Confirmar">4</div>
         </div>
 
         <form id="barberBookingForm">
-            <div class="form-step active-step" id="step1">
-                <h2>Elige Servicio y Fecha</h2>
+            <div id="step-1" class="form-step active-step">
+                <h2>1. Elige tu Servicio</h2>
                 <div class="input-group">
-                    <select id="service-select" name="service-select" required>
-                        <option value="" disabled selected>-- Elige un servicio --</option>
+                    <select id="service-select" required>
+                        <option value="" disabled selected>Cargando servicios...</option>
                     </select>
-                    <label for="service-select" class="static-label">Servicio</label>
-                </div>
-                <div class="input-group">
-                    <input type="date" id="date-picker" name="date-picker" required placeholder=" ">
-                    <label for="date-picker">Fecha</label>
                 </div>
                 <div class="navigation-buttons">
-                    <button type="button" class="next-btn style-button">Siguiente &rarr;</button>
+                    <button type="button" class="style-button" id="next-step-1">Siguiente <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
 
-            <div class="form-step" id="step2">
-                <h2>Selecciona la Hora</h2>
+            <div id="step-2" class="form-step">
+                <h2>2. Elige Fecha y Hora</h2>
                 <div class="input-group">
-                     <select id="time-select" name="time-select" required disabled>
-                        <option value="" disabled selected>-- Elige una fecha primero --</option>
+                    <input type="date" id="booking-date" required>
+                    <label for="booking-date">Fecha de la cita</label>
+                </div>
+                <div class="input-group">
+                    <select id="time-select" required disabled>
+                        <option value="">Selecciona una fecha primero</option>
                     </select>
-                    <label for="time-select" class="static-label">Hora</label>
+                    <label for="time-select">Hora disponible</label>
                 </div>
                 <div class="navigation-buttons">
-                    <button type="button" class="prev-btn style-button">&larr; Atrás</button>
-                    <button type="button" class="next-btn style-button">Siguiente &rarr;</button>
+                    <button type="button" class="style-button" id="prev-step-2"><i class="fas fa-arrow-left"></i> Anterior</button>
+                    <button type="button" class="style-button" id="next-step-2">Siguiente <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
 
-            <div class="form-step" id="step3">
-                <h2>Tus Datos de Contacto</h2>
-                <div class="input-group">
-                    <input type="text" id="cliente-nombre" name="cliente-nombre" required placeholder=" ">
-                    <label for="cliente-nombre">Nombre</label>
+            <div id="step-3" class="form-step">
+                <h2>3. Tus Datos</h2>
+                <p class="step-instructions">Escribe tu nombre para buscarte en nuestros clientes o para registrarte si eres nuevo.</p>
+                
+                <div class="autocomplete-container">
+                    <div class="input-group">
+                        <input type="text" id="cliente-search" name="cliente_search" placeholder=" " autocomplete="off">
+                        <label for="cliente-search">Nombre y Apellido</label>
+                    </div>
+                    <div id="cliente-results-list" class="autocomplete-results"></div>
                 </div>
+
                 <div class="input-group">
-                    <input type="text" id="cliente-apellido" name="cliente-apellido" placeholder=" ">
-                    <label for="cliente-apellido">Apellido (Opcional)</label>
+                    <input type="tel" id="cliente_telefono" name="cliente_telefono" placeholder=" " required>
+                    <label for="cliente_telefono">Teléfono (ej: 04121234567)</label>
                 </div>
-                <div class="input-group">
-                    <input type="tel" id="cliente-telefono" name="cliente-telefono" required placeholder=" ">
-                    <label for="cliente-telefono">Teléfono (WhatsApp)</label>
-                </div>
+
                 <div class="navigation-buttons">
-                    <button type="button" class="prev-btn style-button">&larr; Atrás</button>
-                    <button type="button" class="next-btn style-button">Ver Resumen &rarr;</button>
+                    <button type="button" class="style-button" id="prev-step-3"><i class="fas fa-arrow-left"></i> Anterior</button>
+                    <button type="button" class="style-button" id="next-step-3">Siguiente <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
 
-            <div class="form-step" id="step4">
-                <h2>Resumen de tu Cita</h2>
+            <div id="step-4" class="form-step">
+                <h2>4. Confirma tu Cita</h2>
                 <div id="booking-summary">
-                    <p><strong>Barbero:</strong> <span id="summary-barber-name"></span></p>
-                    <p><strong>Cliente:</strong> <span id="summary-client-name"></span></p>
-                    <p><strong>Teléfono:</strong> <span id="summary-client-phone"></span></p>
-                    <p><strong>Servicio:</strong> <span id="summary-service"></span></p>
-                    <p><strong>Precio Aprox:</strong> $<span id="summary-price"></span></p>
-                    <p><strong>Fecha:</strong> <span id="summary-date"></span></p>
-                    <p><strong>Hora:</strong> <span id="summary-time"></span></p>
+                    <p>Cargando resumen...</p>
                 </div>
                 <div class="navigation-buttons">
-                    <button type="button" class="prev-btn style-button">&larr; Atrás</button>
-                    <button type="button" id="submitWhatsapp" class="style-button">Reservar y Confirmar por WhatsApp</button>
+                    <button type="button" class="style-button" id="prev-step-4"><i class="fas fa-arrow-left"></i> Anterior</button>
+                    <button type="submit" class="style-button">Confirmar Reserva</button>
                 </div>
             </div>
         </form>
-        <p id="booking-status"></p> <div id="whatsapp-link-container"></div> </div>
+        
+        <div id="booking-success-message" style="display: none; text-align: center; padding: 20px; background: var(--login-card-bg); border-radius: 8px; margin-top: 20px;">
+            <h2>¡Reserva Exitosa!</h2>
+            <p>Tu cita ha sido registrada. Recibirás una notificación por WhatsApp para confirmar.</p>
+            <p><strong>Por favor, haz clic en el botón de abajo para enviar el mensaje de confirmación al barbero.</strong></p>
+            <div id="whatsapp-link-container">
+                </div>
+        </div>
+
+        <p id="booking-status" class="status-message"></p>
+
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabaseClient.js"></script>
     <script src="js/reserva.js"></script>
 </body>
 </html>
