@@ -102,12 +102,15 @@ async function initProfileModule() {
             showConfirmationModal(e.detail.cita);
         }
     });
+
+    // Listener para acciones genéricas de navegación a una fecha
     document.addEventListener('navigateToDate', (e) => {
         if (e.detail && e.detail.dateString) {
             navigateToDateFromNotification(e.detail.dateString);
         }
     });
      
+    // Listener para refrescar datos cuando hay una nueva reserva
     document.addEventListener('datosCambiadosPorReserva', () => {
         console.log('Cambio en datos de reservas detectado. Recargando estadísticas...');
         
@@ -120,6 +123,54 @@ async function initProfileModule() {
             loadReportData(period);
         }
     });
+    
+    // =========================================================================
+    // ===== INICIO: CÓDIGO AÑADIDO PARA LA NUEVA FUNCIONALIDAD =====
+    // =========================================================================
+    // Listener para ir directamente a los detalles de la reserva desde una notificación
+    document.addEventListener('showBookingDetailsForDate', async (e) => {
+        if (!e.detail || !e.detail.dateString) return;
+
+        const dateString = e.detail.dateString;
+        const targetDate = new Date(dateString + 'T12:00:00');
+        const dayOfWeek = targetDate.getDay();
+
+        // 1. Cambia a la pestaña "Reservas" si no está activa.
+        const reservasLink = document.querySelector('.menu-link[data-target="reservas"]');
+        if (reservasLink && !reservasLink.classList.contains('active')) {
+            reservasLink.click();
+            // Espera un momento para que la sección cargue.
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // 2. Asegura que el calendario esté mostrando el mes correcto.
+        const isSameMonthView = targetDate.getFullYear() === currentCalendarDate.getFullYear() && targetDate.getMonth() === currentCalendarDate.getMonth();
+        if (!isSameMonthView) {
+            currentCalendarDate = targetDate;
+            await fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+        }
+        
+        // 3. Marca el día en el calendario para dar contexto visual.
+        document.querySelectorAll('.calendar-day.selected-day').forEach(d => d.classList.remove('selected-day'));
+        const dayElement = document.querySelector(`.calendar-day[data-date="${dateString}"]`);
+        if(dayElement) {
+            dayElement.classList.add('selected-day');
+            dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // 4. Abre el modal directamente en la vista de citas.
+        showCalendarActionModal(dateString, dayOfWeek);
+        document.getElementById('modal-action-buttons-view').style.display = 'none';
+        document.getElementById('modal-content-view').style.display = 'block';
+        const viewer = document.querySelector('.modal-content-viewer[data-viewer="bookings"]');
+        viewer.classList.add('active');
+        
+        // 5. Carga y muestra las citas de ese día.
+        loadAndRenderBookingsForDate(dateString);
+    });
+    // =========================================================================
+    // ===== FIN DEL CÓDIGO AÑADIDO ============================================
+    // =========================================================================
 }
 
 // --- LÓGICA DE CARGA DE DATOS ---
