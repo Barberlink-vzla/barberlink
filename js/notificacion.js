@@ -194,37 +194,41 @@ document.addEventListener('DOMContentLoaded', () => {
         return `hace ${Math.floor(seconds)} seg`;
     }
 
-    function setupEventListeners() {
-        document.body.addEventListener('click', (e) => {
-            const bellContainer = e.target.closest('.notification-bell-container');
-            const clickedPanel = e.target.closest('.notification-panel');
+  function setupEventListeners() {
+    document.body.addEventListener('click', (e) => {
+        const bellContainer = e.target.closest('.notification-bell-container');
+        const clickedPanel = e.target.closest('.notification-panel');
 
-            if (bellContainer && !clickedPanel) {
-                const panel = bellContainer.querySelector('.notification-panel');
-                const isVisible = panel.classList.toggle('show');
-                if (isVisible) {
-                    markNotificationsAsRead();
-                }
-            } else if (!clickedPanel) {
-                document.querySelectorAll('.notification-panel.show').forEach(panel => panel.classList.remove('show'));
+        if (bellContainer && !clickedPanel) {
+            const panel = bellContainer.querySelector('.notification-panel');
+            const isVisible = panel.classList.toggle('show');
+            if (isVisible) {
+                markNotificationsAsRead();
             }
+        } else if (!clickedPanel) {
+            document.querySelectorAll('.notification-panel.show').forEach(panel => panel.classList.remove('show'));
+        }
 
-            const link = e.target.closest('.notification-link');
-            if (link) {
-                e.preventDefault();
-                const notifIndex = parseInt(link.dataset.index, 10);
-                const notification = allNotifications[notifIndex];
-                if (!notification) return;
+        const link = e.target.closest('.notification-link');
+        if (link) {
+            e.preventDefault();
+            const notifIndex = parseInt(link.dataset.index, 10);
+            const notification = allNotifications[notifIndex];
+            if (!notification) return;
 
-                if (notification.tipo === 'confirmacion_asistencia' && notification.cita) {
-                    document.dispatchEvent(new CustomEvent('showConfirmationModal', { detail: { cita: notification.cita } }));
-                } else if (notification.cita && notification.cita.fecha_cita) {
-                    document.dispatchEvent(new CustomEvent('navigateToDate', { detail: { dateString: notification.cita.fecha_cita } }));
-                }
-                document.querySelectorAll('.notification-panel.show').forEach(panel => panel.classList.remove('show'));
+            // ===== INICIO DE LA MEJORA =====
+            if (notification.tipo === 'confirmacion_asistencia' && notification.cita) {
+                document.dispatchEvent(new CustomEvent('showConfirmationModal', { detail: { cita: notification.cita } }));
+            } else if (notification.cita && notification.cita.fecha_cita) {
+                // Se envía un nuevo evento más específico para ir directo a los detalles.
+                document.dispatchEvent(new CustomEvent('showBookingDetailsForDate', { detail: { dateString: notification.cita.fecha_cita } }));
             }
-        });
-    }
+            // ===== FIN DE LA MEJORA =====
+
+            document.querySelectorAll('.notification-panel.show').forEach(panel => panel.classList.remove('show'));
+        }
+    });
+}
 
     // --- Iniciar el Módulo ---
     initNotifications();
