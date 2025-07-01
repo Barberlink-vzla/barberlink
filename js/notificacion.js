@@ -3,9 +3,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Variables de Estado ---
     let currentUserId = null;
-    let notificationChannel = null;
+    let notificationChannel = null; // Guardará la referencia al canal de Realtime
     let allNotifications = [];
-    let reconnectionTimer = null; // Para controlar los intentos de reconexión
 
     // --- Elementos del DOM ---
     const bellContainers = document.querySelectorAll('.notification-bell-container');
@@ -22,12 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setupEventListeners();
         
-        // Escucha cambios en la sesión de autenticación
         supabaseClient.auth.onAuthStateChange((event, session) => {
             handleAuthStateChange(session);
         });
 
-        // Manejar el estado inicial de la sesión
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
             handleAuthStateChange(session);
         });
@@ -41,13 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentUserId) {
                 console.log("👤 ID de usuario capturado:", currentUserId);
                 loadInitialNotifications();
-                setupRealtimeConnection(); // Usamos la nueva función robusta
+                // ===== MODIFICACIÓN: Nos suscribimos al canal de Broadcast =====
+                setupBroadcastListener();
             } else {
-                // Si el usuario cierra sesión, nos aseguramos de limpiar todo
                 console.log("👤 Usuario cerró sesión. Limpiando notificaciones.");
-                clearRealtimeConnection();
                 allNotifications = [];
                 renderNotifications();
+                // ===== MODIFICACIÓN: Nos desuscribimos del canal =====
+                clearBroadcastListener();
             }
         }
     }
@@ -92,79 +90,64 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- LÓGICA DE TIEMPO REAL (MEJORADA) ---
-
+    // ======================================================================
+    // ===== INICIO DE LA NUEVA LÓGICA DE BROADCAST (REEMPLAZA A POLLING) =====
+    // ======================================================================
+    
     /**
-     * Limpia la conexión de tiempo real existente de forma segura.
+     * Se desuscribe de cualquier canal activo.
      */
-    function clearRealtimeConnection() {
-        if (reconnectionTimer) {
-            clearTimeout(reconnectionTimer);
-            reconnectionTimer = null;
-        }
+    function clearBroadcastListener() {
         if (notificationChannel) {
-            supabaseClient.removeChannel(notificationChannel)
-                .then(() => console.log("🔌 Canal de notificaciones anterior removido."))
-                .catch(error => console.error("Error al remover canal:", error));
+            supabaseClient.removeChannel(notificationChannel);
             notificationChannel = null;
+            console.log("🔌 Desuscrito del canal de notificaciones.");
         }
     }
 
     /**
-     * Configura y suscribe al canal de notificaciones de forma robusta.
+     * Se suscribe al canal de Broadcast para recibir notificaciones en tiempo real.
      */
+    function setupBroadcastListener() {
+        clearBroadcastListener(); // Asegurarnos de limpiar cualquier suscripción anterior
+        if (!currentUserId) return;
 
+        const channelName = `notifications-channel-for-${currentUserId}`;
+        notificationChannel = supabaseClient.channel(channelName);
 
-function setupRealtimeConnection() {
-    clearRealtimeConnection(); // Limpiamos cualquier conexión anterior
-    if (!currentUserId) return;
-
-    const channelName = `realtime-notifications-for-${currentUserId}`; // Un nombre único para este canal
-    console.log(`📡 Sintonizando canal de Base de Datos: ${channelName}`);
-
-    notificationChannel = supabaseClient
-        .channel(channelName)
-        .on(
-            'postgres_changes', // Escuchamos cambios en la base de datos
-            { 
-                event: 'INSERT', // Específicamente para nuevas filas
-                schema: 'public', 
-                table: 'notificaciones', // En la tabla de notificaciones
-                filter: `barbero_id=eq.${currentUserId}` // Solo para este barbero
-            },
-            (payload) => {
-                console.log('🎉 ¡Cambio en DB detectado! Nueva notificación recibida:', payload);
-                const newNotification = payload.new;
-                
-                // 1. Añadimos la nueva notificación al inicio de la lista en memoria
-                allNotifications.unshift(newNotification);
-
-                // 2. Volvemos a renderizar toda la UI de notificaciones
-                renderNotifications();
-
-                // 3. Mostramos una alerta "toast" en la esquina
-                showToastNotification(newNotification);
-
-                // 4. Notificamos a otros módulos para que refresquen sus datos
-                document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
-            }
-        )
-        .subscribe((status, err) => {
-            console.log(`🚦 Estado del canal de DB: ${status}`);
-            if (status === 'SUBSCRIBED') {
-                console.log('✅ ¡Suscripción a cambios de DB exitosa!');
-                if (reconnectionTimer) {
-                    clearTimeout(reconnectionTimer);
-                    reconnectionTimer = null;
+        notificationChannel
+            .on(
+                'broadcast',
+                { event: 'new-notification' }, // Escuchamos el evento específico que enviamos
+                (message) => {
+                    console.log('🎉 ¡Broadcast recibido!', message);
+                    
+                    // El `message.payload` contiene el objeto que enviamos desde reserva.js
+                    const newNotification = message.payload.payload;
+                    
+                    // Añadimos la nueva notificación al inicio del array
+                    allNotifications.unshift(newNotification);
+                    
+                    // Actualizamos toda la UI
+                    renderNotifications();
+                    showToastNotification(newNotification);
+                    
+                    // Notificamos a otros módulos para que refresquen sus datos (como los reportes)
+                    document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
                 }
-            }
-            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                console.error(`❌ Error en el canal de DB: ${status}.`, err || '');
-            }
-        });
-}
-    
-    // --- Funciones de Utilidad ---
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log(`✅ Suscrito exitosamente al canal de broadcast: ${channelName}`);
+                }
+            });
+    }
+
+    // ====================================================================
+    // ===== FIN DE LA NUEVA LÓGICA DE BROADCAST =====
+    // ====================================================================
+
+    // --- Funciones de Utilidad (sin cambios) ---
 
     async function markNotificationsAsRead() {
         const unreadIds = allNotifications.filter(n => !n.leido).map(n => n.id);
