@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!currentUserId) return;
 
-        const channelName = `notifications-for-${currentUserId}`;
+        const channelName = `notifications-for-user-${currentUserId}`;
         console.log(`📡 Sintonizando nuevo canal: ${channelName}`);
 
         notificationChannel = supabaseClient.channel(channelName, {
