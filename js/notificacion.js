@@ -38,13 +38,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentUserId) {
                 console.log("👤 ID de usuario capturado:", currentUserId);
                 loadInitialNotifications();
-                // ===== MODIFICACIÓN: Nos suscribimos al canal de Broadcast =====
+                // ===== NOS SUSCRIBIMOS AL CANAL DE BROADCAST =====
                 setupBroadcastListener();
             } else {
                 console.log("👤 Usuario cerró sesión. Limpiando notificaciones.");
                 allNotifications = [];
                 renderNotifications();
-                // ===== MODIFICACIÓN: Nos desuscribimos del canal =====
+                // ===== NOS DESUSCRIBIMOS DEL CANAL =====
                 clearBroadcastListener();
             }
         }
@@ -91,12 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ======================================================================
-    // ===== INICIO DE LA NUEVA LÓGICA DE BROADCAST (REEMPLAZA A POLLING) =====
+    // ===== LÓGICA DE BROADCAST =====
     // ======================================================================
     
-    /**
-     * Se desuscribe de cualquier canal activo.
-     */
     function clearBroadcastListener() {
         if (notificationChannel) {
             supabaseClient.removeChannel(notificationChannel);
@@ -105,11 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Se suscribe al canal de Broadcast para recibir notificaciones en tiempo real.
-     */
     function setupBroadcastListener() {
-        clearBroadcastListener(); // Asegurarnos de limpiar cualquier suscripción anterior
+        clearBroadcastListener(); 
         if (!currentUserId) return;
 
         const channelName = `notifications-channel-for-${currentUserId}`;
@@ -118,34 +112,28 @@ document.addEventListener('DOMContentLoaded', () => {
         notificationChannel
             .on(
                 'broadcast',
-                { event: 'new-notification' }, // Escuchamos el evento específico que enviamos
+                { event: 'new-notification' },
                 (message) => {
                     console.log('🎉 ¡Broadcast recibido!', message);
-                    
-                    // El `message.payload` contiene el objeto que enviamos desde reserva.js
                     const newNotification = message.payload.payload;
                     
-                    // Añadimos la nueva notificación al inicio del array
                     allNotifications.unshift(newNotification);
                     
-                    // Actualizamos toda la UI
                     renderNotifications();
                     showToastNotification(newNotification);
                     
-                    // Notificamos a otros módulos para que refresquen sus datos (como los reportes)
                     document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
                 }
             )
-            .subscribe((status) => {
+            .subscribe((status, err) => {
                 if (status === 'SUBSCRIBED') {
                     console.log(`✅ Suscrito exitosamente al canal de broadcast: ${channelName}`);
                 }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('Error en el canal de broadcast:', err);
+                }
             });
     }
-
-    // ====================================================================
-    // ===== FIN DE LA NUEVA LÓGICA DE BROADCAST =====
-    // ====================================================================
 
     // --- Funciones de Utilidad (sin cambios) ---
 
