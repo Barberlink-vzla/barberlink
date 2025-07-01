@@ -285,6 +285,7 @@ async function handleBookingSubmit(e) {
             estado: 'pendiente'
         };
 
+        // 1. Guardar la cita en la base de datos (esto no cambia, es para la robustez)
         const { data: bookingResult, error: bookingError } = await supabaseClient
             .from('citas')
             .insert(bookingData)
@@ -302,14 +303,11 @@ async function handleBookingSubmit(e) {
             throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
         }
         
-        // ================== INICIO DE LA CORRECCIÓN ✅ ==================
-        // Hemos quitado el código de "broadcast" y lo reemplazamos por esto.
-        // Ahora guardamos la notificación de forma persistente.
-        
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
         const notificationMessage = `¡Nueva reserva! ${bookingResult.cliente_nombre} agendó un ${serviceName}.`;
 
-        const { error: notifError } = await supabaseClient
+        // 2. Guardar la notificación en la base de datos (esto tampoco cambia)
+        const { data: persistentNotification, error: notifError } = await supabaseClient
             .from('notificaciones')
             .insert({
                 barbero_id: barberId,
@@ -317,14 +315,41 @@ async function handleBookingSubmit(e) {
                 mensaje: notificationMessage,
                 tipo: 'nueva_reserva',
                 leido: false
-            });
+            })
+            .select()
+            .single();
 
         if (notifError) {
-            // No detenemos el flujo del cliente, pero sí lo registramos.
             console.error("Error al crear la notificación persistente:", notifError);
         }
-        // =================== FIN DE LA CORRECCIÓN ====================
 
+        // =============================================================
+        // ===== INICIO DE LA MODIFICACIÓN: ENVIAR BROADCAST REALTIME =====
+        // =============================================================
+        // Creamos un canal único para el barbero. Es crucial que el nombre sea el mismo que escucha el barbero.
+        const channel = supabaseClient.channel(`notifications-channel-for-${barberId}`);
+
+        // Preparamos el mensaje de broadcast. Debe ser ligero y con la información necesaria para el "toast".
+        const broadcastPayload = {
+            event: 'nueva_reserva',
+            payload: {
+                id: persistentNotification.id,
+                created_at: persistentNotification.created_at,
+                mensaje: notificationMessage,
+                tipo: 'nueva_reserva'
+            }
+        };
+        
+        // Enviamos el mensaje por el canal.
+        channel.send({
+            type: 'broadcast',
+            event: 'new-notification', // Un nombre para el tipo de evento
+            payload: broadcastPayload,
+        });
+        console.log(`🚀 Mensaje de Broadcast enviado al canal: notifications-channel-for-${barberId}`);
+        // =============================================================
+        // ===== FIN DE LA MODIFICACIÓN: ENVIAR BROADCAST REALTIME =====
+        // =============================================================
 
         form.style.display = 'none';
         successMessageContainer.style.display = 'block';
@@ -339,7 +364,7 @@ async function handleBookingSubmit(e) {
         fetchAvailability(dateInput.value);
     }
 };
-    
+
     const generateWhatsAppLink = (booking) => {
         const barberPhone = barberData.telefono.replace(/\D/g, '');
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
