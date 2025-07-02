@@ -102,15 +102,12 @@ async function initProfileModule() {
             showConfirmationModal(e.detail.cita);
         }
     });
-
-    // Listener para acciones genéricas de navegación a una fecha
     document.addEventListener('navigateToDate', (e) => {
         if (e.detail && e.detail.dateString) {
             navigateToDateFromNotification(e.detail.dateString);
         }
     });
      
-    // Listener para refrescar datos cuando hay una nueva reserva
     document.addEventListener('datosCambiadosPorReserva', () => {
         console.log('Cambio en datos de reservas detectado. Recargando estadísticas...');
         
@@ -123,54 +120,6 @@ async function initProfileModule() {
             loadReportData(period);
         }
     });
-    
-    // =========================================================================
-    // ===== INICIO: CÓDIGO AÑADIDO PARA LA NUEVA FUNCIONALIDAD =====
-    // =========================================================================
-    // Listener para ir directamente a los detalles de la reserva desde una notificación
-    document.addEventListener('showBookingDetailsForDate', async (e) => {
-        if (!e.detail || !e.detail.dateString) return;
-
-        const dateString = e.detail.dateString;
-        const targetDate = new Date(dateString + 'T12:00:00');
-        const dayOfWeek = targetDate.getDay();
-
-        // 1. Cambia a la pestaña "Reservas" si no está activa.
-        const reservasLink = document.querySelector('.menu-link[data-target="reservas"]');
-        if (reservasLink && !reservasLink.classList.contains('active')) {
-            reservasLink.click();
-            // Espera un momento para que la sección cargue.
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        // 2. Asegura que el calendario esté mostrando el mes correcto.
-        const isSameMonthView = targetDate.getFullYear() === currentCalendarDate.getFullYear() && targetDate.getMonth() === currentCalendarDate.getMonth();
-        if (!isSameMonthView) {
-            currentCalendarDate = targetDate;
-            await fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-        }
-        
-        // 3. Marca el día en el calendario para dar contexto visual.
-        document.querySelectorAll('.calendar-day.selected-day').forEach(d => d.classList.remove('selected-day'));
-        const dayElement = document.querySelector(`.calendar-day[data-date="${dateString}"]`);
-        if(dayElement) {
-            dayElement.classList.add('selected-day');
-            dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
-        // 4. Abre el modal directamente en la vista de citas.
-        showCalendarActionModal(dateString, dayOfWeek);
-        document.getElementById('modal-action-buttons-view').style.display = 'none';
-        document.getElementById('modal-content-view').style.display = 'block';
-        const viewer = document.querySelector('.modal-content-viewer[data-viewer="bookings"]');
-        viewer.classList.add('active');
-        
-        // 5. Carga y muestra las citas de ese día.
-        loadAndRenderBookingsForDate(dateString);
-    });
-    // =========================================================================
-    // ===== FIN DEL CÓDIGO AÑADIDO ============================================
-    // =========================================================================
 }
 
 // --- LÓGICA DE CARGA DE DATOS ---
@@ -440,7 +389,7 @@ async function handleWalkInSubmit(e) {
 
         if (clientError) throw new Error(`Error al guardar cliente: ${clientError.message}`);
         
-        // Se notifica a otros módulos (como la lista de clientes) que un cliente pudo haber cambiado.
+        // Notifica a otros módulos que un cliente pudo haber cambiado.
         document.dispatchEvent(new CustomEvent('clientListChanged'));
         
         const now = new Date();
@@ -457,7 +406,7 @@ async function handleWalkInSubmit(e) {
             fecha_cita: toLocalISODate(now),
             hora_inicio_cita: startTime,
             hora_fin_cita: endTime,
-            estado: APPOINTMENT_STATUS.IN_PROGRESS, // Se marca como "en proceso"
+            estado: APPOINTMENT_STATUS.IN_PROGRESS, // Se marca como "en proceso" directamente
             metodo_pago: null,
             estado_pago: 'pendiente',
             // ================== INICIO DE LA CORRECCIÓN ==================
@@ -473,10 +422,13 @@ async function handleWalkInSubmit(e) {
 
         if (citaError) throw new Error(`Error al crear la cita: ${citaError.message}`);
 
+        // Añadimos la cita al set de "ya notificadas" para que el sistema no intente cobrarle inmediatamente.
+        promptedConfirmationIds.add(insertedCita.id);
+        
         walkInStatus.textContent = '¡Servicio iniciado! El pago se solicitará al finalizar.';
         walkInStatus.className = 'status-message success';
         
-        // Se notifica al dashboard y a los reportes que los datos han cambiado.
+        // Notifica al dashboard y a los reportes que los datos han cambiado.
         document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
 
         setTimeout(() => {
@@ -491,6 +443,7 @@ async function handleWalkInSubmit(e) {
         submitBtn.disabled = false;
     }
 }
+
 async function checkUpcomingAppointments() {
     if (!currentUserId) return;
     const now = new Date();
@@ -556,49 +509,63 @@ function setupAlertModalListeners() {
 
 
 // ===== SECCIÓN DE CONFIRMACIÓN DE ASISTENCIA (MODAL DE CONFIRMACIÓN) =====
+
+
 function startConfirmationChecker() {
     if (confirmationCheckInterval) clearInterval(confirmationCheckInterval);
+
+    // Ejecuta la verificación una vez al cargar la página
     checkAppointmentsForConfirmation();
-    confirmationCheckInterval = setInterval(checkAppointmentsForConfirmation, 60000); // Se ejecuta cada minuto
+    
+    // ANTES:
+    // confirmationCheckInterval = setInterval(checkAppointmentsForConfirmation, 60000); 
+
+    // AHORA (MÁS FRECUENTE):
+    // Se ejecuta cada 15 segundos para una experiencia en tiempo real.
+    confirmationCheckInterval = setInterval(checkAppointmentsForConfirmation, 15000);
 }
 
 // =========================================================================
 // INICIO DE LA MEJORA: El modal de confirmación ahora aparece al finalizar el servicio.
 // =========================================================================
-// REEMPLAZA ESTA FUNCIÓN EN js/barberProfile.js
+
 
 async function checkAppointmentsForConfirmation() {
     if (!currentUserId) return;
+
     const now = new Date();
-    
-    // ================== INICIO DE LA CORRECCIÓN ==================
-    // Se simplifica y robustece la consulta para traer todos los campos (*) de la cita.
+    const today = toLocalISODate(now); // Asegura el formato YYYY-MM-DD local
+
+    // Buscamos citas de hoy que estén pendientes de alguna acción.
     const { data: citas, error } = await supabaseClient
         .from('citas')
-        .select('*') // Traemos todos los campos para asegurar que `precio_final` esté presente.
+        .select('*') // Traemos todos los campos para tener el precio, etc.
         .eq('barbero_id', currentUserId)
-        .eq('fecha_cita', toLocalISODate(now)) 
-        .in('estado', [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.IN_PROGRESS]);
-    // =================== FIN DE LA CORRECCIÓN ====================
-        
+        .eq('fecha_cita', today)
+        .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.IN_PROGRESS]);
+
     if (error) {
-        console.error("Error buscando citas de hoy para confirmación:", error);
+        console.error("Error buscando citas para confirmación:", error);
         return;
     }
+
     if (!citas) return;
 
     for (const cita of citas) {
-        // La lógica de la fecha de finalización puede fallar si la hora es null, añadimos un fallback.
-        const endTimeString = cita.hora_fin_cita || '00:00:00';
-        const appointmentEndTime = new Date(`${cita.fecha_cita}T${endTimeString}`);
+        if (promptedConfirmationIds.has(cita.id)) continue; // Si ya se mostró un modal para esta cita, la saltamos.
 
-        if (now >= appointmentEndTime) {
-            if (!promptedConfirmationIds.has(cita.id)) {
-                showConfirmationModal(cita);
-                // La creación de la notificación se mueve a una función más robusta
-                await createConfirmationNotification(cita);
-                promptedConfirmationIds.add(cita.id);
-            }
+        const startTime = new Date(`${cita.fecha_cita}T${cita.hora_inicio_cita}`);
+        const endTime = new Date(`${cita.fecha_cita}T${cita.hora_fin_cita}`);
+
+        // CASO 1: La cita está por empezar. Es hora de preguntar si el cliente LLEGÓ.
+        if ((cita.estado === APPOINTMENT_STATUS.PENDING || cita.estado === APPOINTMENT_STATUS.CONFIRMED) && now >= startTime) {
+            showConfirmationModal(cita);
+            promptedConfirmationIds.add(cita.id);
+        
+        // CASO 2: La cita ya está "en proceso" y su tiempo ha terminado. Es hora de COBRAR.
+        } else if (cita.estado === APPOINTMENT_STATUS.IN_PROGRESS && now >= endTime) {
+            showPaymentModal(cita); // ¡NUEVO! Disparamos el modal de pago.
+            promptedConfirmationIds.add(cita.id);
         }
     }
 }
@@ -684,43 +651,54 @@ function processConfirmationQueue(queue) {
  * @param {object} cita - El objeto de la cita.
  * @param {function|null} onModalCloseCallback - Función a ejecutar cuando el modal se cierra.
  */
-function showConfirmationModal(cita, onModalCloseCallback = null) {
+function showConfirmationModal(cita) {
     if (!confirmationOverlay || !cita) return;
 
-    const citaDate = new Date(cita.fecha_cita + 'T12:00:00');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    let message;
-    if (citaDate < today) {
-        message = `¿El cliente ${cita.cliente_nombre} se presentó a su cita del día ${citaDate.toLocaleDateString('es-ES')} a las ${cita.hora_inicio_cita.substring(0, 5)}?`;
-    } else {
-        message = `¿El cliente ${cita.cliente_nombre} se presentó a su cita de las ${cita.hora_inicio_cita.substring(0, 5)}?`;
-    }
+    const message = `¿El cliente ${cita.cliente_nombre} se presentó a su cita de las ${cita.hora_inicio_cita.substring(0, 5)}?`;
     confirmationText.textContent = message;
 
+    // Acción si el cliente SÍ LLEGÓ
     confirmArrivalBtn.onclick = () => {
+        markAppointmentInProgress(cita.id); // Cambia el estado a "en proceso"
         closeConfirmationModal();
-        showPaymentModal(cita);
-        if (onModalCloseCallback) onModalCloseCallback();
     };
-
+       // Acción si el cliente NO LLEGÓ
     confirmNoshowBtn.onclick = async () => {
-        closeConfirmationModal(); // Se cierra inmediatamente
-        await markAppointmentAsNoShow(cita.id, cita.fecha_cita); 
-        if (onModalCloseCallback) onModalCloseCallback();
+        markAppointmentAsNoShow(cita.id, cita.fecha_cita);
+        closeConfirmationModal();
     };
     
     confirmationCloseBtn.onclick = () => {
         closeConfirmationModal();
-        if (onModalCloseCallback) onModalCloseCallback();
     };
 
     confirmationOverlay.classList.add('active');
-    const audio = new Audio('https://cdn.freesound.org/previews/571/571408_6424653-lq.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(e => console.log("No se pudo reproducir sonido de confirmación.", e));
 }
+
+async function markAppointmentInProgress(citaId) {
+    if (saveStatus) saveStatus.textContent = "Iniciando servicio...";
+
+    const { error } = await supabaseClient
+        .from('citas')
+        .update({ estado: APPOINTMENT_STATUS.IN_PROGRESS })
+        .eq('id', citaId);
+
+    if (error) {
+        alert('Error al iniciar el servicio: ' + error.message);
+        if (saveStatus) saveStatus.textContent = "Error.";
+    } else {
+        if (saveStatus) saveStatus.textContent = "Servicio en proceso. El modal de pago aparecerá al finalizar.";
+        
+        // Refrescar vistas por si acaso
+        fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+        const selectedDay = document.querySelector('.calendar-day.selected-day');
+        if (selectedDay) {
+            loadAndRenderBookingsForDate(selectedDay.dataset.date);
+        }
+    }
+    setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 4000);
+}
+
 
 
 function closeConfirmationModal() {
@@ -1864,25 +1842,26 @@ document.addEventListener('DOMContentLoaded', initProfileModule);
 
 // MEJORA: Listener para refrescar datos después de que un pago es procesado por el modal.
 document.addEventListener('paymentProcessed', (e) => {
-    console.log(`Pago procesado para la cita ${e.detail.citaId}. Refrescando datos...`);
-    if (saveStatus) {
-        saveStatus.textContent = "Pago registrado y cita finalizada con éxito. ✅";
-        setTimeout(() => { if(saveStatus) saveStatus.textContent = "" }, 4000);
-    }
+        console.log(`Pago procesado para la cita ${e.detail.citaId}. Refrescando datos...`);
+        if (saveStatus) {
+            saveStatus.textContent = "Pago registrado y cita finalizada con éxito. ✅";
+            setTimeout(() => { if(saveStatus) saveStatus.textContent = "" }, 4000);
+        }
 
-    // Dispara el evento que ya usan los reportes y el dashboard para actualizarse
-    document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
-    
-    // --- INICIO DE LA MEJORA ---
-    // Dispara el evento para que la lista de clientes también se refresque.
-    // Esto cambiará la tarjeta del cliente de rojo (con deuda) a normal.
-    document.dispatchEvent(new CustomEvent('clientListChanged'));
-    // --- FIN DE LA MEJORA ---
+        // Dispara el evento que ya usan los reportes y el dashboard para actualizarse
+        document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
+        
+        // --- INICIO DE LA MEJORA ---
+        // Dispara el evento para que la lista de clientes también se refresque.
+        // Esto cambiará la tarjeta del cliente de rojo (con deuda) a normal.
+        document.dispatchEvent(new CustomEvent('clientListChanged'));
+        // --- FIN DE LA MEJORA ---
 
-    // Refresca la vista del calendario
-    fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-    const selectedDay = document.querySelector('.calendar-day.selected-day');
-    if (selectedDay) {
-        loadAndRenderBookingsForDate(selectedDay.dataset.date);
-    }
-});
+        // Refresca la vista del calendario
+        fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+        const selectedDay = document.querySelector('.calendar-day.selected-day');
+        if (selectedDay) {
+            loadAndRenderBookingsForDate(selectedDay.dataset.date);
+        }
+    });
+
