@@ -7,18 +7,19 @@ const paymentModal = document.getElementById('payment-modal');
 const paymentForm = document.getElementById('payment-form');
 const paymentCloseBtn = document.getElementById('payment-modal-close-btn');
 const paymentClientName = document.getElementById('payment-client-name');
+const paymentServiceName = document.getElementById('payment-service-name'); // Nuevo: para mostrar el servicio
 const paymentAmount = document.getElementById('payment-amount');
 const paymentCitaIdInput = document.getElementById('payment-cita-id');
 const deadlineContainer = document.getElementById('payment-deadline-container');
 const deadlineInput = document.getElementById('payment-deadline-date');
 const savePaymentBtn = document.getElementById('save-payment-btn');
+const paymentStatusMessage = document.getElementById('payment-status-message'); // Nuevo: para mensajes de estado
 
+// REEMPLAZA ESTA FUNCIÓN EN js/paymentModal.js
 /**
  * Muestra el modal de pago y lo puebla con los datos de la cita.
  * @param {object} cita - El objeto de la cita a pagar.
  */
-// REEMPLAZA ESTA FUNCIÓN EN js/paymentModal.js
-
 function showPaymentModal(cita) {
     if (!paymentOverlay || !cita) {
         console.error("No se pudo mostrar el modal de pago. Faltan elementos o datos de la cita.");
@@ -68,21 +69,35 @@ async function handleSavePayment(e) {
 
     savePaymentBtn.disabled = true;
     savePaymentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    paymentStatusMessage.textContent = '';
+    paymentStatusMessage.className = 'status-message processing';
 
     const formData = new FormData(paymentForm);
     const metodoPago = formData.get('metodo_pago');
     const esDeuda = (metodoPago === 'no_pagado');
     const fechaLimite = esDeuda ? deadlineInput.value : null;
 
-    if (esDeuda && !fechaLimite) {
-        alert("Por favor, establece una fecha límite para el pago de la deuda.");
-        savePaymentBtn.disabled = false;
-        savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
-        return;
+    // Validar fecha límite si es deuda
+    if (esDeuda) {
+        if (!fechaLimite) {
+            paymentStatusMessage.textContent = 'Por favor, establece una fecha límite para el pago.';
+            paymentStatusMessage.className = 'status-message error';
+            savePaymentBtn.disabled = false;
+            savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
+            return;
+        }
+        const today = new Date().toISOString().split('T')[0];
+        if (fechaLimite <= today) {
+            paymentStatusMessage.textContent = 'La fecha límite debe ser posterior a hoy.';
+            paymentStatusMessage.className = 'status-message error';
+            savePaymentBtn.disabled = false;
+            savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
+            return;
+        }
     }
 
     const updateData = {
-        estado: 'completada', // La cita ahora se marca como completada
+        estado: 'completada',
         metodo_pago: metodoPago,
         estado_pago: esDeuda ? 'pendiente' : 'pagado',
         fecha_limite_pago: fechaLimite
@@ -94,26 +109,32 @@ async function handleSavePayment(e) {
             .update(updateData)
             .eq('id', currentCitaForPayment.id);
 
-        if (error) {
-            throw new Error(`Error al actualizar la cita: ${error.message}`);
-        }
+        if (error) throw error;
 
-        // Notificar al resto de la aplicación que el pago fue procesado
+        // Éxito: notificar a la aplicación
         document.dispatchEvent(new CustomEvent('paymentProcessed', {
-            detail: { citaId: currentCitaForPayment.id }
+            detail: { 
+                citaId: currentCitaForPayment.id,
+                clienteId: currentCitaForPayment.cliente_id 
+            }
         }));
         
-        closePaymentModal();
+        paymentStatusMessage.textContent = '¡Pago registrado con éxito! La cita ha sido finalizada.';
+        paymentStatusMessage.className = 'status-message success';
+        
+        // Cerrar el modal después de 2 segundos
+        setTimeout(() => {
+            closePaymentModal();
+        }, 2000);
 
     } catch (error) {
-        console.error(error);
-        alert(error.message);
-    } finally {
+        console.error('Error al guardar el pago:', error);
+        paymentStatusMessage.textContent = `Error: ${error.message}`;
+        paymentStatusMessage.className = 'status-message error';
         savePaymentBtn.disabled = false;
         savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
     }
 }
-
 
 /**
  * Configura todos los listeners de eventos para el modal de pago.
@@ -132,7 +153,7 @@ function setupPaymentModalListeners() {
         radio.addEventListener('change', (e) => {
             if (e.target.value === 'no_pagado') {
                 deadlineContainer.style.display = 'block';
-                // Poner la fecha de mañana por defecto para conveniencia
+                // Establecer fecha por defecto: mañana
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 deadlineInput.value = tomorrow.toISOString().split('T')[0];
@@ -142,3 +163,6 @@ function setupPaymentModalListeners() {
         });
     });
 }
+
+// Inicializar los listeners al cargar
+document.addEventListener('DOMContentLoaded', setupPaymentModalListeners);
