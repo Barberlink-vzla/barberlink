@@ -237,6 +237,8 @@ let availableSlots = [];
             apellido: apellido,
             telefono: clientPhoneInput.value.trim(),
         };
+       
+    console.log('DEBUG: Datos del cliente a insertar:', clientData);
 
         if (!clientData.nombre || !clientData.telefono) {
             throw new Error("El nombre y el teléfono del cliente son obligatorios.");
