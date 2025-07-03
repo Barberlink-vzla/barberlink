@@ -338,25 +338,29 @@
     <h2 class="profile-section-title">Gestión de Reservas y Disponibilidad</h2>
 
     <div class="calendar-container">
-        <p class="availability-instructions">Selecciona un día para ver sus citas o editar tu disponibilidad.</p>
-        <div class="calendar-widget-container">
-            <div class="calendar-widget">
-                <div class="calendar-front">
-                    <div class="calendar-current-date">
-                        <button id="cal-prev-month-btn" class="cal-nav-btn" aria-label="Mes anterior">&lt;</button>
-                        <div class="calendar-month-year-display"><h1 id="cal-current-month-year"></h1></div>
-                        <button id="cal-next-month-btn" class="cal-nav-btn" aria-label="Mes siguiente">&gt;</button>
-                    </div>
-                    <div class="calendar-current-month">
-                        <ul class="calendar-week-days">
-                            <li>DOM</li><li>LUN</li><li>MAR</li><li>MIÉ</li><li>JUE</li><li>VIE</li><li>SÁB</li>
-                        </ul>
-                        <div class="calendar-weeks" id="calendar-days-grid"></div>
-                    </div>
-                </div>
-            </div>
+    <p class="availability-instructions">Selecciona un día para ver sus citas o editar tu disponibilidad.</p>
+    
+    <div class="calendar-widget">
+        <div class="calendar-header">
+            <button id="cal-prev-month-btn" class="nav-btn" aria-label="Mes anterior"><i class="fas fa-chevron-left"></i></button>
+            <div class="month-year" id="cal-current-month-year">Cargando...</div>
+            <button id="cal-next-month-btn" class="nav-btn" aria-label="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
         </div>
+        
+        <div class="weekdays">
+            <div>LUN</div>
+            <div>MAR</div>
+            <div>MIÉ</div>
+            <div>JUE</div>
+            <div>VIE</div>
+            <div>SÁB</div>
+            <div>DOM</div>
+        </div>
+        
+        <div class="days-grid" id="calendar-days">
+            </div>
     </div>
+</div>
 </section>
 
 <div class="alert-modal-overlay" id="calendar-action-modal-overlay">
@@ -503,6 +507,14 @@
                     <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Datos Básicos</h3>
                     <div id="profile-content"><p>Cargando perfil...</p></div>
                 </div>
+                <div class="profile-section-card">
+    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Notificaciones Push</h3>
+    <p>Activa las notificaciones para recibir alertas en tu dispositivo incluso con la app cerrada.</p>
+    <button id="enable-push-notifications-btn" class="profile-action-btn" style="width:auto; padding: 10px 15px;">
+        <i class="fas fa-bell"></i> Activar Notificaciones
+    </button>
+    <p id="push-status" style="margin-top: 10px;"></p>
+</div>
                 <div class="profile-section-card">
                     <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Mis Servicios y Precios</h3>
                     <div id="services-section"><p>Cargando servicios...</p></div>
