@@ -145,14 +145,16 @@ async function loadInitialData() {
         return;
     }
     currentUserId = user.id;
+
+    // ===== INICIO: CÓDIGO AÑADIDO PARA NOTIFICACIONES PUSH =====
+    setupPushNotificationButton();
+    registerServiceWorker();
+    // =========================================================
     
-    // Iniciar los checkers recurrentes para citas del día
-    
-    await fetchBarberClients();
+    // Iniciar el checker unificado y recurrente para citas
     startConfirmationChecker();
     
-    // Verificar citas pasadas no confirmadas una sola vez al cargar
-    await checkPastUnconfirmedAppointments();
+    await fetchBarberClients();
 
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
@@ -281,18 +283,14 @@ function openWalkInModal() {
     walkInModalOverlay.classList.add('active');
 }
 
-// js/barberProfile.js
-
 /**
- * Cierra el modal de visita inmediata y resetea el formulario,
- * actuando como una acción de cancelación.
+ * Cierra el modal de visita inmediata y resetea el formulario.
  */
 function closeWalkInModal() {
     if (walkInModalOverlay) {
         walkInModalOverlay.classList.remove('active');
     }
 
-    // Ocultar y resetear todo
     const typeSelection = document.getElementById('walk-in-client-type-selection');
     const form = document.getElementById('walk-in-form');
     const frequentContainer = document.getElementById('walk-in-frequent-client-container');
@@ -307,13 +305,13 @@ function closeWalkInModal() {
     const submitBtn = document.getElementById('walk-in-submit-btn');
     if (submitBtn) submitBtn.disabled = false;
     
-    // Devolver a la vista inicial
     if(typeSelection) typeSelection.style.display = 'block';
     if(form) form.style.display = 'none';
     if(frequentContainer) frequentContainer.style.display = 'none';
     if(detailsContainer) detailsContainer.style.display = 'none';
     if(resultsList) resultsList.innerHTML = '';
 }
+
 function showWalkInClientResults(searchTerm) {
     const resultsList = document.getElementById('walk-in-client-results');
     resultsList.innerHTML = '';
@@ -346,17 +344,10 @@ function handleWalkInClientSelection(client) {
     resultsList.style.display = 'none';
 }
 
-
-// js/barberProfile.js
-
 /**
  * Maneja el envío del formulario de visita inmediata.
  * Crea el cliente (si es nuevo), crea la cita y abre el modal de pago.
  */
-
-
-// REEMPLAZA ESTA FUNCIÓN EN js/barberProfile.js
-
 async function handleWalkInSubmit(e) {
     e.preventDefault();
     
@@ -433,7 +424,8 @@ async function handleWalkInSubmit(e) {
 
         setTimeout(() => {
             closeWalkInModal();
-        }, 2000);
+            showPaymentModal(insertedCita); // Abrir directamente el modal de pago
+        }, 1500);
 
     } catch (error) {
         console.error("Error en visita inmediata:", error);
@@ -443,6 +435,9 @@ async function handleWalkInSubmit(e) {
         submitBtn.disabled = false;
     }
 }
+
+
+// ===== SECCIÓN DE NOTIFICACIONES Y RECORDATORIOS =====
 
 async function checkUpcomingAppointments() {
     if (!currentUserId) return;
@@ -506,150 +501,91 @@ function setupAlertModalListeners() {
 }
 
 
+// =========================================================================
+// INICIO DE LA MEJORA: LÓGICA UNIFICADA PARA VERIFICACIÓN DE CITAS
+// =========================================================================
 
-
-// ===== SECCIÓN DE CONFIRMACIÓN DE ASISTENCIA (MODAL DE CONFIRMACIÓN) =====
-
-
+/**
+ * Inicia el ciclo de verificación de citas. Se ejecuta al cargar la página y
+ * luego periódicamente.
+ */
 function startConfirmationChecker() {
     if (confirmationCheckInterval) clearInterval(confirmationCheckInterval);
 
-    // Ejecuta la verificación una vez al cargar la página
-    checkAppointmentsForConfirmation();
+    // 1. Ejecuta la verificación una vez, inmediatamente al cargar la página.
+    // Esto resuelve el caso de abrir la app después de una cita perdida.
+    checkAndProcessOverdueAppointments();
     
-    // ANTES:
-    // confirmationCheckInterval = setInterval(checkAppointmentsForConfirmation, 60000); 
-
-    // AHORA (MÁS FRECUENTE):
-    // Se ejecuta cada 15 segundos para una experiencia en tiempo real.
-    confirmationCheckInterval = setInterval(checkAppointmentsForConfirmation, 15000);
+    // 2. Establece un intervalo para seguir verificando en tiempo real mientras la app está abierta.
+    // Esto es útil si una cita pasa su hora de inicio mientras el barbero tiene la página abierta.
+    confirmationCheckInterval = setInterval(checkAndProcessOverdueAppointments, 15000); // 15 segundos
 }
 
-// =========================================================================
-// INICIO DE LA MEJORA: El modal de confirmación ahora aparece al finalizar el servicio.
-// =========================================================================
-
-
-async function checkAppointmentsForConfirmation() {
+/**
+ * Busca y procesa TODAS las citas que ya debieron haber comenzado
+ * y cuyo estado aún no ha sido resuelto (pendiente, confirmada, etc.).
+ * Esta función unifica la lógica para citas pasadas del mismo día y de días anteriores.
+ */
+async function checkAndProcessOverdueAppointments() {
     if (!currentUserId) return;
 
     const now = new Date();
-    const today = toLocalISODate(now); // Asegura el formato YYYY-MM-DD local
+    const today = toLocalISODate(now); // Formato YYYY-MM-DD
+    const currentTime = now.toTimeString().slice(0, 8); // Formato HH:MM:SS
 
-    // Buscamos citas de hoy que estén pendientes de alguna acción.
-    const { data: citas, error } = await supabaseClient
+    // Construimos una consulta compleja con OR para buscar citas que cumplan:
+    // a) La fecha es anterior a hoy.
+    // b) La fecha es hoy Y la hora de inicio es anterior a la hora actual.
+    const { data: overdueCitas, error } = await supabaseClient
         .from('citas')
-        .select('*') // Traemos todos los campos para tener el precio, etc.
+        .select('*') // Traemos todo para los modales
         .eq('barbero_id', currentUserId)
-        .eq('fecha_cita', today)
-        .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.IN_PROGRESS]);
+        .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.IN_PROGRESS])
+        .or(`fecha_cita.lt.${today},and(fecha_cita.eq.${today},hora_inicio_cita.lt.${currentTime})`);
 
     if (error) {
-        console.error("Error buscando citas para confirmación:", error);
+        console.error("Error buscando citas pasadas para confirmar:", error);
         return;
     }
 
-    if (!citas) return;
+    if (!overdueCitas || overdueCitas.length === 0) {
+        return;
+    }
 
-    for (const cita of citas) {
-        if (promptedConfirmationIds.has(cita.id)) continue; // Si ya se mostró un modal para esta cita, la saltamos.
+    console.log(`Se encontraron ${overdueCitas.length} citas pasadas por procesar.`);
 
-        const startTime = new Date(`${cita.fecha_cita}T${cita.hora_inicio_cita}`);
+    // Procesamos las citas de una en una para no abrumar con modales.
+    for (const cita of overdueCitas) {
+        // Si ya se mostró un modal para esta cita en esta sesión, la saltamos.
+        if (promptedConfirmationIds.has(cita.id)) continue; 
+
+        // Determinamos qué modal mostrar
         const endTime = new Date(`${cita.fecha_cita}T${cita.hora_fin_cita}`);
-
-        // CASO 1: La cita está por empezar. Es hora de preguntar si el cliente LLEGÓ.
-        if ((cita.estado === APPOINTMENT_STATUS.PENDING || cita.estado === APPOINTMENT_STATUS.CONFIRMED) && now >= startTime) {
-            showConfirmationModal(cita);
-            promptedConfirmationIds.add(cita.id);
         
-        // CASO 2: La cita ya está "en proceso" y su tiempo ha terminado. Es hora de COBRAR.
-        } else if (cita.estado === APPOINTMENT_STATUS.IN_PROGRESS && now >= endTime) {
-            showPaymentModal(cita); // ¡NUEVO! Disparamos el modal de pago.
-            promptedConfirmationIds.add(cita.id);
+        if (cita.estado === APPOINTMENT_STATUS.IN_PROGRESS && now >= endTime) {
+            // La cita "en proceso" ya terminó -> Mostrar modal de PAGO.
+            showPaymentModal(cita);
+        } else {
+            // La cita "pendiente" o "confirmada" ya pasó su hora de inicio -> Mostrar modal de CONFIRMACIÓN DE ASISTENCIA.
+            showConfirmationModal(cita);
         }
+        
+        promptedConfirmationIds.add(cita.id);
+        
+        // Rompemos el bucle para mostrar solo un modal a la vez.
+        // El siguiente se mostrará en la próxima verificación (15s) si es necesario.
+        break; 
     }
 }
+
 // =========================================================================
-// FIN DE LA MEJORA
+// FIN DE LA LÓGICA UNIFICADA
 // =========================================================================
-
-
-// REEMPLAZA ESTA FUNCIÓN EN js/barberProfile.js
-
-async function createConfirmationNotification(cita) {
-    // Usamos .maybeSingle() para evitar el error 406 si se encuentran 0 o más de 1 resultado.
-    // La consulta es más específica para evitar falsos positivos.
-    const { data: existingNotif } = await supabaseClient
-        .from('notificaciones')
-        .select('id')
-        .eq('cita_id', cita.id)
-        .eq('tipo', 'confirmacion_asistencia')
-        .maybeSingle();
-
-    if (existingNotif) return; // Si ya existe, no hacemos nada.
-
-    const mensaje = `Por favor, confirma la asistencia para la cita de ${cita.cliente_nombre} a las ${cita.hora_inicio_cita.substring(0, 5)}.`;
-    
-    const { error } = await supabaseClient
-        .from('notificaciones')
-        .insert({ 
-            barbero_id: cita.barbero_id, 
-            cita_id: cita.id, 
-            mensaje: mensaje, 
-            leido: false, 
-            tipo: 'confirmacion_asistencia' 
-        });
-
-    if (error) {
-        console.error("Error al crear la notificación de confirmación:", error);
-    }
-}
-
-
-// ===== LÓGICA DE VERIFICACIÓN DE CITAS PASADAS =====
-
-async function checkPastUnconfirmedAppointments() {
-    if (!currentUserId) return;
-    // ================== INICIO DE LA CORRECCIÓN ==================
-    const today = toLocalISODate(new Date());
-    // =================== FIN DE LA CORRECCIÓN ====================
-
-    const { data: pastCitas, error } = await supabaseClient
-        .from('citas')
-        .select('*')
-        .eq('barbero_id', currentUserId)
-        .in('estado', [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.IN_PROGRESS])
-        .lt('fecha_cita', today);
-
-    if (error) {
-        console.error("Error buscando citas pasadas no confirmadas:", error);
-        return;
-    }
-
-    if (pastCitas && pastCitas.length > 0) {
-        console.log(`Encontradas ${pastCitas.length} citas pasadas por confirmar. Iniciando cola de confirmación.`);
-        processConfirmationQueue(pastCitas);
-    }
-}
-function processConfirmationQueue(queue) {
-    if (!queue || queue.length === 0) {
-        console.log("Cola de confirmación de citas pasadas finalizada.");
-        fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-        return;
-    }
-
-    const cita = queue.shift();
-    promptedConfirmationIds.add(cita.id);
-
-    const onModalCloseCallback = () => processConfirmationQueue(queue);
-    showConfirmationModal(cita, onModalCloseCallback);
-}
 
 
 /**
  * Muestra el modal de confirmación de asistencia.
  * @param {object} cita - El objeto de la cita.
- * @param {function|null} onModalCloseCallback - Función a ejecutar cuando el modal se cierra.
  */
 function showConfirmationModal(cita) {
     if (!confirmationOverlay || !cita) return;
@@ -662,7 +598,7 @@ function showConfirmationModal(cita) {
         markAppointmentInProgress(cita.id); // Cambia el estado a "en proceso"
         closeConfirmationModal();
     };
-       // Acción si el cliente NO LLEGÓ
+    // Acción si el cliente NO LLEGÓ
     confirmNoshowBtn.onclick = async () => {
         markAppointmentAsNoShow(cita.id, cita.fecha_cita);
         closeConfirmationModal();
@@ -674,6 +610,8 @@ function showConfirmationModal(cita) {
 
     confirmationOverlay.classList.add('active');
 }
+
+// En: js/barberProfile.js
 
 async function markAppointmentInProgress(citaId) {
     if (saveStatus) saveStatus.textContent = "Iniciando servicio...";
@@ -687,9 +625,18 @@ async function markAppointmentInProgress(citaId) {
         alert('Error al iniciar el servicio: ' + error.message);
         if (saveStatus) saveStatus.textContent = "Error.";
     } else {
-        if (saveStatus) saveStatus.textContent = "Servicio en proceso. El modal de pago aparecerá al finalizar.";
+        if (saveStatus) saveStatus.textContent = "Servicio en proceso. El pago se solicitará al finalizar.";
         
-        // Refrescar vistas por si acaso
+        // ======================= INICIO DE LA CORRECCIÓN =======================
+        //
+        // AQUÍ ESTÁ LA CLAVE: Añadimos el ID de la cita al set de "ya procesadas"
+        // para esta sesión. Esto evita que el verificador automático (setInterval)
+        // la vuelva a tomar inmediatamente para mostrar el modal de pago.
+        //
+        promptedConfirmationIds.add(citaId);
+        //
+        // ======================== FIN DE LA CORRECCIÓN =========================
+
         fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
         const selectedDay = document.querySelector('.calendar-day.selected-day');
         if (selectedDay) {
@@ -698,7 +645,6 @@ async function markAppointmentInProgress(citaId) {
     }
     setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 4000);
 }
-
 
 
 function closeConfirmationModal() {
@@ -787,17 +733,13 @@ function setupDashboardNavigation() {
 
             if (loader) loader.classList.add('active'); // 1. Muestra el loader INMEDIATAMENTE
 
-            // Usamos un bloque try...finally para asegurar que el loader siempre se oculte,
-            // incluso si hay un error al cargar los datos.
             try {
                 // 2. Espera un instante para que el navegador renderice el loader antes de continuar.
                 await new Promise(resolve => setTimeout(resolve, 50)); 
 
-                // Ocultamos todas las secciones
                 contentSections.forEach(section => section.classList.remove('active'));
                 
                 // 3. Carga los datos necesarios para la sección específica
-                // La palabra 'await' detiene la ejecución aquí hasta que la carga termine.
                 if (targetId === 'dashboard' && !link.dataset.loaded) {
                     await loadDashboardStats();
                     link.dataset.loaded = true;
@@ -808,17 +750,14 @@ function setupDashboardNavigation() {
                     link.dataset.loaded = true;
                 }
                  if (targetId === 'clientes' && !link.dataset.loaded) {
-                    // El evento fuerza al módulo de clientes a refrescar su lista
                     document.dispatchEvent(new CustomEvent('clientListChanged'));
                     link.dataset.loaded = true;
                 }
                  if (targetId === 'reservas' && !link.dataset.loaded) {
-                    // Carga inicial del mes actual para el calendario
                     await fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
                     link.dataset.loaded = true;
                 }
                 
-                // Actualiza la clase activa en los enlaces del menú
                 menuLinks.forEach(l => l.getAttribute('data-target') && l.classList.remove('active'));
                 link.classList.add('active');
                 
@@ -830,9 +769,7 @@ function setupDashboardNavigation() {
 
             } catch (error) {
                 console.error(`Error al cargar la sección ${targetId}:`, error);
-                // Opcional: Mostrar un mensaje de error al usuario
             } finally {
-                // 5. Oculta el loader, haya funcionado o no la carga.
                 if (loader) loader.classList.remove('active');
             }
         });
@@ -916,12 +853,7 @@ function setupReportControls() {
         });
     });
 }
-/**
- * Formatea un objeto Date a un string YYYY-MM-DD respetando la zona horaria local del navegador.
- * Evita los problemas de conversión a UTC de la función .toISOString().
- * @param {Date} date El objeto Date a formatear.
- * @returns {string} El string de fecha en formato YYYY-MM-DD.
- */
+
 const toLocalISODate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -930,47 +862,28 @@ const toLocalISODate = (date) => {
 };
 
 function getPeriodDates(period) {
-    const now = new Date(); // Fecha y hora actual en la zona horaria del navegador
-    const current_end = new Date(now); // El final del periodo actual es siempre el momento presente
+    const now = new Date();
+    const current_end = new Date(now); 
 
     let current_start, previous_start, previous_end;
 
     if (period === 'year') {
-        // Inicio del periodo actual: 1 de enero de este año
         current_start = new Date(now.getFullYear(), 0, 1);
-        
-        // El periodo anterior termina el día antes de que empiece el actual (31 de dic del año pasado)
         previous_end = new Date(current_start.getTime());
         previous_end.setDate(current_start.getDate() - 1);
-        
-        // El periodo anterior empieza el 1 de enero del año pasado
         previous_start = new Date(previous_end.getFullYear(), 0, 1);
-
     } else if (period === 'month') {
-        // Inicio del periodo actual: día 1 de este mes
         current_start = new Date(now.getFullYear(), now.getMonth(), 1);
-        
-        // El periodo anterior termina el día antes de que empiece el actual (último día del mes pasado)
         previous_end = new Date(current_start.getTime());
         previous_end.setDate(current_start.getDate() - 1);
-        
-        // El periodo anterior empieza el día 1 del mes pasado
         previous_start = new Date(previous_end.getFullYear(), previous_end.getMonth(), 1);
-
-    } else { // 'week', asumiendo que la semana empieza en Domingo
-        // Clonamos 'now' y lo ponemos al inicio del día para cálculos consistentes
+    } else { // 'week'
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const dayOfWeek = startOfToday.getDay(); // 0 para Domingo, 1 para Lunes, etc.
-
-        // Inicio del periodo actual: el domingo de esta semana
+        const dayOfWeek = startOfToday.getDay(); 
         current_start = new Date(startOfToday.getTime());
         current_start.setDate(startOfToday.getDate() - dayOfWeek);
-        
-        // El periodo anterior termina el día antes de que empiece el actual (el sábado pasado)
         previous_end = new Date(current_start.getTime());
         previous_end.setDate(current_start.getDate() - 1);
-
-        // El periodo anterior empieza 7 días antes que el actual (el domingo de la semana pasada)
         previous_start = new Date(current_start.getTime());
         previous_start.setDate(current_start.getDate() - 7);
     }
@@ -1068,12 +981,10 @@ async function loadReportData(period = 'week') {
             clients: { total: clientsTotal, percentage: clientsPercentage, data: currentClientsRes.data || [] }
         };
         
-        // Guardar la lista completa y renderizarla
         currentPeriodAppointments = [...(currentTransactionsRes.data || [])];
         renderReportCharts(reportData);
         renderTransactionList(currentPeriodAppointments);
 
-        // Limpiar filtros al cargar nuevos datos
         document.getElementById('transaction-search-input').value = '';
         document.getElementById('toggle-debt-btn').classList.remove('active');
 
@@ -1222,9 +1133,6 @@ function renderTransactionList(appointmentsToRender) {
     }).join('');
 }
 
-/**
- * Filters the currently stored transaction list based on search and debt toggle, then re-renders the list.
- */
 function filterAndRenderTransactions() {
     const searchInput = document.getElementById('transaction-search-input');
     const debtButton = document.getElementById('toggle-debt-btn');
@@ -1234,24 +1142,20 @@ function filterAndRenderTransactions() {
     const searchTerm = searchInput.value.toLowerCase().trim();
     const showOnlyDebts = debtButton.classList.contains('active');
 
-    let filteredList = [...currentPeriodAppointments]; // Start with the full list for the period
+    let filteredList = [...currentPeriodAppointments]; 
 
-    // 1. Filter by search term (if any)
     if (searchTerm) {
         filteredList = filteredList.filter(item => 
             item.cliente_nombre && item.cliente_nombre.toLowerCase().includes(searchTerm)
         );
     }
 
-    // 2. Filter by debt status (if toggle is active)
     if (showOnlyDebts) {
         filteredList = filteredList.filter(item => {
-            // The same logic used in renderTransactionList to determine debt
             return item.estado_pago === 'pendiente' || (item.estado === 'pendiente' && item.estado_pago !== 'pagado');
         });
     }
     
-    // 3. Re-render the list with the filtered results
     renderTransactionList(filteredList);
 }
 
@@ -1277,65 +1181,57 @@ function changeMonth(offset) {
 }
 
 function renderCalendar(year, month) {
-    if (!calendarDaysGrid || !calCurrentMonthYear) return;
-    calendarDaysGrid.innerHTML = '';
-    calCurrentMonthYear.textContent = `${monthsOfYear[month]} ${year}`;
+    const daysContainer = document.getElementById('calendar-days');
+    const monthYearDisplay = document.getElementById('cal-current-month-year');
+    
+    if (!daysContainer || !monthYearDisplay) return;
+
+    daysContainer.innerHTML = '';
+    monthYearDisplay.textContent = `${monthsOfYear[month]} ${year}`;
+
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const daysInMonth = lastDayOfMonth.getDate();
-    const firstDayOfWeek = firstDayOfMonth.getDay();
-    let currentWeekRow = document.createElement('div');
-    currentWeekRow.className = 'calendar-week-row';
-    for (let i = 0; i < firstDayOfWeek; i++) {
-        currentWeekRow.innerHTML += '<span class="calendar-day other-month"></span>';
+
+    const startDayOfWeek = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+
+    for (let i = 0; i < startDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.classList.add('day', 'empty');
+        daysContainer.appendChild(emptyDay);
     }
+
+    const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
-        if ((firstDayOfWeek + day - 1) % 7 === 0 && currentWeekRow.children.length > 0) {
-            calendarDaysGrid.appendChild(currentWeekRow);
-            currentWeekRow = document.createElement('div');
-            currentWeekRow.className = 'calendar-week-row';
-        }
-        const daySpan = document.createElement('span');
-        daySpan.className = 'calendar-day';
-        daySpan.textContent = day;
+        const dayElement = document.createElement('div');
+        dayElement.classList.add('day');
+        dayElement.textContent = day;
+
         const currentDateObj = new Date(year, month, day);
-        const dateString = currentDateObj.toISOString().split('T')[0];
-        daySpan.dataset.date = dateString;
-        daySpan.dataset.dayOfWeek = currentDateObj.getDay();
-        const today = new Date();
+        const dateString = toLocalISODate(currentDateObj);
+        dayElement.dataset.date = dateString;
+        dayElement.dataset.dayOfWeek = currentDateObj.getDay();
+
         if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
-            daySpan.classList.add('today');
+            dayElement.classList.add('today');
         }
+
         if (monthlyBookingsMap.has(dateString)) {
-            daySpan.classList.add('has-bookings');
+            dayElement.classList.add('has-bookings');
         }
-        daySpan.addEventListener('click', (e) => handleCalendarDayClick(e.target, dateString, currentDateObj.getDay()));
-        currentWeekRow.appendChild(daySpan);
-    }
-    const remainingCells = 7 - (currentWeekRow.children.length % 7);
-    if (currentWeekRow.children.length > 0 && remainingCells < 7) {
-          for (let i = 0; i < remainingCells; i++) {
-            const emptySpan = document.createElement('span');
-            emptySpan.className = 'calendar-day other-month';
-            currentWeekRow.appendChild(emptySpan);
-        }
-    }
-    if (currentWeekRow.children.length > 0) {
-        calendarDaysGrid.appendChild(currentWeekRow); // APPEND THE FINAL ROW
+
+        dayElement.addEventListener('click', (e) => handleCalendarDayClick(e.currentTarget, dateString, currentDateObj.getDay()));
+        
+        daysContainer.appendChild(dayElement);
     }
 }
 
-// REEMPLAZA ESTA FUNCIÓN COMPLETA
-
 function handleCalendarDayClick(dayElement, dateString, dayOfWeekIndex) {
-    // Marcamos visualmente el día seleccionado en el calendario
-    document.querySelectorAll('.calendar-day.selected-day').forEach(d => d.classList.remove('selected-day'));
-    dayElement.classList.add('selected-day');
+    document.querySelectorAll('.day.selected').forEach(d => d.classList.remove('selected'));
+    dayElement.classList.add('selected');
 
-    // Almacenamos el día activo para la lógica de guardado de horarios (si se usa)
     activeEditingDayIndex = dayOfWeekIndex;
 
-    // Mostramos el nuevo modal de acciones
     showCalendarActionModal(dateString, dayOfWeekIndex);
 }
 async function loadAndRenderBookingsForDate(dateString) {
@@ -1514,7 +1410,7 @@ function navigateToDateFromNotification(dateString) {
     currentCalendarDate = targetDate;
     const findAndClickDay = () => {
         setTimeout(() => {
-            const dayElement = document.querySelector(`.calendar-day[data-date="${dateString}"]`);
+            const dayElement = document.querySelector(`.day[data-date="${dateString}"]`);
             if (dayElement) {
                 dayElement.click();
                 dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1570,7 +1466,6 @@ function setupEventListeners() {
         });
     }
 
-    // Listeners for transaction filtering
     const searchInput = document.getElementById('transaction-search-input');
     const debtButton = document.getElementById('toggle-debt-btn');
 
@@ -1586,15 +1481,11 @@ function setupEventListeners() {
     }
 }
 
-// =================================================================
-// ===== INICIO: LÓGICA PARA EL NUEVO MODAL DE ACCIONES DEL CALENDARIO =====
-// =================================================================
+
+// ===== LÓGICA PARA EL MODAL DE ACCIONES DEL CALENDARIO =====
 
 let currentActionModalDate = { dateString: null, dayOfWeek: null };
 
-/**
- * Configura los listeners para el nuevo modal de acciones del calendario.
- */
 function setupCalendarActionModal() {
     const overlay = document.getElementById('calendar-action-modal-overlay');
     const closeBtn = document.getElementById('calendar-action-modal-close-btn');
@@ -1607,13 +1498,11 @@ function setupCalendarActionModal() {
 
     const closeModal = () => closeCalendarActionModal();
     
-    // Listeners para cerrar el modal
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeModal();
     });
     closeBtn.addEventListener('click', closeModal);
 
-    // Listener para el botón "Ver Citas"
     viewBookingsBtn.addEventListener('click', () => {
         document.getElementById('modal-action-buttons-view').style.display = 'none';
         document.getElementById('modal-content-view').style.display = 'block';
@@ -1622,7 +1511,6 @@ function setupCalendarActionModal() {
         loadAndRenderBookingsForDate(currentActionModalDate.dateString);
     });
 
-    // Listener para el botón "Editar Horarios"
     editAvailabilityBtn.addEventListener('click', () => {
         document.getElementById('modal-action-buttons-view').style.display = 'none';
         document.getElementById('modal-content-view').style.display = 'block';
@@ -1631,7 +1519,6 @@ function setupCalendarActionModal() {
         displayAvailabilityForDay(currentActionModalDate.dayOfWeek);
     });
     
-    // Listener para el botón "Volver"
     backBtn.addEventListener('click', () => {
         document.getElementById('modal-content-view').style.display = 'none';
         document.querySelector('.modal-content-viewer.active')?.classList.remove('active');
@@ -1640,43 +1527,31 @@ function setupCalendarActionModal() {
 }
 
 
-/**
- * Muestra el modal de acciones para un día específico.
- * @param {string} dateString - La fecha en formato YYYY-MM-DD.
- * @param {number} dayOfWeek - El índice del día de la semana (0=Domingo).
- */
 function showCalendarActionModal(dateString, dayOfWeek) {
     currentActionModalDate = { dateString, dayOfWeek };
     
     const overlay = document.getElementById('calendar-action-modal-overlay');
     const dateText = document.getElementById('modal-selected-date-text');
     
-    // Formatear la fecha para mostrarla amigablemente
     const friendlyDate = new Date(dateString + 'T12:00:00').toLocaleDateString('es-ES', { dateStyle: 'long' });
     dateText.textContent = friendlyDate;
 
-    // Resetear la vista del modal
     document.getElementById('modal-action-buttons-view').style.display = 'block';
     document.getElementById('modal-content-view').style.display = 'none';
     document.querySelectorAll('.modal-content-viewer').forEach(v => v.classList.remove('active'));
 
-    // Limpiar contenido anterior
     document.getElementById('bookings-list').innerHTML = '';
     document.getElementById('selected-day-slots-container').innerHTML = '';
 
     overlay.classList.add('active');
 }
 
-/**
- * Cierra y resetea el modal de acciones del calendario.
- */
 function closeCalendarActionModal() {
     const overlay = document.getElementById('calendar-action-modal-overlay');
     if (overlay) {
         overlay.classList.remove('active');
     }
 }
-// ===== FIN: LÓGICA PARA EL NUEVO MODAL DE ACCIONES =====
 
 async function addOtherService() {
     const nameInput = document.getElementById('other-service-name');
@@ -1840,7 +1715,6 @@ async function saveAvailability() {
 document.addEventListener('DOMContentLoaded', initProfileModule);
 
 
-// MEJORA: Listener para refrescar datos después de que un pago es procesado por el modal.
 document.addEventListener('paymentProcessed', (e) => {
         console.log(`Pago procesado para la cita ${e.detail.citaId}. Refrescando datos...`);
         if (saveStatus) {
@@ -1848,20 +1722,128 @@ document.addEventListener('paymentProcessed', (e) => {
             setTimeout(() => { if(saveStatus) saveStatus.textContent = "" }, 4000);
         }
 
-        // Dispara el evento que ya usan los reportes y el dashboard para actualizarse
         document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
         
-        // --- INICIO DE LA MEJORA ---
-        // Dispara el evento para que la lista de clientes también se refresque.
-        // Esto cambiará la tarjeta del cliente de rojo (con deuda) a normal.
         document.dispatchEvent(new CustomEvent('clientListChanged'));
-        // --- FIN DE LA MEJORA ---
 
-        // Refresca la vista del calendario
         fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-        const selectedDay = document.querySelector('.calendar-day.selected-day');
+        const selectedDay = document.querySelector('.day.selected');
         if (selectedDay) {
             loadAndRenderBookingsForDate(selectedDay.dataset.date);
         }
     });
 
+/**
+ * =================================================================
+ * ===== INICIO DE LA LÓGICA PARA NOTIFICACIONES PUSH NATIVAS =====
+ * =================================================================
+ */
+
+// Reemplaza esta con la Clave Pública que generaste.
+const VAPID_PUBLIC_KEY = 'BKJEejtTEJo6dV_IOtvPTkeCpP3ArlhWtUL92k6dYC4OC9k2Y-FfULVu8cNOyF6Rnhdayl44xv45SpcPQuQp1JU';
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) {
+        console.error('Push Messaging no soportado: No hay Service Worker.');
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        console.log('Service Worker registrado con éxito:', registration);
+
+        // Comprobar y posiblemente renovar la suscripción cada vez que se carga la página
+        await checkAndRenewSubscription();
+
+    } catch (error) {
+        console.error('Fallo en el registro del Service Worker: ', error);
+    }
+}
+
+async function checkAndRenewSubscription() {
+    if (!('serviceWorker' in navigator) || !currentUserId) return;
+    const pushStatusEl = document.getElementById('push-status');
+
+    const registration = await navigator.serviceWorker.ready;
+    const existingSubscription = await registration.pushManager.getSubscription();
+
+    if (existingSubscription) {
+        console.log('Suscripción Push ya existente.');
+        if (pushStatusEl) {
+            pushStatusEl.textContent = 'Las notificaciones push están activas.';
+            pushStatusEl.style.color = 'var(--success-color)';
+        }
+    } else {
+        if (pushStatusEl) {
+            pushStatusEl.textContent = 'Las notificaciones push no están activas.';
+            pushStatusEl.style.color = 'var(--secondary-text-color)';
+        }
+    }
+}
+
+async function subscribeUserToPush() {
+    const pushStatusEl = document.getElementById('push-status');
+    if (!('serviceWorker' in navigator) || !currentUserId) {
+        alert('Tu navegador no es compatible con notificaciones push.');
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const existingSubscription = await registration.pushManager.getSubscription();
+
+        if (existingSubscription) {
+            alert('Ya estás suscrito a las notificaciones.');
+            return;
+        }
+
+        pushStatusEl.textContent = 'Solicitando permiso...';
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        console.log('Usuario suscrito:', subscription);
+        pushStatusEl.textContent = 'Guardando suscripción...';
+
+        // Guardar la suscripción en la base de datos
+        const { error } = await supabaseClient.from('push_subscriptions').insert({
+            user_id: currentUserId,
+            subscription_info: subscription
+        });
+
+        if (error) {
+            throw new Error('No se pudo guardar la suscripción en el servidor.');
+        }
+
+        pushStatusEl.textContent = '¡Notificaciones activadas con éxito!';
+        pushStatusEl.style.color = 'var(--success-color)';
+
+    } catch (err) {
+        console.error('Fallo al suscribirse a Push: ', err);
+        let message = 'No se pudieron activar las notificaciones.';
+        if (Notification.permission === 'denied') {
+            message += ' Has bloqueado los permisos. Debes activarlos en la configuración de tu navegador.';
+        }
+        pushStatusEl.textContent = message;
+        pushStatusEl.style.color = 'var(--danger-color)';
+    }
+}
+
+function setupPushNotificationButton() {
+    const enablePushBtn = document.getElementById('enable-push-notifications-btn');
+    if (enablePushBtn) {
+        enablePushBtn.addEventListener('click', subscribeUserToPush);
+    }
+}
