@@ -1875,3 +1875,138 @@ header.mobile-header {
 
 /* ===== FIN: MEJORA RESPONSIVE PARA MODAL DE ACCIONES      ===== */
 /* ============================================================= */
+
+
+/* AÑADE ESTO AL FINAL DE TU ARCHIVO css/style.css */
+
+/* ===== INICIO: ESTILOS CALENDARIO MEJORADO Y RESPONSIVO ===== */
+.calendar-widget {
+    width: 100%;
+    max-width: 450px; /* Ancho máximo elegante */
+    margin: 0 auto;
+    background: var(--login-card-bg);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--login-input-border);
+    overflow: hidden;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--primary-text-color);
+}
+
+.month-year {
+    font-size: 1.3rem;
+    font-weight: 600;
+    font-family: var(--heading-font);
+    color: var(--login-primary-accent);
+}
+
+.nav-btn {
+    background: transparent;
+    border: 1px solid var(--login-input-border);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: var(--primary-text-color);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.nav-btn:hover {
+    background: var(--login-primary-accent);
+    color: var(--login-card-bg);
+    border-color: var(--login-primary-accent);
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 12px 0;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+    border-bottom: 1px solid var(--login-input-border);
+}
+
+.weekdays > div {
+    text-align: center;
+}
+
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    padding: 15px;
+}
+
+.day {
+    aspect-ratio: 1; /* Mantiene los días cuadrados */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    border: 2px solid transparent;
+}
+
+.day:hover:not(.empty):not(.selected) {
+    border-color: var(--login-input-border);
+}
+
+.day.empty {
+    visibility: hidden;
+}
+
+.day.today {
+    border-color: var(--login-primary-accent);
+    color: var(--login-primary-accent);
+    font-weight: 700;
+}
+
+.day.selected {
+    background: var(--login-primary-accent);
+    color: var(--login-card-bg) !important;
+    font-weight: 700;
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(197, 164, 126, 0.3);
+}
+
+.day.has-bookings::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success-color);
+}
+
+@media (max-width: 480px) {
+    .calendar-header {
+        padding: 15px;
+    }
+    .month-year {
+        font-size: 1.1rem;
+    }
+    .days-grid {
+        padding: 10px;
+        gap: 3px;
+    }
+    .day {
+        font-size: 0.9rem;
+    }
+}
+/* ===== FIN: ESTILOS CALENDARIO MEJORADO Y RESPONSIVO ===== */
