@@ -1802,6 +1802,8 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
+// EN: js/barberProfile.js
+
 async function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) {
         console.error('Push Messaging no soportado: No hay Service Worker.');
@@ -1809,7 +1811,8 @@ async function registerServiceWorker() {
     }
 
     try {
-        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        // --- ESTA ES LA LÍNEA QUE DEBES CAMBIAR ---
+        const registration = await navigator.serviceWorker.register('/barberlink/sw.js', { scope: '/barberlink/' });
         console.log('Service Worker registrado con éxito:', registration);
 
         // Comprobar y posiblemente renovar la suscripción cada vez que se carga la página
