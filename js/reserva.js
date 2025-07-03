@@ -289,16 +289,17 @@ async function handleBookingSubmit(e) {
         await getClientIdForBooking(); // Esta función debe estar definida en tu archivo
 
         const bookingData = {
-            barbero_id: barberId,
-            cliente_nombre: clientSearchInput.value.trim(),
-            cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
-            servicio_reservado_id: serviceData.id,
-            fecha_cita: dateInput.value,
-            hora_inicio_cita: startTime,
-            hora_fin_cita: endTime,
-            precio_final: serviceData.precio,
-            estado: 'pendiente'
-        };
+        barbero_id: barberId,
+        cliente_id: clienteId, // <-- ¡LA LÍNEA CLAVE QUE FALTABA!
+        cliente_nombre: clientSearchInput.value.trim(),
+        cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
+        servicio_reservado_id: serviceData.id,
+        fecha_cita: dateInput.value,
+        hora_inicio_cita: startTime,
+        hora_fin_cita: endTime,
+        precio_final: serviceData.precio,
+        estado: 'pendiente' //
+    };
 
         const { data: bookingResult, error: bookingError } = await supabaseClient
             .from('citas')
