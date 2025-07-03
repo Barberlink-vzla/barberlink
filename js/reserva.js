@@ -289,13 +289,13 @@ async function handleBookingSubmit(e) {
         const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).toTimeString().slice(0, 8);
 
         // Corrección Clave: Capturar el ID retornado por la función en una constante.
-        const clienteId = await getClientIdForBooking();
+       const clienteId = await getClientIdForBooking(); // <-- ¡SOLUCIÓN!
 
-        const bookingData = {
-            barbero_id: barberId,
-            cliente_id: clienteId, // ¡Solucionado! Ahora la variable sí existe.
-            cliente_nombre: clientSearchInput.value.trim(),
-            cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
+const bookingData = {
+    barbero_id: barberId,
+    cliente_id: clienteId, // <-- ¡CORRECTO! Ahora la variable sí existe.
+    cliente_nombre: clientSearchInput.value.trim(),
+    cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
             servicio_reservado_id: serviceData.id,
             fecha_cita: dateInput.value,
             hora_inicio_cita: startTime,
