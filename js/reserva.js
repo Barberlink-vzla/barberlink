@@ -259,24 +259,37 @@ let availableSlots = [];
     // Reemplaza la función completa en tu archivo js/reserva.js
 
 
+// Reemplaza la función completa en tu archivo js/reserva.js
+
+// Archivo: js/reserva.js
+
 async function handleBookingSubmit(e) {
     e.preventDefault();
+    const statusMessage = document.getElementById('booking-status');
     statusMessage.textContent = 'Procesando reserva...';
     statusMessage.className = 'status-message';
 
     try {
+        const serviceSelect = document.getElementById('service-select');
+        const dateInput = document.getElementById('booking-date');
+        const timeSelect = document.getElementById('time-select');
+        const clientSearchInput = document.getElementById('cliente-search');
+
+        // Variables de estado (asumimos que están definidas en un scope superior)
+        // barberId, selectedServiceDuration, getClientIdForBooking, etc.
+
         const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
         const startTime = timeSelect.value;
         const bookingDate = new Date(`${dateInput.value}T${startTime}`);
         const durationInMinutes = selectedService.duracion_minutos || 30;
         const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).toTimeString().slice(0, 8);
 
-        await getClientIdForBooking();
+        await getClientIdForBooking(); // Esta función debe estar definida en tu archivo
 
         const bookingData = {
             barbero_id: barberId,
             cliente_nombre: clientSearchInput.value.trim(),
-            cliente_telefono: clientPhoneInput.value.trim(),
+            cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
             servicio_reservado_id: serviceData.id,
             fecha_cita: dateInput.value,
             hora_inicio_cita: startTime,
@@ -301,32 +314,19 @@ async function handleBookingSubmit(e) {
         if (!bookingResult) {
             throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
         }
-        
-        // ===================================================================
-        // ===== INICIO DE LA MEJORA: Mensaje de Notificación Detallado =====
-        // ===================================================================
 
-        // Formatear la fecha y hora para que sea más legible para el barbero.
-        const date = new Date(bookingResult.fecha_cita + 'T12:00:00'); // Se añade hora para evitar errores de zona horaria.
+        const date = new Date(bookingResult.fecha_cita + 'T12:00:00');
         const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-        
         const time = new Date(`1970-01-01T${bookingResult.hora_inicio_cita}`);
         const formattedTime = time.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-        // Construir el nuevo mensaje de notificación mucho más informativo.
         const notificationMessage = `¡Nueva reserva de ${bookingResult.cliente_nombre}! Agendado para el ${formattedDate} a las ${formattedTime}.`;
-        
-        // =================================================================
-        // ===== FIN DE LA MEJORA ==========================================
-        // =================================================================
 
-        // 2. Guardar la notificación en la base de datos (usando el nuevo mensaje).
         const { data: persistentNotification, error: notifError } = await supabaseClient
             .from('notificaciones')
             .insert({
                 barbero_id: barberId,
                 cita_id: bookingResult.id,
-                mensaje: notificationMessage, // <--- Aquí se usa el mensaje mejorado.
+                mensaje: notificationMessage,
                 tipo: 'nueva_reserva',
                 leido: false
             })
@@ -336,39 +336,51 @@ async function handleBookingSubmit(e) {
         if (notifError) {
             console.error("Error al crear la notificación persistente:", notifError);
         }
+// ======================= INICIO DE LA SOLUCIÓN =======================
+        //
+        // El problema estaba en `supabaseClient.removeChannel(channel)`.
+        // Al eliminar esa línea, evitamos que la conexión del receptor (el barbero)
+        // se cierre inesperadamente.
+        //
+        const channelName = `notifications-channel-for-${barberId}`;
+        const channel = supabaseClient.channel(channelName);
 
-        const channel = supabaseClient.channel(`notifications-channel-for-${barberId}`);
-
-        // Preparamos el payload del broadcast con el mensaje detallado.
         const broadcastPayload = {
             event: 'nueva_reserva',
             payload: {
                 id: persistentNotification.id,
                 created_at: persistentNotification.created_at,
-                mensaje: notificationMessage, // <--- El mensaje mejorado también se envía en tiempo real.
+                mensaje: notificationMessage,
                 tipo: 'nueva_reserva'
             }
         };
-        
-        // Enviamos el mensaje por el canal.
-        channel.send({
-            type: 'broadcast',
-            event: 'new-notification',
-            payload: broadcastPayload,
-        });
-        console.log(`🚀 Mensaje de Broadcast enviado al canal: notifications-channel-for-${barberId}`);
 
-        form.style.display = 'none';
-        successMessageContainer.style.display = 'block';
+        channel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                // Ahora que estamos suscritos, enviamos el mensaje.
+                channel.send({
+                    type: 'broadcast',
+                    event: 'new-notification',
+                    payload: broadcastPayload,
+                });
+                console.log(`🚀 Mensaje de Broadcast enviado al canal: ${channelName}`);
+                // ¡YA NO NOS DESUSCRIBIMOS!
+                // La conexión se cerrará automáticamente cuando el usuario deje la página.
+            }
+        });
+        //
+        // ======================== FIN DE LA SOLUCIÓN =========================
+        document.getElementById('barberBookingForm').style.display = 'none';
+        document.getElementById('booking-success-message').style.display = 'block';
         statusMessage.textContent = '';
-        generateWhatsAppLink(bookingResult);
+        generateWhatsAppLink(bookingResult); // Esta función debe estar definida en tu archivo
 
     } catch (error) {
         console.error("Error en el proceso de reserva:", error);
         statusMessage.textContent = `Error: ${error.message}`;
         statusMessage.className = 'status-message error';
         alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
-        fetchAvailability(dateInput.value);
+        fetchAvailability(document.getElementById('booking-date').value); // Esta función debe estar definida
     }
 }
     const generateWhatsAppLink = (booking) => {
