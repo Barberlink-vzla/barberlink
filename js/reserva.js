@@ -283,23 +283,30 @@ async function handleBookingSubmit(e) {
         const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
         const startTime = timeSelect.value;
         const bookingDate = new Date(`${dateInput.value}T${startTime}`);
+        // CORRECCIÓN: Usar selectedService que se define en el listener del select
         const durationInMinutes = selectedService.duracion_minutos || 30;
         const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).toTimeString().slice(0, 8);
 
-        await getClientIdForBooking(); // Esta función debe estar definida en tu archivo
+        // ======================= INICIO DE LA CORRECCIÓN CLAVE =======================
+        //
+        // Aquí capturamos el ID que retorna la función y lo guardamos en la variable `clienteId`.
+        //
+        const clienteId = await getClientIdForBooking(); 
+        //
+        // ======================== FIN DE LA CORRECCIÓN CLAVE =========================
 
         const bookingData = {
-        barbero_id: barberId,
-        cliente_id: clienteId, // <-- ¡LA LÍNEA CLAVE QUE FALTABA!
-        cliente_nombre: clientSearchInput.value.trim(),
-        cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
-        servicio_reservado_id: serviceData.id,
-        fecha_cita: dateInput.value,
-        hora_inicio_cita: startTime,
-        hora_fin_cita: endTime,
-        precio_final: serviceData.precio,
-        estado: 'pendiente' //
-    };
+            barbero_id: barberId,
+            cliente_id: clienteId, // <-- ¡AHORA LA VARIABLE SÍ EXISTE!
+            cliente_nombre: clientSearchInput.value.trim(),
+            cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
+            servicio_reservado_id: serviceData.id,
+            fecha_cita: dateInput.value,
+            hora_inicio_cita: startTime,
+            hora_fin_cita: endTime,
+            precio_final: serviceData.precio,
+            estado: 'pendiente'
+        };
 
         const { data: bookingResult, error: bookingError } = await supabaseClient
             .from('citas')
@@ -308,7 +315,7 @@ async function handleBookingSubmit(e) {
             .single();
 
         if (bookingError) {
-            if (bookingError.code === '23505') {
+            if (bookingError.code === '23505') { // Error de violación de unicidad
                 throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
             }
             throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
@@ -317,7 +324,8 @@ async function handleBookingSubmit(e) {
         if (!bookingResult) {
             throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
         }
-
+        
+        // ... (el resto de tu función para notificaciones y UI sigue igual) ...
         const date = new Date(bookingResult.fecha_cita + 'T12:00:00');
         const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
         const time = new Date(`1970-01-01T${bookingResult.hora_inicio_cita}`);
@@ -339,51 +347,44 @@ async function handleBookingSubmit(e) {
         if (notifError) {
             console.error("Error al crear la notificación persistente:", notifError);
         }
-// ======================= INICIO DE LA SOLUCIÓN =======================
-        //
-        // El problema estaba en `supabaseClient.removeChannel(channel)`.
-        // Al eliminar esa línea, evitamos que la conexión del receptor (el barbero)
-        // se cierre inesperadamente.
-        //
+        
         const channelName = `notifications-channel-for-${barberId}`;
         const channel = supabaseClient.channel(channelName);
 
         const broadcastPayload = {
             event: 'nueva_reserva',
             payload: {
+                // CORRECCIÓN: Usa el objeto persistentNotification que acabas de crear
                 id: persistentNotification.id,
                 created_at: persistentNotification.created_at,
-                mensaje: notificationMessage,
-                tipo: 'nueva_reserva'
+                mensaje: persistentNotification.mensaje,
+                tipo: persistentNotification.tipo,
+                cita: bookingResult // Opcional: Adjuntar datos de la cita si es útil
             }
         };
 
         channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                // Ahora que estamos suscritos, enviamos el mensaje.
                 channel.send({
                     type: 'broadcast',
                     event: 'new-notification',
                     payload: broadcastPayload,
                 });
                 console.log(`🚀 Mensaje de Broadcast enviado al canal: ${channelName}`);
-                // ¡YA NO NOS DESUSCRIBIMOS!
-                // La conexión se cerrará automáticamente cuando el usuario deje la página.
             }
         });
-        //
-        // ======================== FIN DE LA SOLUCIÓN =========================
+
         document.getElementById('barberBookingForm').style.display = 'none';
         document.getElementById('booking-success-message').style.display = 'block';
         statusMessage.textContent = '';
-        generateWhatsAppLink(bookingResult); // Esta función debe estar definida en tu archivo
+        generateWhatsAppLink(bookingResult);
 
     } catch (error) {
         console.error("Error en el proceso de reserva:", error);
         statusMessage.textContent = `Error: ${error.message}`;
         statusMessage.className = 'status-message error';
         alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
-        fetchAvailability(document.getElementById('booking-date').value); // Esta función debe estar definida
+        fetchAvailability(document.getElementById('booking-date').value);
     }
 }
     const generateWhatsAppLink = (booking) => {
