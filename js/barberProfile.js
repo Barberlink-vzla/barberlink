@@ -28,6 +28,7 @@ let monthlyBookingsMap = new Map();
 let appointmentCheckInterval = null; 
 const notifiedAppointmentIds = new Set();
 let confirmationCheckInterval = null; 
+let paymentCheckInterval = null; 
 const promptedConfirmationIds = new Set(); 
 
 const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -505,20 +506,23 @@ function setupAlertModalListeners() {
 // INICIO DE LA MEJORA: LÓGICA UNIFICADA PARA VERIFICACIÓN DE CITAS
 // =========================================================================
 
+// EN: js/barberProfile.js
+
 /**
- * Inicia el ciclo de verificación de citas. Se ejecuta al cargar la página y
- * luego periódicamente.
+ * Inicia los ciclos de verificación para asistencia y para pagos.
  */
 function startConfirmationChecker() {
+    // Limpiar intervalos existentes para evitar duplicados
     if (confirmationCheckInterval) clearInterval(confirmationCheckInterval);
+    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
 
-    // 1. Ejecuta la verificación una vez, inmediatamente al cargar la página.
-    // Esto resuelve el caso de abrir la app después de una cita perdida.
-    checkAndProcessOverdueAppointments();
+    // 1. Ejecutar ambas verificaciones una vez al cargar la página
+    checkAndProcessOverdueAppointments(); // ¿Llegó el cliente?
+    checkAndProcessFinishedAppointments(); // ¿Terminó el servicio?
     
-    // 2. Establece un intervalo para seguir verificando en tiempo real mientras la app está abierta.
-    // Esto es útil si una cita pasa su hora de inicio mientras el barbero tiene la página abierta.
-    confirmationCheckInterval = setInterval(checkAndProcessOverdueAppointments, 15000); // 15 segundos
+    // 2. Establecer intervalos para seguir verificando en tiempo real
+    confirmationCheckInterval = setInterval(checkAndProcessOverdueAppointments, 15000); // Cada 15s
+    paymentCheckInterval = setInterval(checkAndProcessFinishedAppointments, 15000); // Cada 15s
 }
 
 /**
@@ -540,7 +544,7 @@ async function checkAndProcessOverdueAppointments() {
         .from('citas')
         .select('*') // Traemos todo para los modales
         .eq('barbero_id', currentUserId)
-        .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.IN_PROGRESS])
+        .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED])
         .or(`fecha_cita.lt.${today},and(fecha_cita.eq.${today},hora_inicio_cita.lt.${currentTime})`);
 
     if (error) {
@@ -577,6 +581,51 @@ async function checkAndProcessOverdueAppointments() {
         break; 
     }
 }
+// AÑADE ESTA NUEVA FUNCIÓN en js/barberProfile.js
+
+/**
+ * Busca citas "en proceso" que ya han terminado para solicitar el pago.
+ */
+async function checkAndProcessFinishedAppointments() {
+    if (!currentUserId) return;
+
+    const now = new Date();
+    const today = toLocalISODate(now);
+    const currentTime = now.toTimeString().slice(0, 8);
+
+    // Esta consulta busca específicamente servicios que están "en proceso" y cuya hora de fin ya pasó.
+    const { data: finishedCitas, error } = await supabaseClient
+        .from('citas')
+        .select('*') // Necesitamos todos los datos para el modal de pago
+        .eq('barbero_id', currentUserId)
+        .eq('estado', APPOINTMENT_STATUS.IN_PROGRESS) // <-- Solo busca citas EN PROCESO
+        .or(`fecha_cita.lt.${today},and(fecha_cita.eq.${today},hora_fin_cita.lt.${currentTime})`); // <-- Compara con la HORA DE FIN
+
+    if (error) {
+        console.error("Error buscando citas finalizadas para pago:", error);
+        return;
+    }
+
+    if (!finishedCitas || finishedCitas.length === 0) {
+        return; // No hay nada que hacer
+    }
+
+    // Procesamos solo una a la vez para no mostrar múltiples modales
+    for (const cita of finishedCitas) {
+        // Si ya mostramos un modal para esta cita, la saltamos
+        if (promptedConfirmationIds.has(cita.id)) continue; 
+
+        // ¡Esta cita ha terminado y necesita que se registre el pago!
+        showPaymentModal(cita);
+        
+        // IMPORTANTE: Marcamos la cita como "ya procesada" para no volver a mostrar el modal
+        promptedConfirmationIds.add(cita.id);
+        
+        // Salimos del bucle para mostrar solo un modal a la vez
+        break; 
+    }
+}
+
 
 // =========================================================================
 // FIN DE LA LÓGICA UNIFICADA
