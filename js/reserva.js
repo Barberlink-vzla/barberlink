@@ -1,5 +1,4 @@
 // js/reserva.js
-
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof supabaseClient === 'undefined') {
         console.error("Reserva Error: supabaseClient no está definido.");
@@ -110,9 +109,22 @@ document.addEventListener('DOMContentLoaded', () => {
             option.value = service.id;
             const serviceName = service.nombre_personalizado || service.servicios_maestro.nombre;
             option.textContent = `${serviceName} - $${service.precio}`;
-            option.dataset.serviceData = JSON.stringify(service);
+            option.dataset.serviceData = JSON.stringify({
+                ...service,
+                duracion_minutos: service.duracion_minutos || 30
+            });
             serviceSelect.appendChild(option);
         });
+
+        // Inicializar selectedService con el primer servicio disponible
+        if (barberData.barbero_servicios.length > 0) {
+            const firstService = barberData.barbero_servicios[0];
+            selectedService = {
+                ...firstService,
+                duracion_minutos: firstService.duracion_minutos || 30
+            };
+            selectedServiceDuration = selectedService.duracion_minutos;
+        }
     };
 
     const fetchAvailability = async (date) => {
@@ -167,11 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stepNumber < 1 || stepNumber > steps.length) return;
 
         if (stepNumber > currentStep) {
-            if (currentStep === 1 && !serviceSelect.value) { alert("Por favor, selecciona un servicio."); return; }
-            if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { alert("Por favor, selecciona fecha y hora."); return; }
+            if (currentStep === 1 && !serviceSelect.value) { 
+                alert("Por favor, selecciona un servicio."); 
+                return; 
+            }
+            if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { 
+                alert("Por favor, selecciona fecha y hora."); 
+                return; 
+            }
             if (currentStep === 3) {
                 if (!clientSearchInput.value.trim() || !clientPhoneInput.value.trim()) {
-                    alert("Por favor, completa tu nombre y teléfono."); return;
+                    alert("Por favor, completa tu nombre y teléfono."); 
+                    return;
                 }
             }
         }
@@ -200,16 +219,25 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateBookingSummary = () => {
-        const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
-        const serviceName = serviceData.nombre_personalizado || serviceData.servicios_maestro.nombre;
-        const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        if (!selectedService) {
+            console.error("No se ha seleccionado ningún servicio");
+            return;
+        }
+        
+        const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
+        const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
         const time = timeSelect.options[timeSelect.selectedIndex].textContent;
         const clientName = clientSearchInput.value;
 
         bookingSummary.innerHTML = `
             <p><strong>Barbero:</strong> ${barberData.nombre}</p>
             <p><strong>Servicio:</strong> ${serviceName}</p>
-            <p><strong>Precio:</strong> $${serviceData.precio}</p>
+            <p><strong>Precio:</strong> $${selectedService.precio}</p>
             <p><strong>Fecha:</strong> ${date}</p>
             <p><strong>Hora:</strong> ${time}</p>
             <p><strong>Cliente:</strong> ${clientName.trim()}</p>
@@ -252,15 +280,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleBookingSubmit(e) {
         e.preventDefault();
+        
+        // Validación adicional para selectedService
+        if (!selectedService) {
+            alert("Por favor selecciona un servicio antes de continuar");
+            return;
+        }
+
         statusMessage.textContent = 'Procesando reserva...';
         statusMessage.className = 'status-message';
 
         try {
-            // --- 1. Obtener todos los datos necesarios del formulario y el estado ---
-            const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
+            // --- 1. Obtener todos los datos necesarios ---
             const startTime = timeSelect.value;
             const bookingDate = new Date(`${dateInput.value}T${startTime}`);
-            const durationInMinutes = selectedService.duracion_minutos || 30;
+            const durationInMinutes = selectedService.duracion_minutos;
             const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60000).toTimeString().slice(0, 8);
 
             // --- 2. Obtener o crear el ID del cliente ---
@@ -272,15 +306,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 cliente_id: clienteId,
                 cliente_nombre: clientSearchInput.value.trim(),
                 cliente_telefono: clientPhoneInput.value.trim(),
-                servicio_reservado_id: serviceData.id,
+                servicio_reservado_id: selectedService.id,
                 fecha_cita: dateInput.value,
                 hora_inicio_cita: startTime,
                 hora_fin_cita: endTime,
-                precio_final: serviceData.precio,
+                precio_final: selectedService.precio,
                 estado: 'pendiente'
             };
 
-            // --- 4. CORRECCIÓN CLAVE: Insertar SIN el .select() ---
+            // --- 4. Insertar la reserva ---
             const { error: bookingError } = await supabaseClient
                 .from('citas')
                 .insert(bookingData);
@@ -288,9 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bookingError) {
                 if (bookingError.code === '23505') {
                     throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
-                }
-                if (bookingError.code === '42501') {
-                    throw new Error(`Error de permisos. Contacta al administrador. Detalles: ${bookingError.message}`);
                 }
                 throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
             }
@@ -300,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('booking-success-message').style.display = 'block';
             statusMessage.textContent = '';
             
-            // Pasamos los datos que ya tenemos a la función del enlace de WhatsApp.
+            // Generar enlace de WhatsApp
             generateWhatsAppLink(bookingData);
 
         } catch (error) {
@@ -312,23 +343,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // ESTA ES LA ÚNICA VERSIÓN DE LA FUNCIÓN QUE DEBE QUEDAR
     const generateWhatsAppLink = (bookingInfo) => {
-        // Usa 'barberData' que ya se cargó al inicio en la página
         const barberPhone = barberData.telefono.replace(/\D/g, '');
-    
-        // Usa 'selectedService' que también es una variable de estado global
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
     
-        // Formatea la fecha y hora desde la información que ya teníamos
         const date = new Date(bookingInfo.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
-        const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+        const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {
+            hour: '2-digit', 
+            minute: '2-digit'
+        });
         
         const message = `¡Hola! Acabo de reservar una cita:\n\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
         
         const whatsappUrl = `https://wa.me/${barberPhone}?text=${encodeURIComponent(message)}`;
         
-        whatsappLinkContainer.innerHTML = `<a href="${whatsappUrl}" target="_blank" class="style-button whatsapp-confirm-button"><i class="fab fa-whatsapp"></i> Enviar Confirmación por WhatsApp</a>`;
+        whatsappLinkContainer.innerHTML = `
+            <a href="${whatsappUrl}" 
+               target="_blank" 
+               class="style-button whatsapp-confirm-button">
+                <i class="fab fa-whatsapp"></i> 
+                Enviar Confirmación por WhatsApp
+            </a>
+        `;
     };
 
     // --- FUNCIONES PARA AUTOCOMPLETADO ---
