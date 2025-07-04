@@ -19,6 +19,8 @@ let currentPeriodAppointments = []; // Holds the full, unfiltered list of appoin
 
 
 // Variables globales para el calendario y la disponibilidad
+
+let highlightedCitaId = null; // Guardará el ID de la cita a resaltar
 let currentCalendarDate = new Date();
 let weeklyAvailabilityData = [[], [], [], [], [], [], []];
 let activeEditingDayIndex = -1;
@@ -105,8 +107,12 @@ async function initProfileModule() {
     });
     document.addEventListener('navigateToDate', (e) => {
         if (e.detail && e.detail.dateString) {
-            navigateToDateFromNotification(e.detail.dateString);
-        }
+        // --- MEJORA ---
+        // Guardamos el ID de la cita que viene desde la notificación
+        highlightedCitaId = e.detail.citaId || null; 
+        
+        navigateToDateFromNotification(e.detail.dateString);
+    }
     });
      
     document.addEventListener('datosCambiadosPorReserva', () => {
@@ -1280,13 +1286,12 @@ function handleCalendarDayClick(dayElement, dateString, dayOfWeekIndex) {
     // 1. Marca visualmente el día seleccionado en el calendario
     document.querySelectorAll('.day.selected').forEach(d => d.classList.remove('selected'));
     dayElement.classList.add('selected');
-    activeEditingDayIndex = dayOfWeekIndex;
-
-    // 2. Llama directamente a la función que abre el modal en la vista de citas
-    // ¡Esta es la modificación clave que omite el paso de selección de acción!
-    showBookingsForDayModal(dateString);
+    
+    // --- ESTA ES LA CORRECCIÓN ---
+    // En lugar de ir directo a las citas, llamamos al modal de acciones
+    // para que el barbero elija qué hacer.
+    showCalendarActionModal(dateString, dayOfWeekIndex);
 }
-
 // AÑADE esta nueva función en js/barberProfile.js
 
 /**
@@ -1332,6 +1337,7 @@ async function loadAndRenderBookingsForDate(dateString) {
     renderBookingsForDay(data);
 }
 
+// REEMPLAZA esta función en js/barberProfile.js
 function renderBookingsForDay(bookings) {
     if (!bookingsList) return;
     if (bookings.length === 0) {
@@ -1342,9 +1348,33 @@ function renderBookingsForDay(bookings) {
     bookings.forEach(booking => {
         const serviceInfo = booking.barbero_servicios;
         const serviceName = serviceInfo?.nombre_personalizado || serviceInfo?.servicios_maestro?.nombre || 'Servicio no especificado';
-        html += `<div class="booking-item"><h4>${booking.hora_inicio_cita.substring(0,5)} - ${booking.hora_fin_cita.substring(0,5)}</h4><p><strong>Cliente:</strong> ${booking.cliente_nombre}</p><p><strong>Teléfono:</strong> ${booking.cliente_telefono || 'No provisto'}</p><p><strong>Servicio:</strong> ${serviceName}</p><p><strong>Estado:</strong> <span style="text-transform: capitalize;">${booking.estado}</span></p></div>`;
+        
+        // --- MEJORA ---
+        const isHighlighted = booking.id === highlightedCitaId;
+        const highlightClass = isHighlighted ? 'highlighted-booking' : '';
+        const bookingIdAttr = `id="booking-item-${booking.id}"`;
+
+        html += `
+            <div class="booking-item ${highlightClass}" ${bookingIdAttr}>
+                <h4>${booking.hora_inicio_cita.substring(0,5)} - ${booking.hora_fin_cita.substring(0,5)}</h4>
+                <p><strong>Cliente:</strong> ${booking.cliente_nombre}</p>
+                <p><strong>Teléfono:</strong> ${booking.cliente_telefono || 'No provisto'}</p>
+                <p><strong>Servicio:</strong> ${serviceName}</p>
+                <p><strong>Estado:</strong> <span style="text-transform: capitalize;">${booking.estado}</span></p>
+            </div>`;
     });
     bookingsList.innerHTML = html;
+
+    // --- MEJORA ---
+    // Si hay una cita para resaltar, la buscamos y hacemos scroll hacia ella
+    if (highlightedCitaId) {
+        const highlightedElement = document.getElementById(`booking-item-${highlightedCitaId}`);
+        if (highlightedElement) {
+            highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Limpiamos la variable para que no afecte a futuras interacciones
+        highlightedCitaId = null; 
+    }
 }
 
 function renderBarberForm(barberData) {
