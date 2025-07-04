@@ -292,7 +292,8 @@ function setupRealtimeListener() {
                         detail: { cita: notification.cita } 
                     }));
                 } else if (notification.cita && notification.cita.fecha_cita) {
-                    document.dispatchEvent(new CustomEvent('showBookingDetailsForDate', { 
+                  // Cambiamos el nombre del evento para que coincida con el listener en barberProfile.js
+                    document.dispatchEvent(new CustomEvent('navigateToDate', { 
                         detail: { dateString: notification.cita.fecha_cita } 
                     }));
                 }
