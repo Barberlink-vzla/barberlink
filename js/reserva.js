@@ -265,6 +265,7 @@ let availableSlots = [];
 
 // Archivo: js/reserva.js
 
+// Reemplaza la función completa en tu archivo js/reserva.js
 async function handleBookingSubmit(e) {
     e.preventDefault();
     const statusMessage = document.getElementById('booking-status');
@@ -272,107 +273,62 @@ async function handleBookingSubmit(e) {
     statusMessage.className = 'status-message';
 
     try {
+        // --- 1. Obtener todos los datos necesarios del formulario y el estado ---
         const serviceSelect = document.getElementById('service-select');
         const dateInput = document.getElementById('booking-date');
         const timeSelect = document.getElementById('time-select');
         const clientSearchInput = document.getElementById('cliente-search');
-
-        // Se asume que las variables de estado como barberId y selectedService
-        // están disponibles en un scope superior.
-
+        const clientPhoneInput = document.getElementById('cliente_telefono');
         const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
         const startTime = timeSelect.value;
         const bookingDate = new Date(`${dateInput.value}T${startTime}`);
-        
-        // Mejora: Se usa la variable 'selectedService' que se actualiza al elegir un servicio.
         const durationInMinutes = selectedService.duracion_minutos || 30;
-        const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60 * 1000).toTimeString().slice(0, 8);
+        const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60000).toTimeString().slice(0, 8);
 
-        // Corrección Clave: Capturar el ID retornado por la función en una constante.
-       const clienteId = await getClientIdForBooking(); // <-- ¡SOLUCIÓN!
+        // --- 2. Obtener o crear el ID del cliente (esta función ya estaba bien) ---
+        const clienteId = await getClientIdForBooking();
 
-const bookingData = {
-    barbero_id: barberId,
-    cliente_id: clienteId, // <-- ¡CORRECTO! Ahora la variable sí existe.
-    cliente_nombre: clientSearchInput.value.trim(),
-    cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
+        // --- 3. Preparar los datos de la reserva ---
+        const bookingData = {
+            barbero_id: barberId,
+            cliente_id: clienteId,
+            cliente_nombre: clientSearchInput.value.trim(),
+            cliente_telefono: clientPhoneInput.value.trim(),
             servicio_reservado_id: serviceData.id,
             fecha_cita: dateInput.value,
             hora_inicio_cita: startTime,
             hora_fin_cita: endTime,
             precio_final: serviceData.precio,
-            estado: 'pendiente'
+            estado: 'pendiente' // El estado inicial siempre es pendiente
         };
 
-        const { data: bookingResult, error: bookingError } = await supabaseClient
+        // --- 4. CORRECCIÓN CLAVE: Insertar SIN el .select() ---
+        // Simplemente insertamos y solo nos preocupamos por si hay un error.
+        const { error: bookingError } = await supabaseClient
             .from('citas')
-            .insert(bookingData)
-            .select()
-            .single();
+            .insert(bookingData);
 
         if (bookingError) {
-            // Manejo de error específico para citas duplicadas.
-            if (bookingError.code === '23505') { 
+            // Manejo de error específico para citas duplicadas (conflicto de clave primaria/única)
+            if (bookingError.code === '23505') {
                 throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
+            }
+            // Error genérico por la política de seguridad (si algo sale mal en el RLS)
+            if (bookingError.code === '42501') {
+                 throw new Error(`Error de permisos. Contacta al administrador. Detalles: ${bookingError.message}`);
             }
             throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
         }
-
-        if (!bookingResult) {
-            throw new Error("La reserva no pudo ser confirmada. Inténtalo de nuevo.");
-        }
-
-        // Crear la notificación para el barbero.
-        const date = new Date(bookingResult.fecha_cita + 'T12:00:00');
-        const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-        const time = new Date(`1970-01-01T${bookingResult.hora_inicio_cita}`);
-        const formattedTime = time.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true });
-        const notificationMessage = `¡Nueva reserva de ${bookingResult.cliente_nombre}! Agendado para el ${formattedDate} a las ${formattedTime}.`;
-
-        const { data: persistentNotification, error: notifError } = await supabaseClient
-            .from('notificaciones')
-            .insert({
-                barbero_id: barberId,
-                cita_id: bookingResult.id,
-                mensaje: notificationMessage,
-                tipo: 'nueva_reserva',
-                leido: false
-            })
-            .select()
-            .single();
-
-        if (notifError) {
-            // No se detiene el flujo, pero se registra el error.
-            console.error("Error al crear la notificación persistente:", notifError);
-        }
         
-        // Enviar notificación en tiempo real (broadcast) al barbero.
-        if (persistentNotification) {
-            const channelName = `notifications-channel-for-${barberId}`;
-            const channel = supabaseClient.channel(channelName);
+        // --- 5. Lógica de éxito: Ya no tenemos 'bookingResult', usamos 'bookingData' ---
+        // La creación de notificaciones se ha eliminado por seguridad. Se hará en el backend (Paso 3).
 
-            const broadcastPayload = {
-                event: 'nueva_reserva',
-                payload: persistentNotification // Se envía el objeto completo de la notificación.
-            };
-
-            channel.subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    channel.send({
-                        type: 'broadcast',
-                        event: 'new-notification',
-                        payload: broadcastPayload,
-                    });
-                    console.log(`🚀 Mensaje de Broadcast enviado al canal: ${channelName}`);
-                }
-            });
-        }
-        
-        // Actualizar la interfaz para mostrar el éxito de la reserva.
         document.getElementById('barberBookingForm').style.display = 'none';
         document.getElementById('booking-success-message').style.display = 'block';
         statusMessage.textContent = '';
-        generateWhatsAppLink(bookingResult);
+
+        // Pasamos los datos que ya tenemos a la función del enlace de WhatsApp.
+        generateWhatsAppLink(bookingData);
 
     } catch (error) {
         console.error("Error en el proceso de reserva:", error);
@@ -382,6 +338,25 @@ const bookingData = {
         fetchAvailability(document.getElementById('booking-date').value);
     }
 }
+
+// Reemplaza también esta función para que no dependa del resultado de la BD
+const generateWhatsAppLink = (bookingInfo) => {
+    // Usamos 'barberData' que ya está cargado globalmente
+    const barberPhone = barberData.telefono.replace(/\D/g, '');
+    
+    // Usamos 'selectedService' que también es una variable de estado global
+    const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
+
+    // Formateamos la fecha y hora desde la información que ya teníamos
+    const date = new Date(bookingInfo.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
+    const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+    
+    const message = `¡Hola! Acabo de reservar una cita:\n\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
+    
+    const whatsappUrl = `https://wa.me/${barberPhone}?text=${encodeURIComponent(message)}`;
+    
+    whatsappLinkContainer.innerHTML = `<a href="${whatsappUrl}" target="_blank" class="style-button whatsapp-confirm-button"><i class="fab fa-whatsapp"></i> Enviar Confirmación por WhatsApp</a>`;
+};
     const generateWhatsAppLink = (booking) => {
         const barberPhone = barberData.telefono.replace(/\D/g, '');
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
