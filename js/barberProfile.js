@@ -1517,6 +1517,8 @@ function updateInMemoryAvailabilityFromUI() {
 
 // REEMPLAZA ESTA FUNCIÓN. ESTA ES LA VERSIÓN CORREGIDA Y DEFINITIVA.
 
+// REEMPLAZA esta función en js/barberProfile.js para la corrección final
+
 async function navigateToDateFromNotification(dateString) {
     if (!dateString) return;
 
@@ -1529,6 +1531,7 @@ async function navigateToDateFromNotification(dateString) {
 
     if (loader) loader.classList.add('active');
     
+    // Cambia a la pestaña de "Reservas"
     document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
     document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
     targetSection.classList.add('active');
@@ -1538,23 +1541,19 @@ async function navigateToDateFromNotification(dateString) {
         const targetDate = new Date(dateString + 'T12:00:00');
         currentCalendarDate = targetDate;
         
+        // Carga el calendario para el mes correcto
         await fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
 
-        const dayElement = document.querySelector(`.day[data-date="${dateString}"]`);
-        if (dayElement) {
-            
-            // --- INICIO DE LA CORRECCIÓN CLAVE ---
-            // ANTERIORMENTE: dayElement.click(); // Esto no pasaba los argumentos.
-            
-            // CORRECCIÓN: Llamamos a la función directamente con todos sus parámetros.
-            const dayOfWeekIndex = new Date(dateString + 'T12:00:00').getDay();
-            handleCalendarDayClick(dayElement, dateString, dayOfWeekIndex);
-            // --- FIN DE LA CORRECCIÓN CLAVE ---
-
-            dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-            console.warn(`No se encontró el elemento del día para la fecha: ${dateString}`);
-        }
+        // ======================= INICIO DE LA CORRECCIÓN CLAVE =======================
+        //
+        // En lugar de llamar a handleCalendarDayClick (que muestra el menú de acciones),
+        // llamamos directamente a la función que abre el modal en la vista de citas.
+        // Como la variable 'highlightedCitaId' ya se estableció en el listener,
+        // la cita correcta será resaltada automáticamente.
+        //
+        showBookingsForDayModal(dateString);
+        //
+        // ======================== FIN DE LA CORRECCIÓN CLAVE =========================
 
     } catch (error) {
         console.error('Error al navegar a la fecha desde la notificación:', error);
