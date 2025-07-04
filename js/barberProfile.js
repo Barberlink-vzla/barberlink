@@ -1275,14 +1275,51 @@ function renderCalendar(year, month) {
     }
 }
 
+// REEMPLAZA esta función en js/barberProfile.js
 function handleCalendarDayClick(dayElement, dateString, dayOfWeekIndex) {
+    // 1. Marca visualmente el día seleccionado en el calendario
     document.querySelectorAll('.day.selected').forEach(d => d.classList.remove('selected'));
     dayElement.classList.add('selected');
-
     activeEditingDayIndex = dayOfWeekIndex;
 
-    showCalendarActionModal(dateString, dayOfWeekIndex);
+    // 2. Llama directamente a la función que abre el modal en la vista de citas
+    // ¡Esta es la modificación clave que omite el paso de selección de acción!
+    showBookingsForDayModal(dateString);
 }
+
+// AÑADE esta nueva función en js/barberProfile.js
+
+/**
+ * Abre el modal de acciones directamente en la vista de "Citas del Día".
+ * @param {string} dateString - La fecha para la cual mostrar las citas (formato YYYY-MM-DD).
+ */
+function showBookingsForDayModal(dateString) {
+    currentActionModalDate = { dateString, dayOfWeek: new Date(dateString + 'T12:00:00').getDay() };
+
+    const overlay = document.getElementById('calendar-action-modal-overlay');
+    const dateText = document.getElementById('modal-selected-date-text');
+
+    // Configura el título del modal con la fecha amigable
+    const friendlyDate = new Date(dateString + 'T12:00:00').toLocaleDateString('es-ES', { dateStyle: 'long' });
+    dateText.textContent = friendlyDate;
+
+    // Oculta la vista de botones de acción
+    document.getElementById('modal-action-buttons-view').style.display = 'none';
+
+    // Muestra el contenedor principal del contenido del modal
+    document.getElementById('modal-content-view').style.display = 'block';
+
+    // Activa específicamente el visor de citas y desactiva los demás
+    document.querySelectorAll('.modal-content-viewer').forEach(v => v.classList.remove('active'));
+    document.querySelector('.modal-content-viewer[data-viewer="bookings"]').classList.add('active');
+
+    // Carga y renderiza las citas para la fecha seleccionada
+    loadAndRenderBookingsForDate(dateString);
+
+    // Finalmente, muestra el modal ya configurado
+    overlay.classList.add('active');
+}
+
 async function loadAndRenderBookingsForDate(dateString) {
     if (selectedDayHeading) selectedDayHeading.textContent = new Date(dateString + 'T12:00:00').toLocaleDateString('es-ES', { dateStyle: 'full' });
     if (bookingsList) bookingsList.innerHTML = 'Cargando citas...';
@@ -1535,6 +1572,8 @@ function setupEventListeners() {
 
 let currentActionModalDate = { dateString: null, dayOfWeek: null };
 
+// MODIFICA esta función en js/barberProfile.js
+
 function setupCalendarActionModal() {
     const overlay = document.getElementById('calendar-action-modal-overlay');
     const closeBtn = document.getElementById('calendar-action-modal-close-btn');
@@ -1546,18 +1585,15 @@ function setupCalendarActionModal() {
     if (!overlay || !modal) return;
 
     const closeModal = () => closeCalendarActionModal();
-    
+
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeModal();
     });
     closeBtn.addEventListener('click', closeModal);
 
+    // Este botón ahora es un "extra" por si se llega a la vista de acciones
     viewBookingsBtn.addEventListener('click', () => {
-        document.getElementById('modal-action-buttons-view').style.display = 'none';
-        document.getElementById('modal-content-view').style.display = 'block';
-        const viewer = document.querySelector('.modal-content-viewer[data-viewer="bookings"]');
-        viewer.classList.add('active');
-        loadAndRenderBookingsForDate(currentActionModalDate.dateString);
+        showBookingsForDayModal(currentActionModalDate.dateString);
     });
 
     editAvailabilityBtn.addEventListener('click', () => {
@@ -1567,7 +1603,8 @@ function setupCalendarActionModal() {
         viewer.classList.add('active');
         displayAvailabilityForDay(currentActionModalDate.dayOfWeek);
     });
-    
+
+    // El botón "Volver" ahora te llevará al menú de selección de acciones
     backBtn.addEventListener('click', () => {
         document.getElementById('modal-content-view').style.display = 'none';
         document.querySelector('.modal-content-viewer.active')?.classList.remove('active');
