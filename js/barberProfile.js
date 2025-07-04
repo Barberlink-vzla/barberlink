@@ -1485,6 +1485,8 @@ function updateInMemoryAvailabilityFromUI() {
     weeklyAvailabilityData[activeEditingDayIndex] = currentDaySlots;
 }
 
+// REEMPLAZA ESTA FUNCIÓN. ESTA ES LA VERSIÓN CORREGIDA Y DEFINITIVA.
+
 async function navigateToDateFromNotification(dateString) {
     if (!dateString) return;
 
@@ -1495,27 +1497,30 @@ async function navigateToDateFromNotification(dateString) {
 
     if (!targetSection || !targetLink) return;
 
-    // 1. Mostrar el loader y cambiar la interfaz de forma síncrona
     if (loader) loader.classList.add('active');
     
-    // Activar la sección y el enlace del menú manualmente
     document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
     document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
     targetSection.classList.add('active');
     targetLink.classList.add('active');
 
     try {
-        // 2. Navegar el estado del calendario a la fecha objetivo
         const targetDate = new Date(dateString + 'T12:00:00');
         currentCalendarDate = targetDate;
         
-        // 3. Esperar (await) a que se carguen las citas del mes Y se renderice el calendario.
         await fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
 
-        // 4. Ahora que el calendario está en el DOM, podemos buscar y hacer clic en el día.
         const dayElement = document.querySelector(`.day[data-date="${dateString}"]`);
         if (dayElement) {
-            dayElement.click(); 
+            
+            // --- INICIO DE LA CORRECCIÓN CLAVE ---
+            // ANTERIORMENTE: dayElement.click(); // Esto no pasaba los argumentos.
+            
+            // CORRECCIÓN: Llamamos a la función directamente con todos sus parámetros.
+            const dayOfWeekIndex = new Date(dateString + 'T12:00:00').getDay();
+            handleCalendarDayClick(dayElement, dateString, dayOfWeekIndex);
+            // --- FIN DE LA CORRECCIÓN CLAVE ---
+
             dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
             console.warn(`No se encontró el elemento del día para la fecha: ${dateString}`);
@@ -1524,11 +1529,9 @@ async function navigateToDateFromNotification(dateString) {
     } catch (error) {
         console.error('Error al navegar a la fecha desde la notificación:', error);
     } finally {
-        // 5. Ocultar el loader al finalizar
         if (loader) loader.classList.remove('active');
     }
 }
-
 function setupEventListeners() {
     if (logoutProfileButton) logoutProfileButton.addEventListener('click', logout);
     if (saveAllButton) saveAllButton.addEventListener('click', saveAllChanges);
