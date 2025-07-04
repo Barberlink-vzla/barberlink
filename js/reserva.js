@@ -7,15 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     console.log("Módulo de reserva iniciado correctamente. ✅");
 
-  // --- State Management ---
-let currentStep = 1;
-let barberId = null;
-let barberData = null;
-let barberClients = []; 
-let selectedClient = null; 
-let selectedService = null;
-let selectedServiceDuration = null; // <-- NUEVA VARIABLE DE ESTADO
-let availableSlots = [];
+    // --- State Management ---
+    let currentStep = 1;
+    let barberId = null;
+    let barberData = null;
+    let barberClients = [];
+    let selectedClient = null;
+    let selectedService = null;
+    let selectedServiceDuration = null;
+    let availableSlots = [];
 
     // --- DOM Elements ---
     const form = document.getElementById('barberBookingForm');
@@ -33,7 +33,6 @@ let availableSlots = [];
     const clientSearchInput = document.getElementById('cliente-search');
     const clientResultsList = document.getElementById('cliente-results-list');
     const clientPhoneInput = document.getElementById('cliente_telefono');
-
 
     // --- Functions ---
 
@@ -58,6 +57,7 @@ let availableSlots = [];
                 barbero_servicios (
                     id,
                     precio,
+                    duracion_minutos,
                     nombre_personalizado,
                     servicios_maestro (id, nombre)
                 )
@@ -75,9 +75,9 @@ let availableSlots = [];
         barberData = data;
         updateBarberInfoUI();
         populateServiceSelect();
-        await fetchBarberClients(); 
+        await fetchBarberClients();
     };
-    
+
     const fetchBarberClients = async () => {
         if (!barberId) return;
         const { data, error } = await supabaseClient
@@ -91,7 +91,6 @@ let availableSlots = [];
         }
         barberClients = data;
     };
-
 
     const updateBarberInfoUI = () => {
         if (!barberData) return;
@@ -117,36 +116,31 @@ let availableSlots = [];
     };
 
     const fetchAvailability = async (date) => {
-    // Si no hay duración (no se ha seleccionado servicio), no buscar.
-    if (!barberId || !date || !selectedServiceDuration) {
+        if (!barberId || !date || !selectedServiceDuration) {
+            timeSelect.disabled = true;
+            timeSelect.innerHTML = '<option>Selecciona un servicio primero</option>';
+            return;
+        }
+
         timeSelect.disabled = true;
-        timeSelect.innerHTML = '<option>Selecciona un servicio primero</option>';
-        return;
-    }
-    
-    timeSelect.disabled = true;
-    timeSelect.innerHTML = '<option>Cargando horarios...</option>';
+        timeSelect.innerHTML = '<option>Cargando horarios...</option>';
 
-    const { data, error } = await supabaseClient.rpc('get_available_slots_by_duration', {
-        p_barber_id: barberId,
-        p_booking_date: date,
-        // La función RPC espera un tipo INTERVAL, que se puede pasar como string
-        p_service_duration: `${selectedServiceDuration} minutes` 
-    });
+        const { data, error } = await supabaseClient.rpc('get_available_slots_by_duration', {
+            p_barber_id: barberId,
+            p_booking_date: date,
+            p_service_duration: `${selectedServiceDuration} minutes`
+        });
 
-    if (error) {
-        console.error('Error fetching availability:', error);
-        timeSelect.innerHTML = '<option>Error al cargar horarios</option>';
-        // Dar un mensaje más útil al usuario
-        alert(`Ocurrió un error al buscar horarios: ${error.message}. Intenta de nuevo.`);
-        return;
-    }
+        if (error) {
+            console.error('Error fetching availability:', error);
+            timeSelect.innerHTML = '<option>Error al cargar horarios</option>';
+            alert(`Ocurrió un error al buscar horarios: ${error.message}. Intenta de nuevo.`);
+            return;
+        }
 
-    // La data ahora viene como un array de objetos {start_time: "HH:mm:ss"}
-    // así que necesitamos adaptarlo un poco.
-    availableSlots = data.map(slot => ({ start_time: slot.start_time }));
-    populateTimeSelect();
-};
+        availableSlots = data.map(slot => ({ start_time: slot.start_time }));
+        populateTimeSelect();
+    };
 
     const populateTimeSelect = () => {
         if (availableSlots.length === 0) {
@@ -161,27 +155,27 @@ let availableSlots = [];
             const date = new Date();
             date.setHours(timeParts[0], timeParts[1], 0);
             const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            
+
             option.value = slot.start_time;
             option.textContent = formattedTime;
             timeSelect.appendChild(option);
         });
         timeSelect.disabled = false;
     };
-    
+
     const navigateToStep = (stepNumber) => {
         if (stepNumber < 1 || stepNumber > steps.length) return;
 
         if (stepNumber > currentStep) {
-             if (currentStep === 1 && !serviceSelect.value) { alert("Por favor, selecciona un servicio."); return; }
-             if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { alert("Por favor, selecciona fecha y hora."); return; }
-             if (currentStep === 3) {
-                if (!clientSearchInput.value.trim() || !clientPhoneInput.value.trim()) { 
-                    alert("Por favor, completa tu nombre y teléfono."); return; 
+            if (currentStep === 1 && !serviceSelect.value) { alert("Por favor, selecciona un servicio."); return; }
+            if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { alert("Por favor, selecciona fecha y hora."); return; }
+            if (currentStep === 3) {
+                if (!clientSearchInput.value.trim() || !clientPhoneInput.value.trim()) {
+                    alert("Por favor, completa tu nombre y teléfono."); return;
                 }
-             }
+            }
         }
-        
+
         currentStep = stepNumber;
 
         steps.forEach(step => step.classList.remove('active-step'));
@@ -199,12 +193,12 @@ let availableSlots = [];
                 pbStep.classList.remove('active', 'completed');
             }
         });
-        
+
         if (currentStep === 4) {
             updateBookingSummary();
         }
     };
-    
+
     const updateBookingSummary = () => {
         const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
         const serviceName = serviceData.nombre_personalizado || serviceData.servicios_maestro.nombre;
@@ -237,8 +231,6 @@ let availableSlots = [];
             apellido: apellido,
             telefono: clientPhoneInput.value.trim(),
         };
-       
-    console.log('DEBUG: Datos del cliente a insertar:', clientData);
 
         if (!clientData.nombre || !clientData.telefono) {
             throw new Error("El nombre y el teléfono del cliente son obligatorios.");
@@ -258,112 +250,81 @@ let availableSlots = [];
         return data.id;
     };
 
-    // Reemplaza la función completa en tu archivo js/reserva.js
+    async function handleBookingSubmit(e) {
+        e.preventDefault();
+        statusMessage.textContent = 'Procesando reserva...';
+        statusMessage.className = 'status-message';
 
+        try {
+            // --- 1. Obtener todos los datos necesarios del formulario y el estado ---
+            const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
+            const startTime = timeSelect.value;
+            const bookingDate = new Date(`${dateInput.value}T${startTime}`);
+            const durationInMinutes = selectedService.duracion_minutos || 30;
+            const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60000).toTimeString().slice(0, 8);
 
-// Reemplaza la función completa en tu archivo js/reserva.js
+            // --- 2. Obtener o crear el ID del cliente ---
+            const clienteId = await getClientIdForBooking();
 
-// Archivo: js/reserva.js
+            // --- 3. Preparar los datos de la reserva ---
+            const bookingData = {
+                barbero_id: barberId,
+                cliente_id: clienteId,
+                cliente_nombre: clientSearchInput.value.trim(),
+                cliente_telefono: clientPhoneInput.value.trim(),
+                servicio_reservado_id: serviceData.id,
+                fecha_cita: dateInput.value,
+                hora_inicio_cita: startTime,
+                hora_fin_cita: endTime,
+                precio_final: serviceData.precio,
+                estado: 'pendiente'
+            };
 
-// Reemplaza la función completa en tu archivo js/reserva.js
-async function handleBookingSubmit(e) {
-    e.preventDefault();
-    const statusMessage = document.getElementById('booking-status');
-    statusMessage.textContent = 'Procesando reserva...';
-    statusMessage.className = 'status-message';
+            // --- 4. CORRECCIÓN CLAVE: Insertar SIN el .select() ---
+            const { error: bookingError } = await supabaseClient
+                .from('citas')
+                .insert(bookingData);
 
-    try {
-        // --- 1. Obtener todos los datos necesarios del formulario y el estado ---
-        const serviceSelect = document.getElementById('service-select');
-        const dateInput = document.getElementById('booking-date');
-        const timeSelect = document.getElementById('time-select');
-        const clientSearchInput = document.getElementById('cliente-search');
-        const clientPhoneInput = document.getElementById('cliente_telefono');
-        const serviceData = JSON.parse(serviceSelect.options[serviceSelect.selectedIndex].dataset.serviceData);
-        const startTime = timeSelect.value;
-        const bookingDate = new Date(`${dateInput.value}T${startTime}`);
-        const durationInMinutes = selectedService.duracion_minutos || 30;
-        const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60000).toTimeString().slice(0, 8);
-
-        // --- 2. Obtener o crear el ID del cliente (esta función ya estaba bien) ---
-        const clienteId = await getClientIdForBooking();
-
-        // --- 3. Preparar los datos de la reserva ---
-        const bookingData = {
-            barbero_id: barberId,
-            cliente_id: clienteId,
-            cliente_nombre: clientSearchInput.value.trim(),
-            cliente_telefono: clientPhoneInput.value.trim(),
-            servicio_reservado_id: serviceData.id,
-            fecha_cita: dateInput.value,
-            hora_inicio_cita: startTime,
-            hora_fin_cita: endTime,
-            precio_final: serviceData.precio,
-            estado: 'pendiente' // El estado inicial siempre es pendiente
-        };
-
-        // --- 4. CORRECCIÓN CLAVE: Insertar SIN el .select() ---
-        // Simplemente insertamos y solo nos preocupamos por si hay un error.
-        const { error: bookingError } = await supabaseClient
-            .from('citas')
-            .insert(bookingData);
-
-        if (bookingError) {
-            // Manejo de error específico para citas duplicadas (conflicto de clave primaria/única)
-            if (bookingError.code === '23505') {
-                throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
+            if (bookingError) {
+                if (bookingError.code === '23505') {
+                    throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
+                }
+                if (bookingError.code === '42501') {
+                    throw new Error(`Error de permisos. Contacta al administrador. Detalles: ${bookingError.message}`);
+                }
+                throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
             }
-            // Error genérico por la política de seguridad (si algo sale mal en el RLS)
-            if (bookingError.code === '42501') {
-                 throw new Error(`Error de permisos. Contacta al administrador. Detalles: ${bookingError.message}`);
-            }
-            throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
+
+            // --- 5. Lógica de éxito ---
+            document.getElementById('barberBookingForm').style.display = 'none';
+            document.getElementById('booking-success-message').style.display = 'block';
+            statusMessage.textContent = '';
+            
+            // Pasamos los datos que ya tenemos a la función del enlace de WhatsApp.
+            generateWhatsAppLink(bookingData);
+
+        } catch (error) {
+            console.error("Error en el proceso de reserva:", error);
+            statusMessage.textContent = `Error: ${error.message}`;
+            statusMessage.className = 'status-message error';
+            alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
+            fetchAvailability(document.getElementById('booking-date').value);
         }
-        
-        // --- 5. Lógica de éxito: Ya no tenemos 'bookingResult', usamos 'bookingData' ---
-        // La creación de notificaciones se ha eliminado por seguridad. Se hará en el backend (Paso 3).
-
-        document.getElementById('barberBookingForm').style.display = 'none';
-        document.getElementById('booking-success-message').style.display = 'block';
-        statusMessage.textContent = '';
-
-        // Pasamos los datos que ya tenemos a la función del enlace de WhatsApp.
-        generateWhatsAppLink(bookingData);
-
-    } catch (error) {
-        console.error("Error en el proceso de reserva:", error);
-        statusMessage.textContent = `Error: ${error.message}`;
-        statusMessage.className = 'status-message error';
-        alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
-        fetchAvailability(document.getElementById('booking-date').value);
     }
-}
-
-// Reemplaza también esta función para que no dependa del resultado de la BD
-const generateWhatsAppLink = (bookingInfo) => {
-    // Usamos 'barberData' que ya está cargado globalmente
-    const barberPhone = barberData.telefono.replace(/\D/g, '');
     
-    // Usamos 'selectedService' que también es una variable de estado global
-    const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
-
-    // Formateamos la fecha y hora desde la información que ya teníamos
-    const date = new Date(bookingInfo.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
-    const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-    
-    const message = `¡Hola! Acabo de reservar una cita:\n\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
-    
-    const whatsappUrl = `https://wa.me/${barberPhone}?text=${encodeURIComponent(message)}`;
-    
-    whatsappLinkContainer.innerHTML = `<a href="${whatsappUrl}" target="_blank" class="style-button whatsapp-confirm-button"><i class="fab fa-whatsapp"></i> Enviar Confirmación por WhatsApp</a>`;
-};
-    const generateWhatsAppLink = (booking) => {
+    // ESTA ES LA ÚNICA VERSIÓN DE LA FUNCIÓN QUE DEBE QUEDAR
+    const generateWhatsAppLink = (bookingInfo) => {
+        // Usa 'barberData' que ya se cargó al inicio en la página
         const barberPhone = barberData.telefono.replace(/\D/g, '');
+    
+        // Usa 'selectedService' que también es una variable de estado global
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
-        const date = new Date(booking.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
-        const time = new Date(`1970-01-01T${booking.hora_inicio_cita}`).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+    
+        // Formatea la fecha y hora desde la información que ya teníamos
+        const date = new Date(bookingInfo.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
+        const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
         
-        const message = `¡Hola! Acabo de reservar una cita:\n\n*Servicio:* ${serviceName}\n*Cliente:* ${booking.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
+        const message = `¡Hola! Acabo de reservar una cita:\n\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
         
         const whatsappUrl = `https://wa.me/${barberPhone}?text=${encodeURIComponent(message)}`;
         
@@ -371,7 +332,7 @@ const generateWhatsAppLink = (bookingInfo) => {
     };
 
     // --- FUNCIONES PARA AUTOCOMPLETADO ---
-    
+
     const showClientResults = (searchTerm) => {
         clientResultsList.innerHTML = '';
         if (!searchTerm) {
@@ -408,7 +369,7 @@ const generateWhatsAppLink = (bookingInfo) => {
         clientResultsList.style.display = 'none';
         clientPhoneInput.focus();
     };
-    
+
     const setupAutocompleteListeners = () => {
         clientSearchInput.addEventListener('input', () => {
             selectedClient = null;
@@ -422,10 +383,9 @@ const generateWhatsAppLink = (bookingInfo) => {
         });
     };
 
-
     // --- Event Listeners ---
     form.addEventListener('submit', handleBookingSubmit);
-    
+
     document.getElementById('next-step-1').addEventListener('click', () => navigateToStep(2));
     document.getElementById('prev-step-2').addEventListener('click', () => navigateToStep(1));
     document.getElementById('next-step-2').addEventListener('click', () => navigateToStep(3));
@@ -434,7 +394,6 @@ const generateWhatsAppLink = (bookingInfo) => {
     document.getElementById('prev-step-4').addEventListener('click', () => navigateToStep(3));
 
     dateInput.addEventListener('change', () => {
-        // Obtenemos la fecha de "hoy" de una manera segura para la zona horaria
         const now = new Date();
         const year = now.getFullYear();
         const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -450,20 +409,18 @@ const generateWhatsAppLink = (bookingInfo) => {
         }
         fetchAvailability(dateInput.value);
     });
-    
-   serviceSelect.addEventListener('change', (e) => {
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    selectedService = JSON.parse(selectedOption.dataset.serviceData);
-    
-    // Guardamos la duración del servicio seleccionado. Usamos 30 como fallback.
-    selectedServiceDuration = selectedService.duracion_minutos || 30; // <-- LÓGICA AÑADIDA
 
-    // Si ya se había seleccionado una fecha, volvemos a cargar la disponibilidad
-    // porque ahora depende de la duración del servicio.
-    if (dateInput.value) {
-        fetchAvailability(dateInput.value);
-    }
-});
+    serviceSelect.addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (!selectedOption.dataset.serviceData) return;
+        
+        selectedService = JSON.parse(selectedOption.dataset.serviceData);
+        selectedServiceDuration = selectedService.duracion_minutos || 30;
+
+        if (dateInput.value) {
+            fetchAvailability(dateInput.value);
+        }
+    });
 
     // --- Initial Load ---
     barberId = getBarberIdFromURL();
