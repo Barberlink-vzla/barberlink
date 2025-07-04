@@ -1485,28 +1485,47 @@ function updateInMemoryAvailabilityFromUI() {
     weeklyAvailabilityData[activeEditingDayIndex] = currentDaySlots;
 }
 
-function navigateToDateFromNotification(dateString) {
+async function navigateToDateFromNotification(dateString) {
     if (!dateString) return;
-    const reservasLink = document.querySelector('.menu-link[data-target="reservas"]');
-    if (reservasLink && !reservasLink.classList.contains('active')) {
-        reservasLink.click();
-    }
-    const targetDate = new Date(dateString + 'T12:00:00');
-    const isSameMonthView = targetDate.getFullYear() === currentCalendarDate.getFullYear() && targetDate.getMonth() === currentCalendarDate.getMonth();
-    currentCalendarDate = targetDate;
-    const findAndClickDay = () => {
-        setTimeout(() => {
-            const dayElement = document.querySelector(`.day[data-date="${dateString}"]`);
-            if (dayElement) {
-                dayElement.click();
-                dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }, 150);
-    };
-    if (!isSameMonthView) {
-        fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth()).finally(findAndClickDay);
-    } else {
-        findAndClickDay();
+
+    const loader = document.getElementById('section-loader-overlay');
+    const targetId = 'reservas';
+    const targetSection = document.getElementById(targetId);
+    const targetLink = document.querySelector(`.menu-link[data-target="${targetId}"]`);
+
+    if (!targetSection || !targetLink) return;
+
+    // 1. Mostrar el loader y cambiar la interfaz de forma síncrona
+    if (loader) loader.classList.add('active');
+    
+    // Activar la sección y el enlace del menú manualmente
+    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+    document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+    targetSection.classList.add('active');
+    targetLink.classList.add('active');
+
+    try {
+        // 2. Navegar el estado del calendario a la fecha objetivo
+        const targetDate = new Date(dateString + 'T12:00:00');
+        currentCalendarDate = targetDate;
+        
+        // 3. Esperar (await) a que se carguen las citas del mes Y se renderice el calendario.
+        await fetchBookingsForMonth(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+
+        // 4. Ahora que el calendario está en el DOM, podemos buscar y hacer clic en el día.
+        const dayElement = document.querySelector(`.day[data-date="${dateString}"]`);
+        if (dayElement) {
+            dayElement.click(); 
+            dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            console.warn(`No se encontró el elemento del día para la fecha: ${dateString}`);
+        }
+
+    } catch (error) {
+        console.error('Error al navegar a la fecha desde la notificación:', error);
+    } finally {
+        // 5. Ocultar el loader al finalizar
+        if (loader) loader.classList.remove('active');
     }
 }
 
