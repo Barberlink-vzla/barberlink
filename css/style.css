@@ -1984,6 +1984,15 @@ header.mobile-header {
     box-shadow: 0 4px 10px rgba(197, 164, 126, 0.3);
 }
 
+/* Estilo para la cita resaltada desde una notificación */
+.highlighted-booking {
+    background-color: #3d3731; /* Un color de fondo sutil que combine */
+    border: 2px solid var(--login-primary-accent); /* Borde con el color de acento */
+    border-radius: 8px;
+    transform: scale(1.02); /* Un ligero aumento para llamar la atención */
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
 .day.has-bookings::after {
     content: '';
     position: absolute;
