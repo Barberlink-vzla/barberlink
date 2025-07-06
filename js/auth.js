@@ -123,6 +123,23 @@ if (registerForm) {
             showNotification('Error de Registro', `No pudimos completar tu registro.<br>Detalle: ${error.message}`, 'error');
             console.error('Error de registro:', error.message);
         } else if (data.user) {
+            
+            // Crea el perfil público del barbero inmediatamente después del registro.
+            const { error: profileError } = await supabaseClient
+                .from('barberos')
+                .insert({ 
+                    user_id: data.user.id, // ID del nuevo usuario desde la autenticación
+                    nombre: data.user.email, // Usa el email como nombre temporal
+                    telefono: 'No especificado' // Valor por defecto
+                });
+
+            if (profileError) {
+                console.error('Error creando el perfil del barbero:', profileError);
+                // Opcional: Informar al usuario que algo salió mal con la creación del perfil
+                showNotification('Error Crítico', 'Tu cuenta fue creada, pero no pudimos inicializar tu perfil. Por favor, contacta a soporte.', 'error');
+                return; // Detiene la ejecución si el perfil no se pudo crear
+            }
+
             if (data.user.identities && data.user.identities.length === 0 && !data.session) {
                 showNotification('Verificación Pendiente', `Ya existe una cuenta con <strong>${email}</strong> pendiente de confirmación.<br>Revisa tu correo para activar la cuenta.`, 'info');
             } else if (data.session === null && !data.user.email_verified) {
