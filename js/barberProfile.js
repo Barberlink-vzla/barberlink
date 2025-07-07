@@ -153,20 +153,36 @@ async function loadInitialData() {
     }
     currentUserId = user.id;
 
-    // ===== INICIO: CÓDIGO AÑADIDO PARA NOTIFICACIONES PUSH =====
     setupPushNotificationButton();
     registerServiceWorker();
-    // =========================================================
     
-    // Iniciar el checker unificado y recurrente para citas
     startConfirmationChecker();
     
     await fetchBarberClients();
 
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
-        const [barberRes, masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
-            supabaseClient.from('barberos').select('*').eq('user_id', currentUserId).single(),
+        // --- INICIO DE LA CORRECCIÓN PARA EL ERROR 406 ---
+        // Separamos la consulta del perfil del barbero para manejarla de forma segura sin .single()
+        const { data: barberProfiles, error: barberError } = await supabaseClient
+            .from('barberos')
+            .select('*')
+            .eq('user_id', currentUserId)
+            .limit(1); // Usamos .limit(1) en lugar de .single()
+
+        if (barberError) {
+            throw new Error(`Perfil: ${barberError.message}`);
+        }
+        
+        // Creamos manualmente un objeto de respuesta para mantener la compatibilidad con el código existente.
+        const barberRes = {
+            data: barberProfiles && barberProfiles.length > 0 ? barberProfiles[0] : null,
+            error: null 
+        };
+        // --- FIN DE LA CORRECCIÓN PARA EL ERROR 406 ---
+
+        // Ejecutamos el resto de las consultas en paralelo
+        const [masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
             supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId),
             supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentUserId).order('dia_semana').order('hora_inicio')
@@ -178,7 +194,7 @@ async function loadInitialData() {
         if (availabilityRes.error) throw new Error(`Disponibilidad: ${availabilityRes.error.message}`);
 
         masterServices = masterServicesRes.data || [];
-        barberServicesData = barberServicesRes.data || []; // AÑADIDO: Guardar los servicios del barbero
+        barberServicesData = barberServicesRes.data || [];
 
         weeklyAvailabilityData = [[], [], [], [], [], [], []];
         (availabilityRes.data || []).forEach(slot => {
@@ -1777,48 +1793,61 @@ async function saveBasicProfile() {
 async function saveServices() {
     const servicesToUpsert = [];
     const serviceIdsToKeep = [];
-    let errorThrown = false; 
 
-    servicesSection.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
-        if (errorThrown) return;
-        
+    // Usamos un bucle for...of para poder detener la ejecución si hay un error.
+    const serviceCheckboxes = servicesSection.querySelectorAll('input[type="checkbox"][data-id]');
+    
+    for (const cb of serviceCheckboxes) {
         const serviceId = cb.dataset.id;
         if (cb.checked) {
-            const price = parseFloat(servicesSection.querySelector(`input[data-price-for="${serviceId}"]`).value);
-            const duration = parseInt(servicesSection.querySelector(`input[data-duration-for="${serviceId}"]`).value, 10);
+            const priceInput = servicesSection.querySelector(`input[data-price-for="${serviceId}"]`);
+            const durationInput = servicesSection.querySelector(`input[data-duration-for="${serviceId}"]`);
             
-            if (!isNaN(price) && price >= 0 && !isNaN(duration) && duration > 0) {
-                servicesToUpsert.push({
-                    barbero_id: currentUserId,
-                    servicio_id: serviceId,
-                    precio: price,
-                    duracion_minutos: duration
-                });
-                serviceIdsToKeep.push(serviceId);
-            } else {
-                errorThrown = true;
-                throw new Error(`Datos inválidos para el servicio "${cb.nextElementSibling.textContent}". Revisa el precio y la duración.`);
+            const price = parseFloat(priceInput.value);
+            const duration = parseInt(durationInput.value, 10);
+
+            // Validación estricta de los datos antes de continuar
+            if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
+                // Si hay un error, lo lanzamos y detenemos la función por completo.
+                throw new Error(`Datos inválidos para el servicio "${cb.nextElementSibling.textContent}". Revisa que el precio y la duración sean números válidos y positivos.`);
             }
+            
+            servicesToUpsert.push({
+                barbero_id: currentUserId,
+                servicio_id: serviceId,
+                precio: price,
+                duracion_minutos: duration
+            });
+            serviceIdsToKeep.push(serviceId);
         }
-    });
+    }
     
+    // 1. Borrar los servicios estándar que el barbero ya no ofrece (los que fueron desmarcados)
     const { error: deleteError } = await supabaseClient
         .from('barbero_servicios')
         .delete()
         .eq('barbero_id', currentUserId)
-        .not('servicio_id', 'is', null)
-        .not('servicio_id', 'in', `(${serviceIdsToKeep.join(',') || "''"})`);
+        .not('servicio_id', 'is', null) // Se asegura de borrar solo servicios estándar (no personalizados)
+        .not('servicio_id', 'in', `(${serviceIdsToKeep.join(',') || "''"})`); // No borra los que siguen marcados
     
-    if (deleteError) throw new Error(`Error actualizando servicios (borrado): ${deleteError.message}`);
+    if (deleteError) {
+        throw new Error(`Error al actualizar la lista de servicios: ${deleteError.message}`);
+    }
 
+    // 2. Actualizar o insertar los servicios que están actualmente marcados.
     if (servicesToUpsert.length > 0) {
         const { error: upsertError } = await supabaseClient
             .from('barbero_servicios')
             .upsert(servicesToUpsert, { onConflict: 'barbero_id, servicio_id' });
         
-        if (upsertError) throw new Error(`Error guardando servicios (upsert): ${upsertError.message}`);
+        if (upsertError) {
+            // Este error es el '409 Conflict'. Si persiste, significa que la restricción
+            // UNIQUE en tu base de datos no es sobre (barbero_id, servicio_id).
+            throw new Error(`Error al guardar los servicios: ${upsertError.message}`);
+        }
     }
 }
+
 
 
 
