@@ -12,6 +12,7 @@ const APPOINTMENT_STATUS = {
 // La variable global `supabaseClient` es inicializada por `js/supabaseClient.js`
 
 let currentUserId = null;
+let currentBarberProfileId = null; // <-- AÑADIR ESTA LÍNEA
 let masterServices = [];
 let barberServicesData = []; // NUEVA VARIABLE GLOBAL PARA GUARDAR SERVICIOS
 let barberClients = []
@@ -151,44 +152,43 @@ async function loadInitialData() {
         window.location.href = 'login_register.html';
         return;
     }
-    currentUserId = user.id;
+    currentUserId = user.id; // Mantenemos el ID de autenticación
 
     setupPushNotificationButton();
     registerServiceWorker();
-    
     startConfirmationChecker();
-    
     await fetchBarberClients();
 
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
-        // --- INICIO DE LA CORRECCIÓN PARA EL ERROR 406 ---
-        // Separamos la consulta del perfil del barbero para manejarla de forma segura sin .single()
-        const { data: barberProfiles, error: barberError } = await supabaseClient
+        // Consulta el perfil del barbero para obtener su ID de perfil (ej: 1, 2, 3...)
+        const { data: barberProfile, error: barberError } = await supabaseClient
             .from('barberos')
-            .select('*')
+            .select('id, nombre, telefono, foto_perfil_url') // Pedimos el 'id' del perfil
             .eq('user_id', currentUserId)
-            .limit(1); // Usamos .limit(1) en lugar de .single()
+            .single(); // Usamos single() para asegurar que obtenemos un solo perfil
 
-        if (barberError) {
-            throw new Error(`Perfil: ${barberError.message}`);
+        if (barberError || !barberProfile) {
+            // Si no se encuentra el perfil, es un error grave.
+            console.error('Error crítico: No se encontró el perfil de barbero para el usuario autenticado.', barberError);
+            if (saveStatus) saveStatus.textContent = "Error: Perfil de barbero no encontrado.";
+            // Considera cerrar la sesión o redirigir, ya que la app no puede funcionar.
+            // await supabaseClient.auth.signOut();
+            // window.location.href = 'login_register.html';
+            return;
         }
-        
-        // Creamos manualmente un objeto de respuesta para mantener la compatibilidad con el código existente.
-        const barberRes = {
-            data: barberProfiles && barberProfiles.length > 0 ? barberProfiles[0] : null,
-            error: null 
-        };
-        // --- FIN DE LA CORRECCIÓN PARA EL ERROR 406 ---
 
-        // Ejecutamos el resto de las consultas en paralelo
+        // ¡Clave! Guardamos el ID del perfil del barbero
+        currentBarberProfileId = barberProfile.id;
+        console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
+
+        // El resto de las consultas pueden continuar
         const [masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
-            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId),
-            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentUserId).order('dia_semana').order('hora_inicio')
+            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId), // Usamos el ID de perfil
+            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio') // Usamos el ID de perfil
         ]);
 
-        if (barberRes.error && barberRes.error.code !== 'PGRST116') throw new Error(`Perfil: ${barberRes.error.message}`);
         if (masterServicesRes.error) throw new Error(`Servicios Maestros: ${masterServicesRes.error.message}`);
         if (barberServicesRes.error) throw new Error(`Servicios Barbero: ${barberServicesRes.error.message}`);
         if (availabilityRes.error) throw new Error(`Disponibilidad: ${availabilityRes.error.message}`);
@@ -207,9 +207,9 @@ async function loadInitialData() {
             }
         });
 
-        renderBarberForm(barberRes.data);
-        renderServices(barberServicesData);
-        renderBookingLink(currentUserId);
+        renderBarberForm(barberProfile); // Pasamos el perfil ya cargado
+        renderServices(barberServicesRes.data);
+        renderBookingLink(currentUserId); // El enlace de reserva sí usa el user_id (UUID)
         
         initCalendar();
         loadDashboardStats();
@@ -221,7 +221,6 @@ async function loadInitialData() {
         if (saveStatus) saveStatus.textContent = `Error al cargar: ${error.message}`;
     }
 }
-
 
 // ===== INICIO: LÓGICA DEL MODAL DE VISITA INMEDIATA =====
 
@@ -1722,8 +1721,9 @@ async function addOtherService() {
     
     if (saveStatus) saveStatus.textContent = 'Añadiendo...';
 
+    // ¡CORRECCIÓN! Usamos currentBarberProfileId
     const { error } = await supabaseClient.from('barbero_servicios').insert({
-        barbero_id: currentUserId,
+        barbero_id: currentBarberProfileId,
         servicio_id: null,
         precio: price,
         nombre_personalizado: name,
@@ -1731,6 +1731,7 @@ async function addOtherService() {
     });
 
     if (error) {
+        // Este alert ahora mostrará el error correcto de la consola
         alert('Error al añadir servicio: ' + error.message);
         if (saveStatus) saveStatus.textContent = 'Error.';
     } else {
@@ -1739,7 +1740,8 @@ async function addOtherService() {
         priceInput.value = '';
         durationInput.value = '30';
         
-        const { data, error: errLoad } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId);
+        // Recargamos los servicios usando el ID correcto
+        const { data, error: errLoad } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId);
         if (errLoad) console.error("Error recargando servicios:", errLoad);
         else renderServices(data || []);
         setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 2000);
@@ -1794,7 +1796,6 @@ async function saveServices() {
     const servicesToUpsert = [];
     const serviceIdsToKeep = [];
 
-    // Usamos un bucle for...of para poder detener la ejecución si hay un error.
     const serviceCheckboxes = servicesSection.querySelectorAll('input[type="checkbox"][data-id]');
     
     for (const cb of serviceCheckboxes) {
@@ -1806,14 +1807,12 @@ async function saveServices() {
             const price = parseFloat(priceInput.value);
             const duration = parseInt(durationInput.value, 10);
 
-            // Validación estricta de los datos antes de continuar
             if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
-                // Si hay un error, lo lanzamos y detenemos la función por completo.
-                throw new Error(`Datos inválidos para el servicio "${cb.nextElementSibling.textContent}". Revisa que el precio y la duración sean números válidos y positivos.`);
+                throw new Error(`Datos inválidos para el servicio "${cb.nextElementSibling.textContent}". Revisa precio y duración.`);
             }
             
             servicesToUpsert.push({
-                barbero_id: currentUserId,
+                barbero_id: currentBarberProfileId, // ¡CORRECCIÓN! Usamos el ID de perfil
                 servicio_id: serviceId,
                 precio: price,
                 duracion_minutos: duration
@@ -1822,32 +1821,29 @@ async function saveServices() {
         }
     }
     
-    // 1. Borrar los servicios estándar que el barbero ya no ofrece (los que fueron desmarcados)
+    // 1. Borrar servicios desmarcados
     const { error: deleteError } = await supabaseClient
         .from('barbero_servicios')
         .delete()
-        .eq('barbero_id', currentUserId)
-        .not('servicio_id', 'is', null) // Se asegura de borrar solo servicios estándar (no personalizados)
-        .not('servicio_id', 'in', `(${serviceIdsToKeep.join(',') || "''"})`); // No borra los que siguen marcados
+        .eq('barbero_id', currentBarberProfileId) // ¡CORRECCIÓN! Usamos el ID de perfil
+        .not('servicio_id', 'is', null)
+        .not('servicio_id', 'in', `(${serviceIdsToKeep.join(',') || "''"})`);
     
     if (deleteError) {
         throw new Error(`Error al actualizar la lista de servicios: ${deleteError.message}`);
     }
 
-    // 2. Actualizar o insertar los servicios que están actualmente marcados.
+    // 2. Actualizar/insertar servicios marcados
     if (servicesToUpsert.length > 0) {
         const { error: upsertError } = await supabaseClient
             .from('barbero_servicios')
             .upsert(servicesToUpsert, { onConflict: 'barbero_id, servicio_id' });
         
         if (upsertError) {
-            // Este error es el '409 Conflict'. Si persiste, significa que la restricción
-            // UNIQUE en tu base de datos no es sobre (barbero_id, servicio_id).
             throw new Error(`Error al guardar los servicios: ${upsertError.message}`);
         }
     }
 }
-
 
 
 
