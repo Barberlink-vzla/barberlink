@@ -2003,6 +2003,8 @@ header.mobile-header {
     background: var(--success-color);
 }
 
+
+
 @media (max-width: 480px) {
     .calendar-header {
         padding: 15px;
@@ -2030,3 +2032,56 @@ header.mobile-header {
     }
 }
 /* ===== FIN: ESTILOS CALENDARIO MEJORADO Y RESPONSIVO ===== */
+
+
+
+/* =================================================================== */
+/* === AÑADIR ESTE BLOQUE COMPLETO AL FINAL DE css/style.css === */
+/* =================================================================== */
+
+/* --- AJUSTE GENERAL PARA MÓVILES --- */
+@media (max-width: 768px) {
+    /* Damos un poco más de aire al contenido principal en móviles */
+    .dashboard-content {
+        padding: 20px 10px; /* Reducimos padding lateral a 10px */
+    }
+}
+
+/* --- OPTIMIZACIÓN DEL CALENDARIO PARA PANTALLAS PEQUEÑAS (480px o menos) --- */
+@media (max-width: 480px) {
+    .calendar-header {
+        padding: 15px; /* Menos padding en la cabecera */
+    }
+    .month-year {
+        font-size: 1.1rem;
+    }
+    .weekdays {
+        padding: 10px 5px; /* Menos padding vertical y lateral */
+        font-size: 0.75rem; /* Letras de la semana más pequeñas */
+    }
+    .days-grid {
+        padding: 10px; /* Reducimos el margen interno del calendario */
+        gap: 4px;      /* Reducimos el espacio entre días */
+    }
+    .day {
+        font-size: 0.9rem;
+    }
+}
+
+/* --- CORRECCIÓN CLAVE PARA PANTALLAS MUY ESTRECHAS (360px o menos) --- */
+/* Esta es la regla que arregla el problema en dispositivos como el que mencionas. */
+@media (max-width: 360px) {
+    .dashboard-content {
+        padding: 15px 5px; /* Mínimo padding lateral para ganar espacio */
+    }
+    .weekdays {
+        font-size: 0.7rem; /* Hacemos las letras (LUN, MAR...) aún más pequeñas */
+    }
+    .days-grid {
+        gap: 2px;       /* Espacio mínimo entre los días */
+        padding: 5px;   /* Margen interno mínimo */
+    }
+    .day {
+        font-size: 0.85rem; /* Números de los días un poco más pequeños */
+    }
+}
