@@ -1752,16 +1752,32 @@ async function logout() {
     }
 }
 
+// REEMPLAZA ESTA FUNCIÓN en barberProfile.js
+
 async function saveAllChanges() {
     if (saveStatus) saveStatus.textContent = "Guardando...";
     if (saveAllButton) saveAllButton.disabled = true;
+
     try {
-        await saveBasicProfile();
+        // La función ahora devuelve el perfil actualizado.
+        const updatedProfile = await saveBasicProfile();
         await saveServices();
         await saveAvailability();
+
+        // Volvemos a renderizar el formulario con la nueva información.
+        if (updatedProfile) {
+            renderBarberForm(updatedProfile);
+        }
+
         if (saveStatus) saveStatus.textContent = "¡Todos los cambios guardados con éxito! ✅";
-        if (activeEditingDayIndex !== -1) displayAvailabilityForDay(activeEditingDayIndex);
+        
+        if (activeEditingDayIndex !== -1) {
+             // Esta lógica es para la disponibilidad, la dejamos como está.
+            displayAvailabilityForDay(activeEditingDayIndex);
+        }
+
         setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 3000);
+
     } catch (error) {
         console.error("Error al guardar todo:", error);
         if (saveStatus) saveStatus.textContent = `Error: ${error.message}`;
@@ -1770,12 +1786,15 @@ async function saveAllChanges() {
     }
 }
 
+// REEMPLAZA ESTA FUNCIÓN en barberProfile.js
+
 async function saveBasicProfile() {
     const nombre = document.getElementById('barber-name').value;
     const telefono = document.getElementById('barber-phone').value;
     const fotoFile = document.getElementById('barber-photo').files[0];
     let foto_perfil_url = document.getElementById('current-profile-img').src;
     if (!nombre.trim() || !telefono.trim()) throw new Error("El nombre y el teléfono no pueden estar vacíos.");
+    
     if (fotoFile) {
         const compressedFile = await imageCompression(fotoFile, { maxSizeMB: 0.5, maxWidthOrHeight: 800 });
         const filePath = `${currentUserId}/${Date.now()}_${compressedFile.name}`;
@@ -1783,8 +1802,21 @@ async function saveBasicProfile() {
         if (uploadError) throw new Error(`Subida Foto: ${uploadError.message}`);
         foto_perfil_url = supabaseClient.storage.from('barber-photos').getPublicUrl(uploadData.path).data.publicUrl;
     }
-    const { error } = await supabaseClient.from('barberos').update({ nombre, telefono, foto_perfil_url }).eq('user_id', currentUserId);
+
+    // ================== INICIO DE LA CORRECCIÓN ==================
+    // Usamos la llave primaria del perfil (`currentBarberProfileId`) para la actualización.
+    const { data: updatedProfile, error } = await supabaseClient
+        .from('barberos')
+        .update({ nombre, telefono, foto_perfil_url })
+        .eq('id', currentBarberProfileId) // <-- ¡CORREGIDO! Usamos 'id' y 'currentBarberProfileId'.
+        .select() // <-- AÑADIDO: Para obtener los datos actualizados.
+        .single();
+    // =================== FIN DE LA CORRECCIÓN ====================
+
     if (error) throw new Error(`Perfil Básico: ${error.message}`);
+
+    // Devolvemos el perfil actualizado para refrescar la UI.
+    return updatedProfile;
 }
 
 
