@@ -1,0 +1,81 @@
+/*
+==============================================
+NUEVO ARCHIVO: css/calendar_mobile_fix.css
+Correcciones para la visualización del calendario
+en dispositivos móviles estrechos (ancho <= 360px)
+==============================================
+*/
+
+/*
+  Corrección #1: El problema principal es un `min-width` en el contenedor del calendario
+  que le impide encogerse. Anulamos esta regla en pantallas pequeñas para asegurar
+  que el diseño sea fluido y se adapte al ancho del dispositivo.
+  Usamos `!important` para garantizar que esta corrección anule cualquier estilo
+  en línea o regla conflictiva en otros archivos.
+*/
+@media (max-width: 480px) {
+  .calendar-container {
+    min-width: 0 !important; /* Permite que el contenedor se encoja por debajo de 400px */
+    flex-basis: auto !important; /* Resetea la base del layout flexible para que se ajuste al contenido */
+  }
+}
+
+/* Corrección #2: Ajustes finos para pantallas de 360px de ancho o menos.
+  Esto reduce los espacios y los tamaños de fuente para que todos los elementos 
+  encajen cómodamente sin verse apretados o cortados.
+*/
+@media (max-width: 360px) {
+
+  /* Ajustamos el padding general del contenido para ganar un poco más de espacio lateral */
+  .dashboard-content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* Optimizamos la cabecera del calendario */
+  .calendar-widget .calendar-header {
+    padding: 12px 15px; /* Reducimos el padding */
+    flex-direction: row;  /* Nos aseguramos que se mantenga en una fila */
+    align-items: center;
+  }
+
+  /* Hacemos el título del mes un poco más pequeño */
+  .calendar-widget .month-year {
+    font-size: 1.05rem;
+    text-align: center;
+    flex-grow: 1; /* Permite que ocupe el espacio central */
+  }
+  
+  /* Hacemos los botones de navegación ligeramente más pequeños */
+  .calendar-widget .nav-btn {
+      width: 34px;
+      height: 34px;
+      font-size: 0.9rem;
+      flex-shrink: 0; /* Evita que los botones se encojan */
+  }
+
+  /* Reducimos el texto de los días de la semana (LUN, MAR, etc.) */
+  .calendar-widget .weekdays {
+    font-size: 0.7rem; /* Reducción significativa para que quepan */
+    padding: 8px 2px;  /* Menos espacio vertical y lateral */
+  }
+
+  /* Reducimos el espaciado y padding de la parrilla de días */
+  .calendar-widget .days-grid {
+    padding: 8px;   /* Menos padding alrededor de los días */
+    gap: 2px;       /* Espacio mínimo entre los círculos de los días */
+  }
+
+  /* Hacemos el número del día y su círculo un poco más pequeños */
+  .calendar-widget .day {
+    font-size: 0.85rem;
+    border-width: 1.5px; /* Borde más fino para el día "hoy" */
+  }
+
+  /* Ajustamos el indicador de "tiene citas" para que no se desplace */
+  .calendar-widget .day.has-bookings::after {
+      width: 5px;
+      height: 5px;
+      bottom: 3px; /* Lo subimos un poco */
+  }
+}
