@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedClient = null;
     let selectedService = null;
     let selectedServiceDuration = null;
+    let selectedServiceType = null; // NUEVO: para guardar la elección del usuario
     let availableSlots = [];
 
     // --- DOM Elements ---
@@ -33,7 +34,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientResultsList = document.getElementById('cliente-results-list');
     const clientPhoneInput = document.getElementById('cliente_telefono');
 
+    // --- NUEVOS ELEMENTOS DEL MODAL ---
+    const serviceTypeOverlay = document.getElementById('service-type-overlay');
+    const bookingContainer = document.getElementById('booking-container');
+    const serviceTypeButtons = document.querySelectorAll('.service-type-btn');
+
     // --- Functions ---
+
+    /**
+     * INICIO: Lógica para el nuevo modal
+     */
+    const initServiceTypeModal = () => {
+        // Mostrar el modal al cargar la página
+        if (serviceTypeOverlay) {
+            serviceTypeOverlay.classList.add('active');
+        }
+
+        // Añadir listeners a los botones del modal
+        serviceTypeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                selectedServiceType = button.dataset.type;
+                console.log(`Tipo de servicio seleccionado: ${selectedServiceType}`);
+                
+                // Ocultar el modal
+                serviceTypeOverlay.classList.remove('active');
+                
+                // Mostrar el contenedor principal de la reserva
+                if (bookingContainer) {
+                    bookingContainer.classList.remove('hidden');
+                }
+            });
+        });
+    };
+    /**
+     * FIN: Lógica para el nuevo modal
+     */
 
     const getBarberIdFromURL = () => {
         const params = new URLSearchParams(window.location.search);
@@ -116,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             serviceSelect.appendChild(option);
         });
 
-        // Inicializar selectedService con el primer servicio disponible
         if (barberData.barbero_servicios.length > 0) {
             const firstService = barberData.barbero_servicios[0];
             selectedService = {
@@ -233,9 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const time = timeSelect.options[timeSelect.selectedIndex].textContent;
         const clientName = clientSearchInput.value;
+        const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
 
         bookingSummary.innerHTML = `
             <p><strong>Barbero:</strong> ${barberData.nombre}</p>
+            <p><strong>Tipo de Servicio:</strong> ${serviceLocation}</p>
             <p><strong>Servicio:</strong> ${serviceName}</p>
             <p><strong>Precio:</strong> $${selectedService.precio}</p>
             <p><strong>Fecha:</strong> ${date}</p>
@@ -281,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleBookingSubmit(e) {
         e.preventDefault();
         
-        // Validación adicional para selectedService
         if (!selectedService) {
             alert("Por favor selecciona un servicio antes de continuar");
             return;
@@ -291,16 +326,12 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.className = 'status-message';
 
         try {
-            // --- 1. Obtener todos los datos necesarios ---
             const startTime = timeSelect.value;
             const bookingDate = new Date(`${dateInput.value}T${startTime}`);
             const durationInMinutes = selectedService.duracion_minutos;
             const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60000).toTimeString().slice(0, 8);
-
-            // --- 2. Obtener o crear el ID del cliente ---
             const clienteId = await getClientIdForBooking();
 
-            // --- 3. Preparar los datos de la reserva ---
             const bookingData = {
                 barbero_id: barberId,
                 cliente_id: clienteId,
@@ -311,10 +342,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 hora_inicio_cita: startTime,
                 hora_fin_cita: endTime,
                 precio_final: selectedService.precio,
-                estado: 'pendiente'
+                estado: 'pendiente',
+                // NUEVO: Guardamos el tipo de servicio en la base de datos
+                tipo_servicio: selectedServiceType 
             };
 
-            // --- 4. Insertar la reserva ---
             const { error: bookingError } = await supabaseClient
                 .from('citas')
                 .insert(bookingData);
@@ -326,12 +358,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
             }
 
-            // --- 5. Lógica de éxito ---
             document.getElementById('barberBookingForm').style.display = 'none';
             document.getElementById('booking-success-message').style.display = 'block';
             statusMessage.textContent = '';
             
-            // Generar enlace de WhatsApp
             generateWhatsAppLink(bookingData);
 
         } catch (error) {
@@ -346,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateWhatsAppLink = (bookingInfo) => {
         const barberPhone = barberData.telefono.replace(/\D/g, '');
         const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
+        const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
     
         const date = new Date(bookingInfo.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
         const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {
@@ -353,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             minute: '2-digit'
         });
         
-        const message = `¡Hola! Acabo de reservar una cita:\n\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
+        const message = `¡Hola! Acabo de reservar una cita:\n\n*Modalidad:* ${serviceLocation}\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
         
         const whatsappUrl = `https://wa.me/${barberPhone}?text=${encodeURIComponent(message)}`;
         
@@ -366,8 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </a>
         `;
     };
-
-    // --- FUNCIONES PARA AUTOCOMPLETADO ---
 
     const showClientResults = (searchTerm) => {
         clientResultsList.innerHTML = '';
@@ -460,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load ---
     barberId = getBarberIdFromURL();
+    initServiceTypeModal(); // Iniciar el nuevo modal
     fetchBarberData();
     setupAutocompleteListeners();
 });
