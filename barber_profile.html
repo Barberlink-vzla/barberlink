@@ -10,7 +10,9 @@
     
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/clientes.css">
-    <link rel="stylesheet" href="css/report-charts.css"> 
+    <link rel="stylesheet" href="css/report-charts.css">
+    
+    <link rel="stylesheet" href="css/calendar_mobile_fix.css">
     
     <style>
     /* Estilos adicionales para el layout del dashboard */
@@ -31,7 +33,9 @@
     .stat-card .stat-value { font-size: 2.2em; font-weight: 700; color: #fff; }
     .stat-card .stat-label { font-size: 1em; color: var(--secondary-text-color); }
     .booking-management-layout { display: flex; gap: 20px; }
-    .calendar-container { flex: 1; min-width: 400px; }
+    /* --- CORRECCIÓN APLICADA AQUÍ --- */
+    /* Se ha eliminado 'min-width: 400px;' que causaba el problema en móviles. */
+    .calendar-container { flex: 1; } 
     .bookings-for-day-container { flex: 1; }
     .booking-item { background-color: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid var(--login-primary-accent); }
     .booking-item h4 { color: #fff; margin-bottom: 5px; }
@@ -276,6 +280,47 @@
             </form>
         </div>
     </div>
+
+    <div class="alert-modal-overlay" id="calendar-action-modal-overlay">
+        <div class="alert-modal" id="calendar-action-modal">
+            <button class="alert-modal-close" id="calendar-action-modal-close-btn">&times;</button>
+            <h3 id="calendar-action-modal-title">Acciones para el Día</h3>
+
+            <div id="modal-action-buttons-view">
+                <p>¿Qué deseas hacer para el <strong id="modal-selected-date-text"></strong>?</p>
+                <div class="confirmation-buttons">
+                    <button id="modal-view-bookings-btn" class="style-button confirm-btn"><i class="fas fa-list-ul"></i> Ver Citas del Día</button>
+                    <button id="modal-edit-availability-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-edit"></i> Editar Horarios</button>
+                </div>
+            </div>
+
+            <div id="modal-content-view" style="display: none;">
+                <button id="modal-back-btn" class="style-button back-button"><i class="fas fa-arrow-left"></i> Volver</button>
+                
+                <div class="modal-content-viewer" data-viewer="bookings">
+                    <div id="bookings-for-selected-day">
+                        <h3>Reservas</h3>
+                        <div id="bookings-list"></div>
+                    </div>
+                </div>
+                
+                <div class="modal-content-viewer" data-viewer="availability">
+                    <div id="availability-day-editor">
+                        <h3>Editar Horarios</h3>
+                        <div id="selected-day-slots-container"></div>
+                        <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
+                        <div class="modal-save-actions">
+                            <button id="save-day-availability-btn" class="style-button">
+                                <i class="fas fa-save"></i> Guardar Cambios para este Día
+                            </button>
+                            <div id="modal-save-status" class="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <header class="mobile-header">
         <button class="mobile-menu-toggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
         <div class="mobile-header-brand">Barber Panel</div>
@@ -289,6 +334,7 @@
         </div>
     </header>
     <div class="menu-overlay"></div>
+
     <div class="dashboard-layout">
         
         <nav class="dashboard-menu" aria-label="Menú principal">
@@ -352,74 +398,30 @@
                 </div>
             </section>
             
-           <section id="reservas" class="content-section">
-    <h2 class="profile-section-title">Gestión de Reservas y Disponibilidad</h2>
-
-    <div class="calendar-container">
-    <p class="availability-instructions">Selecciona un día para ver sus citas o editar tu disponibilidad.</p>
-    
-    <div class="calendar-widget">
-        <div class="calendar-header">
-            <button id="cal-prev-month-btn" class="nav-btn" aria-label="Mes anterior"><i class="fas fa-chevron-left"></i></button>
-            <div class="month-year" id="cal-current-month-year">Cargando...</div>
-            <button id="cal-next-month-btn" class="nav-btn" aria-label="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        
-        <div class="weekdays">
-            <div>LUN</div>
-            <div>MAR</div>
-            <div>MIÉ</div>
-            <div>JUE</div>
-            <div>VIE</div>
-            <div>SÁB</div>
-            <div>DOM</div>
-        </div>
-        
-        <div class="days-grid" id="calendar-days">
-            </div>
-    </div>
-</div>
-</section>
-
-<div class="alert-modal-overlay" id="calendar-action-modal-overlay">
-    <div class="alert-modal" id="calendar-action-modal">
-        <button class="alert-modal-close" id="calendar-action-modal-close-btn">&times;</button>
-        <h3 id="calendar-action-modal-title">Acciones para el Día</h3>
-
-        <div id="modal-action-buttons-view">
-            <p>¿Qué deseas hacer para el <strong id="modal-selected-date-text"></strong>?</p>
-            <div class="confirmation-buttons">
-                <button id="modal-view-bookings-btn" class="style-button confirm-btn"><i class="fas fa-list-ul"></i> Ver Citas del Día</button>
-                <button id="modal-edit-availability-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-edit"></i> Editar Horarios</button>
-            </div>
-        </div>
-
-        <div id="modal-content-view" style="display: none;">
-            <button id="modal-back-btn" class="style-button back-button"><i class="fas fa-arrow-left"></i> Volver</button>
-            
-            <div class="modal-content-viewer" data-viewer="bookings">
-                <div id="bookings-for-selected-day">
-                    <h3>Reservas</h3>
-                    <div id="bookings-list"></div>
+            <section id="reservas" class="content-section">
+                <h2 class="profile-section-title">Gestión de Reservas y Disponibilidad</h2>
+                <div class="calendar-container">
+                    <p class="availability-instructions">Selecciona un día para ver sus citas o editar tu disponibilidad.</p>
+                    <div class="calendar-widget">
+                        <div class="calendar-header">
+                            <button id="cal-prev-month-btn" class="nav-btn" aria-label="Mes anterior"><i class="fas fa-chevron-left"></i></button>
+                            <div class="month-year" id="cal-current-month-year">Cargando...</div>
+                            <button id="cal-next-month-btn" class="nav-btn" aria-label="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="weekdays">
+                            <div>LUN</div>
+                            <div>MAR</div>
+                            <div>MIÉ</div>
+                            <div>JUE</div>
+                            <div>VIE</div>
+                            <div>SÁB</div>
+                            <div>DOM</div>
+                        </div>
+                        <div class="days-grid" id="calendar-days">
+                            </div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="modal-content-viewer" data-viewer="availability">
-                <div id="availability-day-editor">
-                    <h3>Editar Horarios</h3>
-                    <div id="selected-day-slots-container"></div>
-                    <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
-                    <div class="modal-save-actions">
-    <button id="save-day-availability-btn" class="style-button">
-        <i class="fas fa-save"></i> Guardar Cambios para este Día
-    </button>
-    <div id="modal-save-status" class="status-message"></div>
-</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+            </section>
 
             <section id="clientes" class="content-section">
                 <h2 class="profile-section-title">Gestión de Clientes</h2>
@@ -532,13 +534,13 @@
                     <div id="profile-content"><p>Cargando perfil...</p></div>
                 </div>
                 <div class="profile-section-card">
-    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Notificaciones Push</h3>
-    <p>Activa las notificaciones para recibir alertas en tu dispositivo incluso con la app cerrada.</p>
-    <button id="enable-push-notifications-btn" class="profile-action-btn" style="width:auto; padding: 10px 15px;">
-        <i class="fas fa-bell"></i> Activar Notificaciones
-    </button>
-    <p id="push-status" style="margin-top: 10px;"></p>
-</div>
+                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Notificaciones Push</h3>
+                    <p>Activa las notificaciones para recibir alertas en tu dispositivo incluso con la app cerrada.</p>
+                    <button id="enable-push-notifications-btn" class="profile-action-btn" style="width:auto; padding: 10px 15px;">
+                        <i class="fas fa-bell"></i> Activar Notificaciones
+                    </button>
+                    <p id="push-status" style="margin-top: 10px;"></p>
+                </div>
                 <div class="profile-section-card">
                     <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Mis Servicios y Precios</h3>
                     <div id="services-section"><p>Cargando servicios...</p></div>
@@ -566,6 +568,7 @@
         </main>
         
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
