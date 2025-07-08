@@ -1882,7 +1882,7 @@ header.mobile-header {
 /* ===== INICIO: ESTILOS CALENDARIO MEJORADO Y RESPONSIVO ===== */
 .calendar-widget {
     width: 100%;
-    max-width: 450px; /* Ancho máximo elegante */
+    /* max-width: 450px; */ /* <-- COMENTADO: Eliminamos el ancho máximo para que sea 100% flexible dentro de su contenedor */
     margin: 0 auto;
     background: var(--login-card-bg);
     border-radius: 15px;
@@ -2006,6 +2006,8 @@ header.mobile-header {
 @media (max-width: 480px) {
     .calendar-header {
         padding: 15px;
+        flex-direction: column; /* Apila el título y los botones en pantallas muy pequeñas */
+        gap: 10px;
     }
     .month-year {
         font-size: 1.1rem;
@@ -2016,6 +2018,15 @@ header.mobile-header {
     }
     .day {
         font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .weekdays div {
+      font-size: 0.7em; /* Nombres de los días de la semana más pequeños */
+    }
+    .day {
+      font-size: 0.8em; /* Número del día más pequeño */
     }
 }
 /* ===== FIN: ESTILOS CALENDARIO MEJORADO Y RESPONSIVO ===== */
