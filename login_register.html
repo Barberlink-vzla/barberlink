@@ -7,9 +7,60 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style1.css"> 
-</head>
+
+    <style>
+        /* Estilo para el enlace de recuperación */
+        .forgot-password-link {
+            display: block;
+            text-align: right;
+            font-size: 0.9em;
+            color: var(--secondary-text-color);
+            text-decoration: none;
+            margin-top: -10px;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        .forgot-password-link:hover {
+            color: var(--login-primary-accent);
+        }
+
+        /* Contenedor para el formulario de restablecimiento */
+        #password-reset-container {
+            /* Usamos la clase .card-front de tu CSS para consistencia */
+            /* La propiedad 'transform' se sobreescribe para que no gire */
+            transform: none; 
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            pointer-events: none; /* Evita interacción cuando está oculto */
+        }
+
+        /* Clase para mostrar el contenedor con una animación suave */
+        #password-reset-container.visible {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* Ocultar la tarjeta de flip cuando se muestra el reseteo */
+        .container.reset-mode .flip-card {
+            display: none;
+        }
+
+        /* Mensaje de instrucción en el formulario de reseteo */
+        .reset-instructions {
+            color: var(--secondary-text-color);
+            font-size: 0.9em;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+    </style>
+    </head>
+
 <body class="login-register-page">
-    <div class="container">
+    <div class="container" id="main-auth-container">
+        
         <div class="flip-card" id="flipCard">
             <div class="card-front">
                 <div class="brand">ACCESO BARBERO</div>
@@ -17,10 +68,9 @@
                     <button class="header-btn active" data-action="login">Iniciar Sesión</button>
                     <button class="header-btn" data-action="signup">Registrarse</button>
                 </div>
-
                 <div class="form-container">
                     <h2 class="form-title">Ingresa a tu cuenta de Barbero</h2>
-                    <form id="login-form">
+                    <form id="login-form" novalidate>
                         <div class="input-group">
                             <i class="fas fa-envelope"></i>
                             <input type="email" id="login-email" placeholder=" " required>
@@ -31,10 +81,11 @@
                             <input type="password" id="login-password" placeholder=" " required>
                             <label for="login-password">Contraseña</label>
                         </div>
+                        <a href="#" id="forgot-password-link" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
                         <button type="submit" class="submit-btn">Iniciar Sesión</button>
                     </form>
                 </div>
-                 <div class="flip-note" data-action="signup">¿Nuevo barbero? <strong>Regístrate aquí.</strong></div>
+                <div class="flip-note" data-action="signup">¿Nuevo barbero? <strong>Regístrate aquí.</strong></div>
             </div>
 
             <div class="card-back">
@@ -43,10 +94,9 @@
                     <button class="header-btn" data-action="login">Iniciar Sesión</button>
                     <button class="header-btn active" data-action="signup">Registrarse</button>
                 </div>
-
                 <div class="form-container">
                     <h2 class="form-title">Crea tu cuenta de Barbero</h2>
-                    <form id="register-form">
+                    <form id="register-form" novalidate>
                         <div class="input-group">
                             <i class="fas fa-envelope"></i>
                             <input type="email" id="register-email" placeholder=" " required>
@@ -63,12 +113,28 @@
                 <div class="flip-note" data-action="login">¿Ya tienes cuenta? <strong>Inicia sesión.</strong></div>
             </div>
         </div>
+
+        <div id="password-reset-container" class="card-front" style="display: none;">
+             <div class="brand">RECUPERACIÓN</div>
+             <div class="form-container">
+                    <h2 class="form-title">Crea tu nueva contraseña</h2>
+                    <p class="reset-instructions">Has seguido un enlace de recuperación. Ingresa tu nueva contraseña a continuación.</p>
+                    <form id="password-reset-form" novalidate>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="new-password" placeholder=" " required minlength="6">
+                            <label for="new-password">Nueva Contraseña</label>
+                        </div>
+                        <button type="submit" class="submit-btn">Guardar y Acceder</button>
+                    </form>
+                </div>
+        </div>
+
         <div id="auth-forms-status-container" style="display: none;"> 
              <p id="auth-status"></p>
              <button id="logout-button" style="display: none;">Cerrar Sesión</button>
         </div>
     </div>
-
 
     <div class="notification-overlay" id="notification-overlay">
         <div class="notification-box">
@@ -78,7 +144,6 @@
         </div>
     </div>
   
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const flipCard = document.getElementById('flipCard');
@@ -92,30 +157,16 @@
 
                     if (action === 'signup' && !isFlipped) {
                         flipCard.classList.add('flipped');
-                        updateActiveHeaderButtons('signup');
                     } else if (action === 'login' && isFlipped) {
                         flipCard.classList.remove('flipped');
-                        updateActiveHeaderButtons('login');
                     }
                 });
             });
-
-            function updateActiveHeaderButtons(activeAction) {
-                const headerButtons = document.querySelectorAll('.login-register-page .header-btn');
-                headerButtons.forEach(btn => {
-                    if (btn.getAttribute('data-action') === activeAction) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
-                });
-            }
-            updateActiveHeaderButtons('login');
         });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script src="js/supabaseClient.js"></script>
+    <script src="js/supabaseClient.js"></script>
     <script src="js/auth.js"></script> 
 </body>
 </html>
