@@ -1679,6 +1679,16 @@ function setupCalendarActionModal() {
         document.querySelector('.modal-content-viewer.active')?.classList.remove('active');
         document.getElementById('modal-action-buttons-view').style.display = 'block';
     });
+    
+    // ===== INICIO DE LA MEJORA: Listener para el nuevo botón de guardado =====
+const saveDayBtn = document.getElementById('save-day-availability-btn');
+if (saveDayBtn) {
+    saveDayBtn.addEventListener('click', async () => {
+        // Llama a la nueva función de guardado con el día actualmente en edición.
+        await saveAvailabilityForDay(currentActionModalDate.dayOfWeek);
+    });
+}
+// ===== FIN DE LA MEJORA =====
 }
 
 
