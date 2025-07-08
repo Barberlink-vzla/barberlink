@@ -222,12 +222,13 @@ body.barber-profile-page {
 /* --- SECCIÓN RESERVAS Y DISPONIBILIDAD --- */
 .booking-management-layout {
     display: flex;
-    flex-wrap: wrap; 
+    flex-wrap: wrap; /* Mantenemos el wrap como fallback */
+    /* min-width: 625px; */ /* <-- ELIMINADO: Esta era la causa principal del problema. */ 
     gap: 25px;
 }
 .calendar-container {
-    flex: 1 1 350px; /* <-- MODIFICADO: Flexibilidad para el contenedor de citas */
-    min-width: 300px;
+    flex: 1 1 400px; /* <-- MODIFICADO: Flexibilidad para el contenedor de citas */
+    min-width: 320px;
 }
 .bookings-for-day-container {
     flex: 1 1 350px; /* <-- MODIFICADO: Flexibilidad para el contenedor de citas */
@@ -382,4 +383,17 @@ body.barber-profile-page {
     width: auto;
     padding-left: 25px;
     padding-right: 25px;
+}
+
+@media (max-width: 992px) {
+    /* En pantallas de tablet y más pequeñas, apilamos los elementos verticalmente */
+    .booking-management-layout {
+        flex-direction: column; /* Apila el calendario y la lista de citas */
+        gap: 30px; /* Aumenta el espacio vertical entre ellos */
+    }
+
+    /* Reducimos el padding general para dar más espacio al contenido */
+    .dashboard-content {
+        padding: 20px 15px;
+    }
 }
