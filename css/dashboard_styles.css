@@ -397,3 +397,15 @@ body.barber-profile-page {
         padding: 20px 15px;
     }
 }
+
+/* Ajuste para reducir el espacio superior en la sección de reservas en móviles */
+@media (max-width: 480px) {
+    .dashboard-content {
+        padding-top: 20px; /* Reducimos el padding superior */
+    }
+
+    /* Adicionalmente, podemos reducir un poco el margen superior del título si es necesario */
+    #reservas h2.profile-section-title {
+        margin-top: 15px; /* Ajusta este valor si quieres menos espacio encima del título */
+    }
+}
