@@ -139,6 +139,24 @@
         .transaction-item span:nth-child(4) { grid-area: amount; }
         .transaction-item div:nth-child(5) { grid-area: action; }
     }
+    
+    .modal-save-actions { 
+    margin-top: 20px; 
+    border-top: 1px solid var(--border-color-light); 
+    padding-top: 15px;
+    text-align: center; 
+}
+#save-day-availability-btn { 
+    width: 100%; 
+    background-color: var(--success-color);
+}
+#modal-save-status { 
+    margin-top: 10px; 
+    min-height: 1.2em; 
+    font-weight: 500;
+}
+#modal-save-status.success { color: var(--success-color); }
+#modal-save-status.error { color: var(--danger-color); }
     </style>
 </head>
 <body class="barber-profile-page">
@@ -391,6 +409,12 @@
                     <h3>Editar Horarios</h3>
                     <div id="selected-day-slots-container"></div>
                     <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
+                    <div class="modal-save-actions">
+    <button id="save-day-availability-btn" class="style-button">
+        <i class="fas fa-save"></i> Guardar Cambios para este Día
+    </button>
+    <div id="modal-save-status" class="status-message"></div>
+</div>
                 </div>
             </div>
         </div>
