@@ -1902,7 +1902,7 @@ async function saveServices() {
 
 
 async function saveAvailability() {
-    updateInMemoryAvailabilityFromUI();
+    
     const slotsToInsert = [];
     let validationErrorMsg = null;
     weeklyAvailabilityData.forEach((daySlots, dayIndex) => {
