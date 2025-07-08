@@ -1721,9 +1721,9 @@ async function addOtherService() {
     
     if (saveStatus) saveStatus.textContent = 'Añadiendo...';
 
-    // ¡CORRECCIÓN! Usamos currentBarberProfileId
+    // ¡La corrección clave está aquí!
     const { error } = await supabaseClient.from('barbero_servicios').insert({
-        barbero_id: currentBarberProfileId,
+        barbero_id: currentUserId, // <-- ¡CORREGIDO! Se usa el ID de autenticación.
         servicio_id: null,
         precio: price,
         nombre_personalizado: name,
@@ -1731,7 +1731,6 @@ async function addOtherService() {
     });
 
     if (error) {
-        // Este alert ahora mostrará el error correcto de la consola
         alert('Error al añadir servicio: ' + error.message);
         if (saveStatus) saveStatus.textContent = 'Error.';
     } else {
@@ -1740,7 +1739,7 @@ async function addOtherService() {
         priceInput.value = '';
         durationInput.value = '30';
         
-        // Recargamos los servicios usando el ID correcto
+        // Esta parte ya usaba el ID de perfil correcto (currentBarberProfileId) para cargar los servicios, lo cual está bien.
         const { data, error: errLoad } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId);
         if (errLoad) console.error("Error recargando servicios:", errLoad);
         else renderServices(data || []);
@@ -1812,7 +1811,7 @@ async function saveServices() {
             }
             
             servicesToUpsert.push({
-                barbero_id: currentBarberProfileId, // ¡CORRECCIÓN! Usamos el ID de perfil
+                barbero_id: currentUserId, // <-- ¡CORREGIDO! Se usa el ID de autenticación.
                 servicio_id: serviceId,
                 precio: price,
                 duracion_minutos: duration
@@ -1825,7 +1824,7 @@ async function saveServices() {
     const { error: deleteError } = await supabaseClient
         .from('barbero_servicios')
         .delete()
-        .eq('barbero_id', currentBarberProfileId) // ¡CORRECCIÓN! Usamos el ID de perfil
+        .eq('barbero_id', currentUserId) // <-- ¡CORREGIDO! Se usa el ID de autenticación.
         .not('servicio_id', 'is', null)
         .not('servicio_id', 'in', `(${serviceIdsToKeep.join(',') || "''"})`);
     
