@@ -17,6 +17,7 @@ let masterServices = [];
 let barberServicesData = []; // NUEVA VARIABLE GLOBAL PARA GUARDAR SERVICIOS
 let barberClients = []
 let currentPeriodAppointments = []; // Holds the full, unfiltered list of appointments for the current report period
+let currentBarberName = '';
 
 
 // Variables globales para el calendario y la disponibilidad
@@ -1390,6 +1391,7 @@ function renderBookingsForDay(bookings) {
 
 function renderBarberForm(barberData) {
     if (!profileContent) return;
+    currentBarberName = barberData?.nombre || 'barbero';
     profileContent.innerHTML = `<form id="barber-profile-form"><div class="input-group"><i class="fas fa-user"></i><input type="text" id="barber-name" value="${barberData?.nombre || ''}" placeholder=" " required><label for="barber-name">Nombre Completo</label></div><div class="input-group"><i class="fas fa-phone"></i><input type="tel" id="barber-phone" value="${barberData?.telefono || ''}" placeholder=" " required><label for="barber-phone">Teléfono (ej: 58412...)</label></div><div class="input-group"><i class="fas fa-image"></i><input type="file" id="barber-photo" accept="image/*"><label for="barber-photo" style="top:-10px;left:10px;font-size:0.85em;background:var(--login-card-bg);padding:0 5px;z-index:2;">Foto (opcional)</label></div><img src="${barberData?.foto_perfil_url || ''}" alt="Foto de perfil" id="current-profile-img" class="profile-img-preview" style="${barberData?.foto_perfil_url ? 'display:block;' : 'display:none;'}"></form>`;
     const photoInput = document.getElementById('barber-photo');
     if (photoInput) {
@@ -1477,15 +1479,44 @@ function renderServices(barberServices) {
     });
 }
 
+// EN: js/barberProfile.js
 function renderBookingLink(userId) {
-    if (bookingLinkContainer && userId) {
-        const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const bookingUrl = `${baseUrl}/reserva.html?barber_id=${userId}`;
-        bookingLinkContainer.innerHTML = `<a href="${bookingUrl}" target="_blank">${bookingUrl}</a><br><br><button id="copy-link-btn" class="profile-action-btn" style="width:auto;padding:8px 15px;font-size:0.9em;"><i class="fas fa-copy"></i> Copiar Enlace</button>`;
+    if (!bookingLinkContainer || !userId || !currentBarberName) return;
+
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+    const longBookingUrl = `${baseUrl}/reserva.html?barber_id=${userId}`;
+
+    bookingLinkContainer.innerHTML = `<p>Generando enlace corto...</p>`;
+
+    // Llama a la Edge Function 'shorten-link'
+    supabaseClient.functions.invoke('shorten-link', {
+        body: {
+            longUrl: longBookingUrl,
+            barberName: currentBarberName
+        },
+    }).then(({ data, error }) => {
+        let finalUrl = longBookingUrl; // Usar la URL larga como respaldo
+
+        if (error) {
+            console.error('Error al invocar la Edge Function:', error);
+        } else if (data && data.shortUrl) {
+            finalUrl = data.shortUrl; // Éxito: usar la URL corta de Bitly
+        }
+
+        // Renderiza el resultado final
+        bookingLinkContainer.innerHTML = `
+            <a href="${finalUrl}" target="_blank">${finalUrl}</a>
+            <br><br>
+            <button id="copy-link-btn" class="profile-action-btn" style="width:auto;padding:8px 15px;font-size:0.9em;">
+                <i class="fas fa-copy"></i> Copiar Enlace
+            </button>`;
+
         document.getElementById('copy-link-btn')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(bookingUrl).then(() => alert('¡Enlace copiado!')).catch(err => alert('Error al copiar.'));
+            navigator.clipboard.writeText(finalUrl)
+                .then(() => alert('¡Enlace copiado!'))
+                .catch(err => alert('Error al copiar el enlace.'));
         });
-    }
+    });
 }
 
 function renderSlotInput(id, start, end) {
