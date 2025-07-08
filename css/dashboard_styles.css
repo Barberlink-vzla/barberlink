@@ -222,16 +222,18 @@ body.barber-profile-page {
 /* --- SECCIÓN RESERVAS Y DISPONIBILIDAD --- */
 .booking-management-layout {
     display: flex;
+    flex-wrap: wrap; 
     gap: 25px;
 }
 .calendar-container {
-    flex: 1.2;
+    flex: 1 1 350px; /* <-- MODIFICADO: Flexibilidad para el contenedor de citas */
     min-width: 300px;
 }
 .bookings-for-day-container {
-    flex: 1;
+    flex: 1 1 350px; /* <-- MODIFICADO: Flexibilidad para el contenedor de citas */
     min-width: 300px;
 }
+
 .booking-item {
     background-color: rgba(0,0,0,0.2);
     padding: 15px;
