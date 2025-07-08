@@ -1915,6 +1915,88 @@ async function saveAvailability() {
     }
 }
 
+/**
+ * Guarda la disponibilidad para un solo día específico.
+ * Esta función es llamada desde el modal de edición del calendario.
+ * @param {number} dayIndex - El índice del día de la semana (0=Domingo, 6=Sábado).
+ */
+async function saveAvailabilityForDay(dayIndex) {
+    const statusEl = document.getElementById('modal-save-status');
+    const saveBtn = document.getElementById('save-day-availability-btn');
+    if (!statusEl || !saveBtn) return;
+
+    statusEl.textContent = "Guardando...";
+    statusEl.className = 'status-message';
+    saveBtn.disabled = true;
+
+    try {
+        // 1. Obtener los horarios directamente desde la UI del modal
+        const slotsForDay = [];
+        const editorContainer = document.getElementById('selected-day-slots-container');
+        const slotElements = editorContainer.querySelectorAll('.time-slot');
+
+        for (const slotEl of slotElements) {
+            const inputs = slotEl.querySelectorAll('input[type="time"]');
+            const start = inputs[0].value;
+            const end = inputs[1].value;
+
+            if (!start || !end) {
+                throw new Error("Hay bloques horarios incompletos. Por favor, llénalos o elimínalos.");
+            }
+            if (start >= end) {
+                throw new Error(`Horario inválido: la hora de inicio (${start}) debe ser anterior a la de fin (${end}).`);
+            }
+            slotsForDay.push({
+                barbero_id: currentUserId,
+                dia_semana: dayIndex,
+                hora_inicio: start,
+                hora_fin: end
+            });
+        }
+
+        // 2. Borrar en la DB SOLO los horarios del día que se está editando
+        const { error: deleteError } = await supabaseClient
+            .from('disponibilidad')
+            .delete()
+            .eq('barbero_id', currentUserId)
+            .eq('dia_semana', dayIndex);
+
+        if (deleteError) {
+            throw new Error(`Error al limpiar horarios anteriores: ${deleteError.message}`);
+        }
+
+        // 3. Insertar los nuevos horarios si existen
+        if (slotsForDay.length > 0) {
+            const { error: insertError } = await supabaseClient
+                .from('disponibilidad')
+                .insert(slotsForDay);
+
+            if (insertError) {
+                throw new Error(`Error al guardar los nuevos horarios: ${insertError.message}`);
+            }
+        }
+
+        // 4. Actualizar la variable global en memoria para consistencia
+        weeklyAvailabilityData[dayIndex] = slotsForDay.map(s => ({
+            hora_inicio: s.hora_inicio,
+            hora_fin: s.hora_fin
+        }));
+
+        statusEl.textContent = "¡Horario guardado con éxito! ✅";
+        statusEl.className = 'status-message success';
+
+    } catch (error) {
+        console.error('Error al guardar disponibilidad del día:', error);
+        statusEl.textContent = error.message;
+        statusEl.className = 'status-message error';
+    } finally {
+        saveBtn.disabled = false;
+        setTimeout(() => {
+            if(statusEl) statusEl.textContent = "";
+        }, 4000);
+    }
+}
+
 
 // --- INICIAR ---
 document.addEventListener('DOMContentLoaded', initProfileModule);
