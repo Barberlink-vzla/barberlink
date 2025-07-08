@@ -146,13 +146,14 @@ async function fetchBarberClients() {
     barberClients = data || [];
 }
 
+
 async function loadInitialData() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
         window.location.href = 'login_register.html';
         return;
     }
-    currentUserId = user.id; // Mantenemos el ID de autenticación
+    currentUserId = user.id; 
 
     setupPushNotificationButton();
     registerServiceWorker();
@@ -161,33 +162,29 @@ async function loadInitialData() {
 
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
-        // Consulta el perfil del barbero para obtener su ID de perfil (ej: 1, 2, 3...)
         const { data: barberProfile, error: barberError } = await supabaseClient
             .from('barberos')
-            .select('id, nombre, telefono, foto_perfil_url') // Pedimos el 'id' del perfil
+            .select('id, nombre, telefono, foto_perfil_url')
             .eq('user_id', currentUserId)
-            .single(); // Usamos single() para asegurar que obtenemos un solo perfil
+            .single();
 
         if (barberError || !barberProfile) {
-            // Si no se encuentra el perfil, es un error grave.
             console.error('Error crítico: No se encontró el perfil de barbero para el usuario autenticado.', barberError);
             if (saveStatus) saveStatus.textContent = "Error: Perfil de barbero no encontrado.";
-            // Considera cerrar la sesión o redirigir, ya que la app no puede funcionar.
-            // await supabaseClient.auth.signOut();
-            // window.location.href = 'login_register.html';
             return;
         }
 
-        // ¡Clave! Guardamos el ID del perfil del barbero
         currentBarberProfileId = barberProfile.id;
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
-        // El resto de las consultas pueden continuar
+        // ================== INICIO DE LA CORRECCIÓN ==================
+        // Usamos currentUserId para cargar servicios y disponibilidad, ya que así se guardan.
         const [masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
-            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId), // Usamos el ID de perfil
-            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio') // Usamos el ID de perfil
+            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId), // <-- ¡CORREGIDO!
+            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentUserId).order('dia_semana').order('hora_inicio') // <-- ¡CORREGIDO!
         ]);
+        // =================== FIN DE LA CORRECCIÓN ====================
 
         if (masterServicesRes.error) throw new Error(`Servicios Maestros: ${masterServicesRes.error.message}`);
         if (barberServicesRes.error) throw new Error(`Servicios Barbero: ${barberServicesRes.error.message}`);
@@ -207,9 +204,9 @@ async function loadInitialData() {
             }
         });
 
-        renderBarberForm(barberProfile); // Pasamos el perfil ya cargado
+        renderBarberForm(barberProfile); 
         renderServices(barberServicesRes.data);
-        renderBookingLink(currentUserId); // El enlace de reserva sí usa el user_id (UUID)
+        renderBookingLink(currentUserId); 
         
         initCalendar();
         loadDashboardStats();
@@ -221,7 +218,6 @@ async function loadInitialData() {
         if (saveStatus) saveStatus.textContent = `Error al cargar: ${error.message}`;
     }
 }
-
 // ===== INICIO: LÓGICA DEL MODAL DE VISITA INMEDIATA =====
 
 /**
@@ -1791,6 +1787,7 @@ async function saveBasicProfile() {
     if (error) throw new Error(`Perfil Básico: ${error.message}`);
 }
 
+
 async function saveServices() {
     const servicesToUpsert = [];
     const serviceIdsToKeep = [];
@@ -1811,7 +1808,7 @@ async function saveServices() {
             }
             
             servicesToUpsert.push({
-                barbero_id: currentUserId, // <-- ¡CORREGIDO! Se usa el ID de autenticación.
+                barbero_id: currentUserId, 
                 servicio_id: serviceId,
                 precio: price,
                 duracion_minutos: duration
@@ -1820,13 +1817,22 @@ async function saveServices() {
         }
     }
     
-    // 1. Borrar servicios desmarcados
-    const { error: deleteError } = await supabaseClient
+    // ================== INICIO DE LA CORRECCIÓN ==================
+    // 1. Borrar servicios desmarcados (solo si hay algo que comparar)
+    // Esto evita el error cuando `serviceIdsToKeep` está vacío.
+    let deleteQuery = supabaseClient
         .from('barbero_servicios')
         .delete()
-        .eq('barbero_id', currentUserId) // <-- ¡CORREGIDO! Se usa el ID de autenticación.
-        .not('servicio_id', 'is', null)
-        .not('servicio_id', 'in', `(${serviceIdsToKeep.join(',') || "''"})`);
+        .eq('barbero_id', currentUserId)
+        .not('servicio_id', 'is', null);
+
+    // Solo añadimos el filtro `not.in` si hay IDs para mantener.
+    if (serviceIdsToKeep.length > 0) {
+        deleteQuery = deleteQuery.not('servicio_id', 'in', `(${serviceIdsToKeep.join(',')})`);
+    }
+
+    const { error: deleteError } = await deleteQuery;
+    // =================== FIN DE LA CORRECCIÓN ====================
     
     if (deleteError) {
         throw new Error(`Error al actualizar la lista de servicios: ${deleteError.message}`);
@@ -1843,7 +1849,6 @@ async function saveServices() {
         }
     }
 }
-
 
 
 
