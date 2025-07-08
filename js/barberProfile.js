@@ -1658,13 +1658,20 @@ function setupCalendarActionModal() {
         showBookingsForDayModal(currentActionModalDate.dateString);
     });
 
-    editAvailabilityBtn.addEventListener('click', () => {
-        document.getElementById('modal-action-buttons-view').style.display = 'none';
-        document.getElementById('modal-content-view').style.display = 'block';
-        const viewer = document.querySelector('.modal-content-viewer[data-viewer="availability"]');
-        viewer.classList.add('active');
-        displayAvailabilityForDay(currentActionModalDate.dayOfWeek);
-    });
+   editAvailabilityBtn.addEventListener('click', () => {
+    document.getElementById('modal-action-buttons-view').style.display = 'none';
+    document.getElementById('modal-content-view').style.display = 'block';
+    const viewer = document.querySelector('.modal-content-viewer[data-viewer="availability"]');
+    viewer.classList.add('active');
+
+    // ===== AQUÍ ESTÁ LA CORRECCIÓN CLAVE =====
+    // Asignamos el índice del día a la variable global ANTES de mostrar el editor.
+    activeEditingDayIndex = currentActionModalDate.dayOfWeek;
+    // =========================================
+    
+    // Ahora esta función solo muestra los datos, y el estado ya está guardado.
+    displayAvailabilityForDay(activeEditingDayIndex);
+});
 
     // El botón "Volver" ahora te llevará al menú de selección de acciones
     backBtn.addEventListener('click', () => {
