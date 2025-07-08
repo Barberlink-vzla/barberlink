@@ -2085,3 +2085,55 @@ header.mobile-header {
         font-size: 0.85rem; /* Números de los días un poco más pequeños */
     }
 }
+/* =================================================================== */
+/* === INICIO: CÓDIGO DE AJUSTE FINO PARA CALENDARIO EN MÓVILES === */
+/* =================================================================== */
+
+/*
+ * Estas reglas aseguran que el calendario se vea perfecto en pantallas
+ * muy estrechas (ancho de 420px o menos), como un "Mobile S".
+ */
+@media (max-width: 420px) {
+
+    /* 1. Damos más espacio al contenido principal reduciendo el margen lateral */
+    .dashboard-content {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    /* 2. Hacemos la cabecera del calendario más compacta */
+    .calendar-header {
+        padding: 12px 10px;
+    }
+
+    .month-year {
+        font-size: 1.1rem;
+    }
+
+    /* 3. Ajustamos las letras de la semana (LUN, MAR, etc.) */
+    .weekdays {
+        padding: 8px 4px; /* Menos espacio vertical y lateral */
+        font-size: 0.7rem;  /* Letras más pequeñas para que quepan todas */
+        font-weight: 500;
+    }
+
+    /* 4. La cuadrícula de días: reducimos márgenes y espacios al mínimo */
+    .days-grid {
+        padding: 8px;   /* Margen interno del calendario más pequeño */
+        gap: 3px;       /* Espacio mínimo entre los números de los días */
+    }
+
+    /* 5. Los días: un poco más pequeños para asegurar que los 7 quepan */
+    .day {
+        font-size: 0.85rem;
+        font-weight: 500;
+        border-width: 1px; /* Borde más fino en el día de hoy */
+    }
+    
+    /* 6. Aseguramos que el punto de "citas" sea visible */
+    .day.has-bookings::after {
+        width: 5px;
+        height: 5px;
+        bottom: 3px;
+    }
+}
