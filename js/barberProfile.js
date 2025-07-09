@@ -35,7 +35,7 @@ let paymentCheckInterval = null;
 const promptedConfirmationIds = new Set(); 
 let reminderCheckInterval = null;
 const remindedAppointmentIds = new Set();
-et appointmentCheckInterval = null; // Intervalo para verificar citas próximas
+let appointmentCheckInterval = null; // Intervalo para verificar citas próximas
 const notifiedAppointmentIds = new Set(); // Guarda IDs de citas ya notificadas para no repetir
 
 const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
