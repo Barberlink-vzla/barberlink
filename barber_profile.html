@@ -161,9 +161,67 @@
 }
 #modal-save-status.success { color: var(--success-color); }
 #modal-save-status.error { color: var(--danger-color); }
+
+/* Estilos para el nuevo modal de alerta y el botón de WhatsApp */
+.whatsapp-button {
+    background-color: #25D366;
+    width: 100%;
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+.whatsapp-button:hover {
+    background-color: #1DA851;
+}
+
+#appointment-alert-modal textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--container-bg);
+    color: var(--primary-text-color);
+    font-size: 0.95em;
+    resize: vertical;
+}
+
+#alert-modal-subtitle {
+    font-size: 0.9em;
+    color: var(--secondary-text-color);
+    margin-top: -10px;
+    margin-bottom: 15px;
+}
+
+.alert-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    color: var(--secondary-text-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
     </style>
 </head>
 <body class="barber-profile-page">
+
+<div class="alert-modal-overlay" id="appointment-alert-overlay">
+    <div class="alert-modal" id="appointment-alert-modal">
+        <button class="alert-modal-close" id="alert-modal-close-btn" aria-label="Cerrar modal">&times;</button>
+        <h3 id="alert-modal-title">Recordatorio de Cita</h3>
+        <p id="alert-modal-subtitle">Dentro de 30 minutos tienes una cita. Puedes editar el mensaje de recordatorio para tu cliente a continuación.</p>
+        
+        <textarea id="alert-modal-message" rows="4" aria-label="Mensaje de recordatorio"></textarea>
+        
+        <a href="#" id="alert-modal-whatsapp-btn" target="_blank" class="style-button whatsapp-button" role="button">
+            <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
+        </a>
+    </div>
+</div>
 
     <div class="alert-modal-overlay" id="appointment-alert-overlay">
         <div class="alert-modal" id="appointment-alert-modal">
