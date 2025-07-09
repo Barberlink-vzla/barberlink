@@ -349,7 +349,7 @@ const populateServiceSelect = (services) => {
     serviceId: selectedService.id,
     bookingDate: dateInput.value,
     startTime: startTime,
-    endTime: endTime,
+    endTime: endTime, // <-- ¡Este campo es obligatorio!
     finalPrice: selectedService.precio,
     serviceType: selectedServiceType
 };
