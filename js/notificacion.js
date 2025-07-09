@@ -34,14 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleAuthStateChange(session) {
         const newUserId = session?.user?.id || null;
         if (currentUserId !== newUserId) {
-            if (currentUserId && notificationChannel) {
+            // Quita canal anterior si existía
+            if (notificationChannel) {
                 supabaseClient.removeChannel(notificationChannel);
+                notificationChannel = null;
             }
-            
             currentUserId = newUserId;
             allNotifications = [];
             renderNotifications();
-            
             if (currentUserId) {
                 loadInitialNotifications();
                 setupRealtimeListener();
@@ -119,7 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica Realtime ---
     function setupRealtimeListener() {
-        if (!currentUserId || notificationChannel) return;
+        if (!currentUserId) return;
+        // Elimina canal anterior si existe
+        if (notificationChannel) {
+            supabaseClient.removeChannel(notificationChannel);
+            notificationChannel = null;
+        }
 
         const channelName = `realtime:notifications:${currentUserId}`;
         notificationChannel = supabaseClient
@@ -137,15 +142,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             )
             .subscribe((status, error) => {
-                if (status === 'SUBSCRIBED') {
-                    isRealtimeActive = true;
-                } else {
-                    isRealtimeActive = false;
-                }
+                isRealtimeActive = status === 'SUBSCRIBED';
             });
     }
     
     async function handleNewNotification(newNotificationData) {
+        // Evita duplicados: verifica si ya existe por ID
+        if (allNotifications.some(n => n.id === newNotificationData.id)) {
+            return; // Ya existe, no la agregues de nuevo
+        }
         // Para obtener los datos completos de la cita, hacemos una consulta rápida
         const { data: fullNotification, error } = await supabaseClient
             .from('notificaciones')
@@ -153,16 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .eq('id', newNotificationData.id)
             .single();
 
-        if (error) {
-            console.error("Error al obtener detalles de la nueva notificación:", error);
-            // Usamos el payload básico si la consulta falla
-            allNotifications.unshift(newNotificationData);
-        } else {
-            allNotifications.unshift(fullNotification);
-        }
-        
+        const notification = error ? newNotificationData : fullNotification;
+
+        allNotifications.unshift(notification); // Solo agrega una vez
+
         renderNotifications();
-        showToastNotification(fullNotification || newNotificationData);
+        showToastNotification(notification);
         document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
     }
 
