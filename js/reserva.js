@@ -11,446 +11,327 @@ document.addEventListener('DOMContentLoaded', () => {
     let barberId = null;
     let barberData = null;
     let barberClients = [];
-    let selectedClient = null;
     let selectedService = null;
     let selectedServiceDuration = null;
-    let selectedServiceType = null; // NUEVO: para guardar la elección del usuario
+    let selectedServiceType = null; // 'domicilio' o 'studio'
     let availableSlots = [];
 
     // --- DOM Elements ---
     const form = document.getElementById('barberBookingForm');
     const steps = document.querySelectorAll('.form-step');
     const progressBarSteps = document.querySelectorAll('.progress-bar-step');
+    
+    // Step 1: Tipo de servicio (Modal)
+    const serviceTypeModalOverlay = document.getElementById('service-type-modal-overlay');
+    const studioButton = document.getElementById('select-studio-btn');
+    const domicilioButton = document.getElementById('select-domicilio-btn');
+
+    // Step 2: Cliente y Servicio
+    const clientSearchInput = document.getElementById('client-search');
+    const clientPhoneInput = document.getElementById('client-phone');
+    const clientSuggestions = document.getElementById('client-suggestions');
     const serviceSelect = document.getElementById('service-select');
+    
+    // Step 3: Fecha y Hora
     const dateInput = document.getElementById('booking-date');
     const timeSelect = document.getElementById('time-select');
+    
+    // Step 4: Resumen
+    const bookingSummary = document.getElementById('booking-summary');
+
+    // UI Elements
     const barberNameTitle = document.getElementById('barber-name-title');
     const barberProfileImg = document.getElementById('barber-profile-img');
-    const bookingSummary = document.getElementById('booking-summary');
     const statusMessage = document.getElementById('booking-status');
     const successMessageContainer = document.getElementById('booking-success-message');
     const whatsappLinkContainer = document.getElementById('whatsapp-link-container');
-    const clientSearchInput = document.getElementById('cliente-search');
-    const clientResultsList = document.getElementById('cliente-results-list');
-    const clientPhoneInput = document.getElementById('cliente_telefono');
 
-    // --- NUEVOS ELEMENTOS DEL MODAL ---
-    const serviceTypeOverlay = document.getElementById('service-type-overlay');
-    const bookingContainer = document.getElementById('booking-container');
-    const serviceTypeButtons = document.querySelectorAll('.service-type-btn');
 
-    // --- Functions ---
+    // =================================================================================
+    // INICIALIZACIÓN Y CARGA DE DATOS
+    // =================================================================================
 
     /**
-     * INICIO: Lógica para el nuevo modal
+     * Obtiene el ID del barbero desde la URL.
+     * Ejemplo URL: /reserva.html?barberId=uuid-del-barbero
      */
-    const initServiceTypeModal = () => {
-        // Mostrar el modal al cargar la página
-        if (serviceTypeOverlay) {
-            serviceTypeOverlay.classList.add('active');
-        }
-
-        // Añadir listeners a los botones del modal
-        serviceTypeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                selectedServiceType = button.dataset.type;
-                console.log(`Tipo de servicio seleccionado: ${selectedServiceType}`);
-                
-                // Ocultar el modal
-                serviceTypeOverlay.classList.remove('active');
-                
-                // Mostrar el contenedor principal de la reserva
-                if (bookingContainer) {
-                    bookingContainer.classList.remove('hidden');
-                }
-            });
-        });
-    };
-    /**
-     * FIN: Lógica para el nuevo modal
-     */
-
-    const getBarberIdFromURL = () => {
+    function getBarberIdFromURL() {
         const params = new URLSearchParams(window.location.search);
-        return params.get('barber_id');
-    };
-
-    const fetchBarberData = async () => {
-        if (!barberId) {
-            statusMessage.textContent = "Error: No se ha especificado un barbero.";
-            statusMessage.className = 'status-message error';
-            return;
+        const id = params.get('barberId');
+        if (!id) {
+            console.error("No se encontró el ID del barbero en la URL.");
+            document.body.innerHTML = '<h1>Error: Falta el identificador del barbero.</h1>';
         }
+        return id;
+    }
+
+    /**
+     * Inicia el modal para que el usuario elija el tipo de servicio.
+     */
+    function initServiceTypeModal() {
+        if (!serviceTypeModalOverlay) return;
+
+        serviceTypeModalOverlay.classList.add('active');
+
+        const selectType = (type) => {
+            selectedServiceType = type;
+            console.log(`Tipo de servicio seleccionado: ${selectedServiceType}`);
+            serviceTypeModalOverlay.classList.remove('active');
+            navigateToStep(1); // Mover al primer paso real del formulario
+            fetchServices(); // Cargar los servicios correspondientes
+        };
+
+        studioButton.onclick = () => selectType('studio');
+        domicilioButton.onclick = () => selectType('domicilio');
+    }
+
+
+    /**
+     * Carga los datos del perfil del barbero (nombre, imagen, etc.).
+     */
+    async function fetchBarberData() {
+        if (!barberId) return;
 
         const { data, error } = await supabaseClient
             .from('barberos')
-            .select(`
-                nombre,
-                telefono,
-                foto_perfil_url,
-                barbero_servicios (
-                    id,
-                    precio,
-                    duracion_minutos,
-                    nombre_personalizado,
-                    servicios_maestro (id, nombre)
-                )
-            `)
-            .eq('user_id', barberId)
+            .select('nombre, apellido, foto_perfil_url, telefono')
+            .eq('id', barberId)
             .single();
 
-        if (error || !data) {
-            console.error("Error fetching barber data:", error);
-            statusMessage.textContent = "No se pudo cargar la información del barbero.";
-            statusMessage.className = 'status-message error';
+        if (error) {
+            console.error('Error al cargar datos del barbero:', error);
+            barberNameTitle.textContent = "Barbero no encontrado";
             return;
         }
 
         barberData = data;
-        updateBarberInfoUI();
-        populateServiceSelect();
-        await fetchBarberClients();
-    };
+        barberNameTitle.textContent = `Reservar con ${data.nombre} ${data.apellido || ''}`;
+        if (data.foto_perfil_url) {
+            barberProfileImg.src = data.foto_perfil_url;
+        }
+    }
 
-    const fetchBarberClients = async () => {
-        if (!barberId) return;
+    /**
+     * Carga los servicios (de estudio o a domicilio) que ofrece el barbero.
+     */
+    async function fetchServices() {
+        if (!barberId || !selectedServiceType) return;
+        
+        const tableName = selectedServiceType === 'studio' ? 'servicios_barbero' : 'servicios_domicilio';
+
         const { data, error } = await supabaseClient
-            .from('clientes')
-            .select('id, nombre, apellido, telefono')
-            .eq('barbero_id', barberId);
+            .from(tableName)
+            .select('*')
+            .eq('barbero_id', barberId)
+            .order('nombre', { ascending: true });
 
         if (error) {
-            console.error('Error fetching clients:', error);
+            console.error(`Error al cargar servicios de ${selectedServiceType}:`, error);
             return;
         }
-        barberClients = data;
-    };
 
-    const updateBarberInfoUI = () => {
-        if (!barberData) return;
-        barberNameTitle.textContent = `Reservar con ${barberData.nombre}`;
-        if (barberData.foto_perfil_url) {
-            barberProfileImg.src = barberData.foto_perfil_url;
-        }
-    };
-
-    const populateServiceSelect = () => {
-        if (!barberData || !barberData.barbero_servicios) return;
-
-        serviceSelect.innerHTML = '<option value="" disabled selected>Selecciona un servicio</option>';
-
-        barberData.barbero_servicios.forEach(service => {
+        serviceSelect.innerHTML = '<option value="">Selecciona un servicio...</option>';
+        data.forEach(service => {
             const option = document.createElement('option');
             option.value = service.id;
-            const serviceName = service.nombre_personalizado || service.servicios_maestro.nombre;
-            option.textContent = `${serviceName} - $${service.precio}`;
-            option.dataset.serviceData = JSON.stringify({
-                ...service,
-                duracion_minutos: service.duracion_minutos || 30
-            });
+            option.textContent = `${service.nombre} - $${service.precio} (${service.duracion_minutos} min)`;
+            option.dataset.serviceData = JSON.stringify(service);
             serviceSelect.appendChild(option);
         });
+    }
 
-        if (barberData.barbero_servicios.length > 0) {
-            const firstService = barberData.barbero_servicios[0];
-            selectedService = {
-                ...firstService,
-                duracion_minutos: firstService.duracion_minutos || 30
-            };
-            selectedServiceDuration = selectedService.duracion_minutos;
-        }
-    };
-
-    const fetchAvailability = async (date) => {
-        if (!barberId || !date || !selectedServiceDuration) {
-            timeSelect.disabled = true;
-            timeSelect.innerHTML = '<option>Selecciona un servicio primero</option>';
+    /**
+     * Carga la disponibilidad del barbero para una fecha específica.
+     */
+    async function fetchAvailability(date) {
+        if (!barberId || !selectedService) {
+            timeSelect.innerHTML = '<option value="">Selecciona un servicio primero</option>';
             return;
         }
 
         timeSelect.disabled = true;
-        timeSelect.innerHTML = '<option>Cargando horarios...</option>';
+        timeSelect.innerHTML = '<option value="">Cargando horarios...</option>';
 
-        const { data, error } = await supabaseClient.rpc('get_available_slots_by_duration', {
-            p_barber_id: barberId,
-            p_booking_date: date,
-            p_service_duration: `${selectedServiceDuration} minutes`
+        const { data, error } = await supabaseClient.rpc('get_available_slots', {
+            barber_uuid: barberId,
+            booking_date: date,
+            service_duration: selectedService.duracion_minutos
         });
 
         if (error) {
-            console.error('Error fetching availability:', error);
-            timeSelect.innerHTML = '<option>Error al cargar horarios</option>';
-            alert(`Ocurrió un error al buscar horarios: ${error.message}. Intenta de nuevo.`);
+            console.error('Error al cargar disponibilidad:', error);
+            timeSelect.innerHTML = `<option value="">Error al cargar horarios</option>`;
             return;
         }
 
-        availableSlots = data.map(slot => ({ start_time: slot.start_time }));
-        populateTimeSelect();
-    };
-
-    const populateTimeSelect = () => {
-        if (availableSlots.length === 0) {
+        availableSlots = data;
+        timeSelect.innerHTML = '<option value="">Selecciona una hora</option>';
+        if (data.length === 0) {
             timeSelect.innerHTML = '<option value="">No hay horarios disponibles</option>';
             return;
         }
 
-        timeSelect.innerHTML = '<option value="" disabled selected>Selecciona una hora</option>';
-        availableSlots.forEach(slot => {
+        data.forEach(slot => {
             const option = document.createElement('option');
-            const timeParts = slot.start_time.split(':');
-            const date = new Date();
-            date.setHours(timeParts[0], timeParts[1], 0);
-            const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
+            // Formatear la hora para mostrarla (ej: 14:00)
             option.value = slot.start_time;
-            option.textContent = formattedTime;
+            option.textContent = new Date(`1970-01-01T${slot.start_time}`).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
             timeSelect.appendChild(option);
         });
         timeSelect.disabled = false;
-    };
+    }
 
-    const navigateToStep = (stepNumber) => {
-        if (stepNumber < 1 || stepNumber > steps.length) return;
 
-        if (stepNumber > currentStep) {
-            if (currentStep === 1 && !serviceSelect.value) { 
-                alert("Por favor, selecciona un servicio."); 
-                return; 
-            }
-            if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { 
-                alert("Por favor, selecciona fecha y hora."); 
-                return; 
-            }
-            if (currentStep === 3) {
-                if (!clientSearchInput.value.trim() || !clientPhoneInput.value.trim()) {
-                    alert("Por favor, completa tu nombre y teléfono."); 
-                    return;
-                }
-            }
-        }
+    // =================================================================================
+    // MANEJO DEL FORMULARIO Y NAVEGACIÓN
+    // =================================================================================
 
+    function navigateToStep(stepNumber) {
         currentStep = stepNumber;
+        steps.forEach(step => step.style.display = 'none');
+        document.getElementById(`step-${stepNumber}`).style.display = 'block';
 
-        steps.forEach(step => step.classList.remove('active-step'));
-        document.getElementById(`step-${currentStep}`).classList.add('active-step');
-
-        progressBarSteps.forEach((pbStep, index) => {
-            const stepNum = index + 1;
-            if (stepNum < currentStep) {
-                pbStep.classList.add('completed');
-                pbStep.classList.remove('active');
-            } else if (stepNum === currentStep) {
-                pbStep.classList.add('active');
-                pbStep.classList.remove('completed');
+        progressBarSteps.forEach((step, index) => {
+            if (index < stepNumber -1) {
+                step.classList.add('completed');
+                step.classList.remove('active');
+            } else if (index === stepNumber -1) {
+                step.classList.add('active');
+                step.classList.remove('completed');
             } else {
-                pbStep.classList.remove('active', 'completed');
+                step.classList.remove('active', 'completed');
             }
         });
-
-        if (currentStep === 4) {
-            updateBookingSummary();
+        
+        if (stepNumber === 4) {
+             updateBookingSummary();
         }
-    };
+    }
 
-    const updateBookingSummary = () => {
-        if (!selectedService) {
-            console.error("No se ha seleccionado ningún servicio");
+    function updateBookingSummary() {
+        if (!selectedService || !dateInput.value || !timeSelect.value) {
+            bookingSummary.innerHTML = "<p>Por favor, completa todos los pasos anteriores.</p>";
             return;
         }
-        
-        const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
-        const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-        const time = timeSelect.options[timeSelect.selectedIndex].textContent;
-        const clientName = clientSearchInput.value;
-        const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
+
+        const selectedDate = new Date(`${dateInput.value}T00:00:00-04:00`); // Asegurar zona horaria local
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = selectedDate.toLocaleDateString('es-VE', dateOptions);
+
+        const selectedTime = new Date(`1970-01-01T${timeSelect.value}`);
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+        const formattedTime = selectedTime.toLocaleTimeString('es-VE', timeOptions);
 
         bookingSummary.innerHTML = `
-            <p><strong>Barbero:</strong> ${barberData.nombre}</p>
-            <p><strong>Tipo de Servicio:</strong> ${serviceLocation}</p>
-            <p><strong>Servicio:</strong> ${serviceName}</p>
+            <h4>Resumen de la Cita:</h4>
+            <p><strong>Cliente:</strong> ${clientSearchInput.value.trim()}</p>
+            <p><strong>Teléfono:</strong> ${clientPhoneInput.value.trim()}</p>
+            <p><strong>Servicio:</strong> ${selectedService.nombre}</p>
+            <p><strong>Tipo:</strong> ${selectedServiceType === 'studio' ? 'En el estudio' : 'A domicilio'}</p>
+            <p><strong>Fecha:</strong> ${formattedDate}</p>
+            <p><strong>Hora:</strong> ${formattedTime}</p>
             <p><strong>Precio:</strong> $${selectedService.precio}</p>
-            <p><strong>Fecha:</strong> ${date}</p>
-            <p><strong>Hora:</strong> ${time}</p>
-            <p><strong>Cliente:</strong> ${clientName.trim()}</p>
         `;
-    };
+    }
 
-    const getClientIdForBooking = async () => {
-        if (selectedClient) {
-            return selectedClient.id;
-        }
+    // =================================================================================
+    // LÓGICA DE LA RESERVA (NUEVO MÉTODO)
+    // =================================================================================
 
-        const nameParts = clientSearchInput.value.trim().split(' ');
-        const nombre = nameParts.shift() || '';
-        const apellido = nameParts.join(' ');
-
-        const clientData = {
-            barbero_id: barberId,
-            nombre: nombre,
-            apellido: apellido,
-            telefono: clientPhoneInput.value.trim(),
-        };
-
-        if (!clientData.nombre || !clientData.telefono) {
-            throw new Error("El nombre y el teléfono del cliente son obligatorios.");
-        }
-
-        const { data, error } = await supabaseClient
-            .from('clientes')
-            .upsert(clientData, { onConflict: 'barbero_id, telefono' })
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Error al guardar cliente:", error);
-            throw new Error(`No se pudo guardar la información del cliente: ${error.message}`);
-        }
-
-        return data.id;
-    };
-
+    /**
+     * Maneja el envío del formulario.
+     * Reúne toda la información y la envía a la Edge Function 'create-booking'.
+     */
     async function handleBookingSubmit(e) {
         e.preventDefault();
-        
-        if (!selectedService) {
-            alert("Por favor selecciona un servicio antes de continuar");
+        statusMessage.textContent = 'Procesando tu reserva...';
+        statusMessage.style.color = 'var(--text-color)';
+
+        // --- Validación ---
+        if (!barberId || !selectedService || !dateInput.value || !timeSelect.value || !clientSearchInput.value || !clientPhoneInput.value) {
+            statusMessage.textContent = 'Error: Por favor, completa todos los campos.';
+            statusMessage.style.color = 'var(--danger-color)';
             return;
         }
-
-        statusMessage.textContent = 'Procesando reserva...';
-        statusMessage.className = 'status-message';
 
         try {
             const startTime = timeSelect.value;
-            const bookingDate = new Date(`${dateInput.value}T${startTime}`);
-            const durationInMinutes = selectedService.duracion_minutos;
-            const endTime = new Date(bookingDate.getTime() + durationInMinutes * 60000).toTimeString().slice(0, 8);
-            const clienteId = await getClientIdForBooking();
+            const selectedSlot = availableSlots.find(slot => slot.start_time === startTime);
+            if (!selectedSlot) {
+                throw new Error("La hora seleccionada ya no está disponible. Por favor, elige otra.");
+            }
+            const endTime = selectedSlot.end_time;
 
-            const bookingData = {
-                barbero_id: barberId,
-                cliente_id: clienteId,
-                cliente_nombre: clientSearchInput.value.trim(),
-                cliente_telefono: clientPhoneInput.value.trim(),
-                servicio_reservado_id: selectedService.id,
-                fecha_cita: dateInput.value,
-                hora_inicio_cita: startTime,
-                hora_fin_cita: endTime,
-                precio_final: selectedService.precio,
-                estado: 'pendiente',
-                // NUEVO: Guardamos el tipo de servicio en la base de datos
-                tipo_servicio: selectedServiceType 
+            // 1. Construir el objeto payload para la Edge Function.
+            //    Este objeto debe coincidir con la interfaz `BookingPayload` en index.ts
+            const bookingPayload = {
+                barberId: barberId,
+                clientName: clientSearchInput.value.trim(),
+                clientPhone: clientPhoneInput.value.trim(),
+                serviceId: selectedService.id,
+                bookingDate: dateInput.value, // Formato AAAA-MM-DD
+                startTime: startTime,         // Formato HH:MM:SS
+                endTime: endTime,             // Formato HH:MM:SS
+                finalPrice: selectedService.precio,
+                serviceType: selectedServiceType
             };
 
-            const { error: bookingError } = await supabaseClient
-                .from('citas')
-                .insert(bookingData);
+            // 2. Invocar la Edge Function con el payload.
+            //    Esta es la única interacción con Supabase para crear la reserva.
+            const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
+                body: bookingPayload
+            });
 
-            if (bookingError) {
-                if (bookingError.code === '23505') {
-                    throw new Error("Lo sentimos, este horario acaba de ser reservado. Por favor, selecciona otro.");
-                }
-                throw new Error(`No se pudo crear la cita: ${bookingError.message}`);
+            // 3. Manejar la respuesta de la función.
+            if (functionError) {
+                // El error puede venir de la función misma (ej: un 'throw new Error(...)')
+                const errorMessage = functionError.context?.errorMessage || `No se pudo crear la cita: ${functionError.message}`;
+                throw new Error(errorMessage);
             }
 
-            document.getElementById('barberBookingForm').style.display = 'none';
-            document.getElementById('booking-success-message').style.display = 'block';
+            // 4. Éxito: Mostrar la pantalla de confirmación.
+            document.getElementById('booking-container').style.display = 'none';
+            successMessageContainer.style.display = 'block';
             statusMessage.textContent = '';
             
-            generateWhatsAppLink(bookingData);
+            // Generar el enlace de WhatsApp con los datos devueltos por la función
+            generateWhatsAppLink(bookingResult.bookingData);
 
         } catch (error) {
-            console.error("Error en el proceso de reserva:", error);
+            console.error('Error en el proceso de reserva:', error);
             statusMessage.textContent = `Error: ${error.message}`;
-            statusMessage.className = 'status-message error';
-            alert(error.message + "\n\nVamos a recargar los horarios disponibles.");
-            fetchAvailability(document.getElementById('booking-date').value);
+            statusMessage.style.color = 'var(--danger-color)';
         }
     }
-    
-    const generateWhatsAppLink = (bookingInfo) => {
-        const barberPhone = barberData.telefono.replace(/\D/g, '');
-        const serviceName = selectedService.nombre_personalizado || selectedService.servicios_maestro.nombre;
-        const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
-    
-        const date = new Date(bookingInfo.fecha_cita + 'T12:00:00').toLocaleDateString('es-ES', {dateStyle: 'long'});
-        const time = new Date(`1970-01-01T${bookingInfo.hora_inicio_cita}`).toLocaleTimeString('es-ES', {
-            hour: '2-digit', 
-            minute: '2-digit'
-        });
-        
-        const message = `¡Hola! Acabo de reservar una cita:\n\n*Modalidad:* ${serviceLocation}\n*Servicio:* ${serviceName}\n*Cliente:* ${bookingInfo.cliente_nombre}\n*Fecha:* ${date}\n*Hora:* ${time}\n\nPor favor, confírmame la cita. ¡Gracias!`;
-        
-        const whatsappUrl = `https://wa.me/${barberPhone}?text=${encodeURIComponent(message)}`;
-        
-        whatsappLinkContainer.innerHTML = `
-            <a href="${whatsappUrl}" 
-               target="_blank" 
-               class="style-button whatsapp-confirm-button">
-                <i class="fab fa-whatsapp"></i> 
-                Enviar Confirmación por WhatsApp
-            </a>
-        `;
-    };
 
-    const showClientResults = (searchTerm) => {
-        clientResultsList.innerHTML = '';
-        if (!searchTerm) {
-            clientResultsList.style.display = 'none';
+    /**
+     * Genera y muestra un enlace de WhatsApp para que el cliente confirme la cita.
+     */
+    function generateWhatsAppLink(bookingData) {
+        if (!barberData || !barberData.telefono) {
+            whatsappLinkContainer.innerHTML = '<p>No se pudo generar el enlace de WhatsApp (teléfono del barbero no disponible).</p>';
             return;
         }
 
-        const filteredClients = barberClients.filter(client =>
-            `${client.nombre} ${client.apellido || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const clientName = clientSearchInput.value.trim();
+        const serviceName = selectedService.nombre;
+        const date = new Date(`${bookingData.fecha_cita}T${bookingData.hora_inicio_cita}`).toLocaleDateString('es-VE', { dateStyle: 'long' });
+        const time = new Date(`1970-01-01T${bookingData.hora_inicio_cita}`).toLocaleTimeString('es-VE', { timeStyle: 'short' });
 
-        if (filteredClients.length > 0) {
-            filteredClients.forEach(client => {
-                const item = document.createElement('div');
-                item.className = 'autocomplete-item';
-                item.textContent = `${client.nombre} ${client.apellido || ''}`;
-                item.addEventListener('click', () => handleClientSelection(client));
-                clientResultsList.appendChild(item);
-            });
-        } else {
-            const item = document.createElement('div');
-            item.className = 'autocomplete-item no-results';
-            item.textContent = 'No se encontró el cliente. Continúa para registrarlo.';
-            clientResultsList.appendChild(item);
-        }
-        clientResultsList.style.display = 'block';
-    };
+        const message = `¡Hola ${barberData.nombre}! Soy ${clientName}. Acabo de agendar una cita para un corte de '${serviceName}' el día ${date} a las ${time}. ¡Gracias!`;
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=${barberData.telefono}&text=${encodeURIComponent(message)}`;
 
-    const handleClientSelection = (client) => {
-        selectedClient = client;
-        clientSearchInput.value = `${client.nombre} ${client.apellido || ''}`.trim();
-        clientPhoneInput.value = client.telefono || '';
-        clientResultsList.innerHTML = '';
-        clientResultsList.style.display = 'none';
-        clientPhoneInput.focus();
-    };
+        whatsappLinkContainer.innerHTML = `<a href="${whatsappUrl}" target="_blank" class="style-button whatsapp-button"><i class="fab fa-whatsapp"></i> Confirmar por WhatsApp</a>`;
+    }
 
-    const setupAutocompleteListeners = () => {
-        clientSearchInput.addEventListener('input', () => {
-            selectedClient = null;
-            showClientResults(clientSearchInput.value);
-        });
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.autocomplete-container')) {
-                clientResultsList.style.display = 'none';
-            }
-        });
-    };
+    // =================================================================================
+    // LISTENERS DE EVENTOS
+    // =================================================================================
 
-    // --- Event Listeners ---
     form.addEventListener('submit', handleBookingSubmit);
 
+    // Navegación entre pasos
     document.getElementById('next-step-1').addEventListener('click', () => navigateToStep(2));
     document.getElementById('prev-step-2').addEventListener('click', () => navigateToStep(1));
     document.getElementById('next-step-2').addEventListener('click', () => navigateToStep(3));
@@ -477,19 +358,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     serviceSelect.addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
-        if (!selectedOption.dataset.serviceData) return;
+        if (!selectedOption.dataset.serviceData) {
+             selectedService = null;
+             return;
+        }
         
         selectedService = JSON.parse(selectedOption.dataset.serviceData);
-        selectedServiceDuration = selectedService.duracion_minutos || 30;
 
         if (dateInput.value) {
             fetchAvailability(dateInput.value);
         }
     });
 
-    // --- Initial Load ---
+    // --- Carga Inicial ---
     barberId = getBarberIdFromURL();
-    initServiceTypeModal(); // Iniciar el nuevo modal
-    fetchBarberData();
-    setupAutocompleteListeners();
+    if(barberId) {
+        initServiceTypeModal();
+        fetchBarberData();
+    }
 });
