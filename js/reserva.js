@@ -354,8 +354,7 @@ const populateServiceSelect = (services) => {
     serviceType: selectedServiceType
 };
 
-console.log("bookingPayload enviado a create-booking:", bookingPayload); // <-- ESTA LÍNEA
-
+console.log("bookingPayload enviado a create-booking:", JSON.stringify(bookingPayload, null, 2));
             const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
                 body: bookingPayload
             });
