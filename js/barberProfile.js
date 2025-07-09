@@ -34,6 +34,8 @@ const notifiedAppointmentIds = new Set();
 let confirmationCheckInterval = null; 
 let paymentCheckInterval = null; 
 const promptedConfirmationIds = new Set(); 
+let reminderCheckInterval = null;
+const remindedAppointmentIds = new Set();
 
 const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const monthsOfYear = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -56,6 +58,12 @@ const selectedDaySlotsContainer = document.getElementById('selected-day-slots-co
 const addSlotToSelectedDayBtn = document.getElementById('add-slot-to-selected-day-btn');
 const selectedDayHeading = document.getElementById('selected-day-heading');
 const bookingsList = document.getElementById('bookings-list');
+
+// --- NUEVOS ELEMENTOS DEL DOM PARA EL MODAL DE RECORDATORIO ---
+const reminderOverlay = document.getElementById('reminder-modal-overlay');
+const reminderClientName = document.getElementById('reminder-client-name');
+const reminderTime = document.getElementById('reminder-time');
+const reminderCloseBtn = document.getElementById('reminder-modal-close-btn');
 // Elementos del modal de confirmación
 const confirmationOverlay = document.getElementById('confirmation-modal-overlay');
 const confirmationModal = document.getElementById('confirmation-modal');
@@ -92,10 +100,14 @@ async function initProfileModule() {
     setupPaymentModalListeners();
     setupWalkInModalListeners(); // AÑADIDO: configurar listeners del nuevo modal
     setupCalendarActionModal();
+        setupReminderModalListeners(); // <-- AÑADIR ESTA LÍNEA
+
    
 
     await loadInitialData();
 
+ startReminderChecker(); // <-- AÑADIR ESTA LÍNEA
+ 
     supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
             window.location.href = 'login_register.html';
@@ -159,11 +171,14 @@ async function loadInitialData() {
     setupPushNotificationButton();
     registerServiceWorker();
     startConfirmationChecker();
+    
+
     await fetchBarberClients();
 
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
-        const { data: barberProfile, error: barberError } = await supabaseClient
+        const { data: barberProfile, error: barberError } = await 
+        supabaseClient
             .from('barberos')
             .select('id, nombre, telefono, foto_perfil_url')
             .eq('user_id', currentUserId)
@@ -2176,5 +2191,110 @@ function setupPushNotificationButton() {
     const enablePushBtn = document.getElementById('enable-push-notifications-btn');
     if (enablePushBtn) {
         enablePushBtn.addEventListener('click', subscribeUserToPush);
+    }
+}
+
+/**
+ * Configura los listeners para el nuevo modal de recordatorio.
+ */
+function setupReminderModalListeners() {
+    if (!reminderOverlay || !reminderCloseBtn) return;
+
+    const closeModal = () => {
+        reminderOverlay.classList.remove('active');
+    };
+
+    reminderCloseBtn.addEventListener('click', closeModal);
+    reminderOverlay.addEventListener('click', (e) => {
+        if (e.target === reminderOverlay) {
+            closeModal();
+        }
+    });
+}
+
+/**
+ * Muestra el modal de recordatorio con los datos de la cita.
+ * @param {object} cita - El objeto de la cita.
+ */
+function showReminderModal(cita) {
+    if (!reminderOverlay || !reminderClientName || !reminderTime) return;
+
+    reminderClientName.textContent = cita.cliente_nombre;
+    const time = new Date(`1970-01-01T${cita.hora_inicio_cita}`).toLocaleTimeString('es-ES', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    reminderTime.textContent = time;
+
+    reminderOverlay.classList.add('active');
+
+    // Reproducir un sonido sutil para llamar la atención
+    const audio = new Audio('https://cdn.freesound.org/previews/571/571408_6424653-lq.mp3');
+    audio.volume = 0.3; // Volumen más bajo para una alerta
+    audio.play().catch(e => console.warn("No se pudo reproducir el sonido de recordatorio.", e));
+}
+
+/**
+ * Inicia el ciclo de verificación para los recordatorios de citas.
+ */
+function startReminderChecker() {
+    if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+    
+    // Ejecutar la verificación una vez al iniciar
+    checkUpcomingAppointmentReminders();
+    
+    // Establecer el intervalo para que verifique cada minuto
+    reminderCheckInterval = setInterval(checkUpcomingAppointmentReminders, 60000); // 60000 ms = 1 minuto
+}
+
+/**
+ * Busca citas que están a 30 minutos o menos de comenzar y muestra una advertencia.
+ */
+async function checkUpcomingAppointmentReminders() {
+    if (!currentUserId) return;
+
+    const now = new Date();
+    const today = toLocalISODate(now);
+    const currentTime = now.toTimeString().slice(0, 8);
+
+    // Buscamos citas para hoy, que aún no han pasado y cuyo estado es pendiente o confirmada.
+    const { data: citas, error } = await supabaseClient
+        .from('citas')
+        .select('id, cliente_nombre, hora_inicio_cita, fecha_cita')
+        .eq('barbero_id', currentUserId)
+        .eq('fecha_cita', today)
+        .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED])
+        .gt('hora_inicio_cita', currentTime); // Clave: solo citas futuras
+
+    if (error) {
+        console.error("Error buscando citas para recordar:", error);
+        return;
+    }
+
+    if (!citas || citas.length === 0) {
+        return;
+    }
+
+    // Procesamos las citas encontradas
+    for (const cita of citas) {
+        // Si ya mostramos una alerta para esta cita, la saltamos
+        if (remindedAppointmentIds.has(cita.id)) {
+            continue;
+        }
+
+        const appointmentTime = new Date(`${cita.fecha_cita}T${cita.hora_inicio_cita}`);
+        const diffMinutes = (appointmentTime.getTime() - now.getTime()) / 60000;
+
+        // Si faltan 30 minutos o menos, mostramos el modal
+        if (diffMinutes <= 30) {
+            console.log(`Recordatorio para la cita ID ${cita.id} a las ${cita.hora_inicio_cita}. Faltan ${diffMinutes.toFixed(1)} minutos.`);
+            showReminderModal(cita);
+            remindedAppointmentIds.add(cita.id);
+            
+            // Rompemos el bucle para mostrar solo un modal a la vez.
+            // La siguiente advertencia aparecerá en la próxima verificación.
+            break; 
+        }
     }
 }
