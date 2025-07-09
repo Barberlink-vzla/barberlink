@@ -36,6 +36,8 @@ let paymentCheckInterval = null;
 const promptedConfirmationIds = new Set(); 
 let reminderCheckInterval = null;
 const remindedAppointmentIds = new Set();
+et appointmentCheckInterval = null; // Intervalo para verificar citas próximas
+const notifiedAppointmentIds = new Set(); // Guarda IDs de citas ya notificadas para no repetir
 
 const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const monthsOfYear = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -101,6 +103,7 @@ async function initProfileModule() {
     setupWalkInModalListeners(); // AÑADIDO: configurar listeners del nuevo modal
     setupCalendarActionModal();
         setupReminderModalListeners(); // <-- AÑADIR ESTA LÍNEA
+        setupAlertModalListeners(); // <-- AÑADIR ESTA LÍNEA
 
    
 
@@ -2297,4 +2300,110 @@ async function checkUpcomingAppointmentReminders() {
             break; 
         }
     }
+}
+
+// AÑADIR ESTA NUEVA FUNCIÓN EN js/barberProfile.js
+
+/**
+ * Busca citas que están a 30 minutos o menos de comenzar y muestra una alerta al barbero.
+ */
+async function checkUpcomingAppointments() {
+    if (!currentUserId) return;
+
+    const now = new Date();
+
+    // Buscamos citas para hoy, que aún no han pasado y cuyo estado es pendiente o confirmada.
+    const { data: citas, error } = await supabaseClient
+        .from('citas')
+        .select('id, fecha_cita, hora_inicio_cita, cliente_nombre, cliente_telefono')
+        .eq('barbero_id', currentUserId)
+        .eq('fecha_cita', now.toISOString().split('T')[0]) // Solo citas de hoy
+        .in('estado', [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING]) // Solo las que no han empezado ni se han cancelado
+        .gte('hora_inicio_cita', now.toTimeString().slice(0, 8)); // Solo citas futuras en el día de hoy
+
+    if (error) {
+        console.error("Error buscando citas próximas:", error);
+        return;
+    }
+    
+    if (!citas) return;
+
+    // Procesamos cada cita encontrada
+    citas.forEach(cita => {
+        // Si ya mostramos una alerta para esta cita en esta sesión, la saltamos.
+        if (notifiedAppointmentIds.has(cita.id)) return;
+
+        const appointmentTime = new Date(`${cita.fecha_cita}T${cita.hora_inicio_cita}`);
+        const diffMinutes = (appointmentTime.getTime() - now.getTime()) / 60000;
+
+        // Si la cita es en 30 minutos o menos (y no ha pasado), mostramos la alerta.
+        if (diffMinutes <= 30 && diffMinutes > 0) {
+            showReminderAlert(cita); // Llamamos a la función que muestra el modal
+            notifiedAppointmentIds.add(cita.id); // La añadimos al set para no volver a notificar
+        }
+    });
+}
+
+// AÑADIR ESTA NUEVA FUNCIÓN EN js/barberProfile.js
+
+/**
+ * Muestra el modal de recordatorio y lo configura con los datos de la cita.
+ * @param {object} cita El objeto de la cita.
+ */
+function showReminderAlert(cita) {
+    const overlay = document.getElementById('appointment-alert-overlay');
+    const title = document.getElementById('alert-modal-title');
+    const messageTextarea = document.getElementById('alert-modal-message');
+    const whatsappBtn = document.getElementById('alert-modal-whatsapp-btn');
+
+    if (!overlay || !title || !messageTextarea || !whatsappBtn) return;
+
+    // 1. Llenar el modal con la información de la cita
+    title.textContent = `¡Cita en ~30 min con ${cita.cliente_nombre}!`;
+    messageTextarea.value = `Hola ${cita.cliente_nombre}, te escribo para recordarte que nuestra cita es dentro de unos 30 minutos. ¡Por favor, confírmame tu asistencia!`;
+
+    // 2. Función para generar y actualizar el enlace de WhatsApp
+    const updateWhatsappLink = () => {
+        // Validación por si un cliente antiguo no tiene teléfono
+        if (!cita.cliente_telefono) {
+            whatsappBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Cliente sin teléfono';
+            whatsappBtn.style.pointerEvents = 'none';
+            whatsappBtn.style.backgroundColor = '#6c757d'; // Un color gris
+            return;
+        }
+
+        const message = messageTextarea.value;
+        const phone = cita.cliente_telefono.replace(/[\s+()-]/g, ''); // Limpia el número
+        whatsappBtn.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    };
+
+    // 3. Generar el enlace inicial y actualizarlo si el barbero edita el mensaje
+    updateWhatsappLink();
+    messageTextarea.onkeyup = updateWhatsappLink;
+
+    // 4. Mostrar el modal
+    overlay.classList.add('active');
+    
+    // 5. (Opcional) Reproducir un sonido para llamar la atención del barbero
+    const audio = new Audio('https://cdn.freesound.org/previews/571/571408_6424653-lq.mp3'); // Sonido sutil
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log("No se pudo reproducir sonido de alerta.", e));
+}
+
+// AÑADIR ESTA NUEVA FUNCIÓN EN js/barberProfile.js
+
+function setupAlertModalListeners() {
+    const overlay = document.getElementById('appointment-alert-overlay');
+    const closeBtn = document.getElementById('alert-modal-close-btn');
+    const modal = document.getElementById('appointment-alert-modal');
+
+    const closeModal = () => {
+        if (overlay) overlay.classList.remove('active');
+    };
+
+    if (overlay) overlay.addEventListener('click', closeModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    
+    // Evita que el modal se cierre al hacer clic dentro de él
+    if(modal) modal.addEventListener('click', (e) => e.stopPropagation());
 }
