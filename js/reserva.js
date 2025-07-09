@@ -103,9 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ================================
-    // Carga servicios y clientes
-    // ================================
     const fetchServicesForBarber = async () => {
         if (!barberId || !selectedServiceType) return;
         const serviceTableName = 'barbero_servicios';
@@ -302,13 +299,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (submitButton) submitButton.disabled = false;
                 return;
             }
-            const endTime = selectedSlot.end_time;
+            // --- CAMBIO CLAVE: Usar el nombre correcto del campo de fin ---
+            const endTime = selectedSlot.hora_fin || selectedSlot.end_time || selectedSlot.hora_fin_cita;
 
-            // Log para debug
-            console.log("Slot seleccionado:", selectedSlot);
+            console.log("Slot seleccionado:", selectedSlot, "Campos:", Object.keys(selectedSlot));
             console.log("Valor de endTime:", endTime);
 
-            // Validación definitiva de endTime
             if (!endTime) {
                 alert("Error interno: el horario de fin no se pudo determinar. Por favor, selecciona otra hora.");
                 if (submitButton) submitButton.disabled = false;
