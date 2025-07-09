@@ -12,7 +12,7 @@ const corsHeaders = {
 }
 // --- FIN DE LA CORRECCIÓN ---
 
-
+// Definimos los tipos para mayor claridad y seguridad
 interface BookingPayload {
   barberId: string;
   clientName: string;
@@ -37,34 +37,34 @@ serve(async (req) => {
   try {
     const payload: BookingPayload = await req.json();
 
+    // Crear un cliente de Supabase con privilegios de 'service_role' para saltar RLS
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    
-    // El resto de tu lógica para crear la cita y la notificación permanece igual...
-    const newCita = {
-      barbero_id: payload.barberId,
-      cliente_nombre: payload.clientName,
-      cliente_telefono: payload.clientPhone,
-      servicio_reservado_id: payload.serviceId,
-      fecha_cita: payload.bookingDate,
-      hora_inicio_cita: payload.startTime,
-      hora_fin_cita: payload.endTime,
-      estado: 'confirmada',
-      estado_pago: 'pendiente',
-      precio_final: payload.finalPrice,
-      tipo_servicio: payload.serviceType,
-    }; //
 
+    // Insertar la nueva cita en la base de datos
     const { data: insertedCita, error: citaError } = await supabaseAdmin
       .from('citas')
-      .insert(newCita)
+      .insert({
+        barbero_id: payload.barberId,
+        cliente_nombre: payload.clientName,
+        cliente_telefono: payload.clientPhone,
+        servicio_reservado_id: payload.serviceId,
+        fecha_cita: payload.bookingDate,
+        hora_inicio_cita: payload.startTime,
+        hora_fin_cita: payload.endTime,
+        estado: 'confirmada',
+        estado_pago: 'pendiente',
+        precio_final: payload.finalPrice,
+        tipo_servicio: payload.serviceType,
+      })
       .select()
       .single();
 
     if (citaError) throw new Error(`Error al crear la cita: ${citaError.message}`);
-    
+
+    // Crear la notificación para el barbero
     const notificationMessage = `${payload.clientName} ha reservado una cita.`;
     await supabaseAdmin.from('notificaciones').insert({
         barbero_id: payload.barberId,
@@ -72,12 +72,11 @@ serve(async (req) => {
         tipo: 'nueva_reserva',
         leido: false,
         cita_id: insertedCita.id
-    }); //
-
+    });
 
     // --- INICIO DE LA CORRECCIÓN: AÑADIR HEADERS A LA RESPUESTA ---
     return new Response(JSON.stringify({ bookingData: insertedCita }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, // Se añaden los headers de CORS
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
     // --- FIN DE LA CORRECCIÓN ---
@@ -85,7 +84,7 @@ serve(async (req) => {
   } catch (err) {
     // --- INICIO DE LA CORRECCIÓN: AÑADIR HEADERS A LA RESPUESTA DE ERROR ---
     return new Response(JSON.stringify({ error: err.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, // Se añaden también en caso de error
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
       status: 400,
     });
     // --- FIN DE LA CORRECCIÓN ---
