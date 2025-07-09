@@ -29,8 +29,7 @@ let activeEditingDayIndex = -1;
 let monthlyBookingsMap = new Map();
 
 // Variables para recordatorios y confirmaciones
-let appointmentCheckInterval = null; 
-const notifiedAppointmentIds = new Set();
+
 let confirmationCheckInterval = null; 
 let paymentCheckInterval = null; 
 const promptedConfirmationIds = new Set(); 
