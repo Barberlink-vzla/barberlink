@@ -2292,7 +2292,7 @@ async function checkUpcomingAppointmentReminders() {
         if (diffMinutes <= 30) {
             console.log(`Recordatorio para la cita ID ${cita.id} a las ${cita.hora_inicio_cita}. Faltan ${diffMinutes.toFixed(1)} minutos.`);
             showReminderModal(cita);
-            remindedAppointmentIds.add(cita.id);
+            notifiedAppointmentIds.add(cita.id);
             
             // Rompemos el bucle para mostrar solo un modal a la vez.
             // La siguiente advertencia aparecerá en la próxima verificación.
