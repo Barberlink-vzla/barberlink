@@ -343,16 +343,19 @@ const populateServiceSelect = (services) => {
             }
             const endTime = selectedSlot.end_time;
             const bookingPayload = {
-                barberId: barberId,
-                clientName: clientSearchInput.value.trim(),
-                clientPhone: clientPhoneInput.value.trim(),
-                serviceId: selectedService.id,
-                bookingDate: dateInput.value,
-                startTime: startTime,
-                endTime: endTime,
-                finalPrice: selectedService.precio,
-                serviceType: selectedServiceType
-            };
+    barberId: barberId,
+    clientName: clientSearchInput.value.trim(),
+    clientPhone: clientPhoneInput.value.trim(),
+    serviceId: selectedService.id,
+    bookingDate: dateInput.value,
+    startTime: startTime,
+    endTime: endTime,
+    finalPrice: selectedService.precio,
+    serviceType: selectedServiceType
+};
+
+console.log("bookingPayload enviado a create-booking:", bookingPayload); // <-- ESTA LÍNEA
+
             const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
                 body: bookingPayload
             });
