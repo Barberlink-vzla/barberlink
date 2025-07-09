@@ -117,64 +117,77 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Carga los servicios del barbero y los clientes existentes.
      */
-    const fetchServicesForBarber = async () => {
-        if (!barberId || !selectedServiceType) return;
+   // js/reserva.js
+
+/**
+ * Carga los servicios del barbero y los clientes existentes.
+ */
+const fetchServicesForBarber = async () => {
+    if (!barberId || !selectedServiceType) return;
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Apuntamos siempre a la tabla correcta 'barbero_servicios'.
+    const serviceTableName = 'barbero_servicios';
+    console.log(`Cargando servicios desde la tabla correcta: ${serviceTableName}`);
+
+    // Hacemos la consulta igual que en barberProfile.js para obtener el nombre del servicio
+    // y también cargamos los clientes del barbero.
+    const [servicesResponse, clientsResponse] = await Promise.all([
+        supabaseClient
+            .from(serviceTableName)
+            .select('*, servicios_maestro(id, nombre)') // Incluimos el nombre desde la tabla maestra
+            .eq('barbero_id', barberId),
+        supabaseClient
+            .from('clientes')
+            .select('id, nombre, telefono')
+            .eq('barbero_id', barberId)
+    ]);
+    // --- FIN DE LA CORRECCIÓN ---
+
+
+    if (servicesResponse.error) {
+        console.error(`Error cargando servicios:`, servicesResponse.error);
+        serviceSelect.innerHTML = '<option>Error al cargar servicios</option>';
+        statusMessage.textContent = `Error al cargar servicios: ${servicesResponse.error.message}`;
+        statusMessage.className = 'status-message error';
+    } else {
+        populateServiceSelect(servicesResponse.data);
+    }
+
+    if (clientsResponse.error) {
+        console.error('Error fetching clients:', clientsResponse.error);
+    } else {
+        barberClients = clientsResponse.data || [];
+    }
+};
+
+/**
+ * Rellena el <select> de servicios con los datos obtenidos.
+ */
+const populateServiceSelect = (services) => {
+    if (!services || services.length === 0) {
+        serviceSelect.innerHTML = '<option>No hay servicios disponibles</option>';
+        return;
+    }
+    
+    serviceSelect.innerHTML = '<option value="" disabled selected>Selecciona un servicio...</option>';
+    
+    services.forEach(service => {
+        const option = document.createElement('option');
+        option.value = service.id; // ID de la tabla barbero_servicios
         
-        const serviceTableName = selectedServiceType === 'studio' ? 'servicios_barbero' : 'servicios_domicilio';
-        console.log(`Cargando servicios desde la tabla: ${serviceTableName}`);
+        // --- INICIO DE LA CORRECCIÓN ---
+        // Leemos el nombre del servicio desde la relación con 'servicios_maestro'
+        const serviceName = service.nombre_personalizado || service.servicios_maestro?.nombre || 'Servicio sin nombre';
+        const servicePrice = service.precio || 0;
+        const serviceDuration = service.duracion_minutos || 30;
+        // --- FIN DE LA CORRECCIÓN ---
 
-        // CORRECCIÓN: Se eliminó la unión con "servicios_maestro" que causaba el error.
-        const [servicesResponse, clientsResponse] = await Promise.all([
-            supabaseClient
-                .from(serviceTableName)
-                .select('*') 
-                .eq('barbero_id', barberId),
-            supabaseClient
-                .from('clientes')
-                .select('id, nombre, telefono') // También quitamos apellido aquí por si acaso
-                .eq('barbero_id', barberId)
-        ]);
-
-        if (servicesResponse.error) {
-            // El error "Could not find a relationship" aparecerá aquí.
-            console.error(`Error cargando servicios:`, servicesResponse.error);
-            serviceSelect.innerHTML = '<option>Error al cargar servicios</option>';
-        } else {
-            populateServiceSelect(servicesResponse.data);
-        }
-
-        if (clientsResponse.error) {
-            console.error('Error fetching clients:', clientsResponse.error);
-        } else {
-            barberClients = clientsResponse.data;
-        }
-    };
-
-    /**
-     * Rellena el <select> de servicios con los datos obtenidos.
-     */
-    const populateServiceSelect = (services) => {
-        if (!services || services.length === 0) {
-            serviceSelect.innerHTML = '<option>No hay servicios disponibles</option>';
-            return;
-        }
-        
-        serviceSelect.innerHTML = '<option value="" disabled selected>Selecciona un servicio...</option>';
-        
-        services.forEach(service => {
-            const option = document.createElement('option');
-            option.value = service.id;
-            
-            // Usamos las columnas directas de la tabla de servicios.
-            const serviceName = service.nombre_personalizado || service.nombre || 'Servicio sin nombre';
-            const servicePrice = service.precio || 0;
-            const serviceDuration = service.duracion_minutos || 30;
-
-            option.textContent = `${serviceName} - $${servicePrice} (${serviceDuration} min)`;
-            option.dataset.serviceData = JSON.stringify(service);
-            serviceSelect.appendChild(option);
-        });
-    };
+        option.textContent = `${serviceName} - $${servicePrice} (${serviceDuration} min)`;
+        option.dataset.serviceData = JSON.stringify(service);
+        serviceSelect.appendChild(option);
+    });
+};
 
     /**
      * Busca los horarios disponibles para una fecha y duración de servicio.
