@@ -2238,3 +2238,43 @@ body {
         padding: 30px; /* Restauramos el padding original del contenido */
     }
 }
+
+/* =================================================================== */
+/* === AJUSTES PARA LA TRANSICIÓN DE CARGA INICIAL === */
+/* =================================================================== */
+
+/* Por defecto, el layout principal estará oculto para evitar parpadeos */
+.dashboard-layout {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.4s ease-in;
+}
+
+/* Cuando el body tenga la clase 'loaded', se mostrará el panel suavemente */
+body.loaded .dashboard-layout {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Revisión del estilo del loader para asegurar que siempre esté visible al inicio */
+#app-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--background-color);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1; /* Aseguramos que sea visible por defecto */
+    transition: opacity 0.5s ease-out, visibility 0s 0.5s;
+    visibility: visible;
+}
+
+/* Cuando el loader deba desaparecer */
+#app-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
