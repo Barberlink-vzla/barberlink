@@ -113,16 +113,17 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
 
     await loadInitialData();
     
-     // --- INICIO DE LA MODIFICACIÓN ---
-    // Una vez que todo ha cargado, oculta la pantalla de carga
+     // --- LÓGICA DE CARGA MEJORADA ---
+    const appLoader = document.getElementById('app-loader');
+    
     if (appLoader) {
-        appLoader.classList.add('fade-out');
-        // Elimina el elemento del DOM después de la animación para mejorar el rendimiento
-        setTimeout(() => {
-            appLoader.style.display = 'none';
-        }, 500); // Coincide con la duración de la transición en CSS
+        // 1. Oculta el loader
+        appLoader.classList.add('hidden');
     }
-    // --- FIN DE LA MODIFICACIÓN ---
+    
+    // 2. Muestra el contenido principal del dashboard
+    document.body.classList.add('loaded');
+    // --- FIN DE LA MEJORA ---
     
      handlePushNotificationRedirect();
 
