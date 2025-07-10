@@ -481,33 +481,33 @@
                 </div>
             </section>
 
-            <section id="clientes" class="content-section">
-                <h2 class="profile-section-title">Gestión de Clientes</h2>
-                <div class="add-client-card">
-                    <h3>Añadir Cliente Manualmente</h3>
-                    <form id="add-client-form">
-                        <div class="input-group">
-                            <i class="fas fa-user"></i>
-                            <input type="text" name="nombre" placeholder=" " required><label>Nombre</label>
-                        </div>
-                         <div class="input-group">
-                            <i class="fas fa-user-tag"></i>
-                            <input type="text" name="apellido" placeholder=" "><label>Apellido</label>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-phone"></i>
-                            <input type="tel" name="telefono" placeholder=" " required><label>Teléfono</label>
-                        </div>
-                        <div class="input-group full-width">
-                            <i class="fas fa-comments"></i>
-                            <input type="text" name="temas_conversacion" placeholder=" "><label>Temas de Conversación</label>
-                        </div>
-                        <button type="submit"><i class="fas fa-plus-circle"></i> Añadir Cliente</button>
-                    </form>
-                </div>
-                <div id="client-list-container">
-                    </div>
-            </section>
+           <section id="clientes" class="content-section">
+    <h2 class="profile-section-title">Gestión de Clientes</h2>
+    <div class="add-client-card">
+        <h3>Añadir Cliente Manualmente</h3>
+        <form id="add-client-form">
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="add-client-nombre" name="nombre" placeholder=" " required><label for="add-client-nombre">Nombre</label>
+            </div>
+             <div class="input-group">
+                <i class="fas fa-user-tag"></i>
+                <input type="text" id="add-client-apellido" name="apellido" placeholder=" "><label for="add-client-apellido">Apellido</label>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-phone"></i>
+                <input type="tel" id="add-client-telefono" name="telefono" placeholder=" " required><label for="add-client-telefono">Teléfono</label>
+            </div>
+            <div class="input-group full-width">
+                <i class="fas fa-comments"></i>
+                <input type="text" id="add-client-temas" name="temas_conversacion" placeholder=" "><label for="add-client-temas">Temas de Conversación</label>
+            </div>
+            <button type="submit"><i class="fas fa-plus-circle"></i> Añadir Cliente</button>
+        </form>
+    </div>
+    <div id="client-list-container">
+        </div>
+</section>
             
             <section id="reportes" class="content-section">
                 <h2 class="profile-section-title">Reportes y Análisis</h2>
