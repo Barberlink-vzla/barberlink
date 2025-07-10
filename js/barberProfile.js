@@ -2167,6 +2167,20 @@ async function subscribeUserToPush() {
         });
 
         console.log('Usuario suscrito:', subscription);
+             // --- INICIO DE LA SOLUCIÓN ---
+
+        // PASO 1: VERIFICA EL VALOR DE currentUserId EN LA CONSOLA
+        console.log('Intentando guardar la suscripción para el User ID:', currentUserId);
+
+        // PASO 2: DETÉN LA EJECUCIÓN SI EL ID NO EXISTE
+        if (!currentUserId) {
+            console.error('Error Crítico: currentUserId es nulo. No se puede guardar la suscripción.');
+            document.getElementById('push-status').textContent = 'Error: No se pudo identificar al usuario.';
+            return; // Detiene la función aquí mismo
+        }
+
+        // --- FIN DE LA SOLUCIÓN ---
+        
         pushStatusEl.textContent = 'Guardando suscripción...';
 
         // Guardar la suscripción en la base de datos
