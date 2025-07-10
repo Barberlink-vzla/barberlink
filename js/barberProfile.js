@@ -73,6 +73,9 @@ const confirmArrivalBtn = document.getElementById('confirm-arrival-btn');
 const confirmNoshowBtn = document.getElementById('confirm-noshow-btn');
 const confirmationCloseBtn = document.getElementById('confirmation-modal-close-btn');
 
+const appLoader = document.getElementById('app-loader'); // <-- AÑADIR ESTA LÍNEA
+
+
 // --- INICIO: Elementos del DOM para el nuevo modal de Visita Inmediata ---
 const showWalkInModalBtn = document.getElementById('show-walk-in-modal-btn');
 const walkInModalOverlay = document.getElementById('walk-in-modal-overlay');
@@ -109,6 +112,17 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
 
 
     await loadInitialData();
+    
+     // --- INICIO DE LA MODIFICACIÓN ---
+    // Una vez que todo ha cargado, oculta la pantalla de carga
+    if (appLoader) {
+        appLoader.classList.add('fade-out');
+        // Elimina el elemento del DOM después de la animación para mejorar el rendimiento
+        setTimeout(() => {
+            appLoader.style.display = 'none';
+        }, 500); // Coincide con la duración de la transición en CSS
+    }
+    // --- FIN DE LA MODIFICACIÓN ---
     
      handlePushNotificationRedirect();
 
