@@ -109,6 +109,8 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
 
 
     await loadInitialData();
+    
+     handlePushNotificationRedirect();
 
  
  
@@ -2112,10 +2114,9 @@ async function registerServiceWorker() {
 
     try {
         // --- ESTA ES LA LÍNEA QUE DEBES CAMBIAR ---
-        const registration = await navigator.serviceWorker.register('/barberlink/sw.js', { scope: '/barberlink/' });
+        const registration = await navigator.serviceWorker.register('sw.js');
         console.log('Service Worker registrado con éxito:', registration);
 
-        // Comprobar y posiblemente renovar la suscripción cada vez que se carga la página
         await checkAndRenewSubscription();
 
     } catch (error) {
@@ -2444,4 +2445,27 @@ function startAppointmentChecker() {
     appointmentCheckInterval = setInterval(checkUpcomingAppointments, 60000);
 
     console.log("✅ Verificador de citas próximas iniciado. Se ejecutará cada minuto.");
+}
+
+function handlePushNotificationRedirect() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fechaCita = urlParams.get('fecha');
+    const idCita = urlParams.get('citaId');
+
+    // Si ambos parámetros existen, significa que venimos de una notificación.
+    if (fechaCita && idCita) {
+        console.log(`Redirección desde Push detectada. Navegando a la cita ${idCita} del ${fechaCita}.`);
+
+        // Disparamos el mismo evento que usan las notificaciones internas.
+        // Esto reutiliza la lógica que ya te funciona perfectamente.
+        document.dispatchEvent(new CustomEvent('navigateToDate', {
+            detail: {
+                dateString: fechaCita,
+                citaId: idCita
+            }
+        }));
+
+        // Limpia los parámetros de la URL para que no se repita la acción si el usuario recarga.
+        history.replaceState(null, '', window.location.pathname);
+    }
 }
