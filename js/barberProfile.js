@@ -480,11 +480,13 @@ async function handleWalkInSubmit(e) {
 async function checkUpcomingAppointments() {
     if (!currentUserId) return;
     const now = new Date();
+   const today = toLocalISODate(now); 
+
     const { data: citas, error } = await supabaseClient
         .from('citas')
         .select('id, fecha_cita, hora_inicio_cita, cliente_nombre, cliente_telefono')
         .eq('barbero_id', currentUserId)
-        .eq('fecha_cita', now.toISOString().split('T')[0])
+        .eq('fecha_cita', today) // <-- LÍNEA CORREGIDA
         .in('estado', [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
         .gte('hora_inicio_cita', now.toTimeString().slice(0, 8));
     if (error) { console.error("Error buscando citas próximas:", error); return; }
