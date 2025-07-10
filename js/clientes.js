@@ -161,36 +161,37 @@ document.addEventListener('DOMContentLoaded', () => {
      * Maneja el envío del formulario para añadir un nuevo cliente
      */
     async function handleAddClient(e) {
-        e.preventDefault();
-        const formData = new FormData(addClientForm);
-        const newClient = {
-            nombre: formData.get('nombre'),
-            apellido: formData.get('apellido'),
-            telefono: formData.get('telefono'),
-            temas_conversacion: formData.get('temas_conversacion'),
-            barbero_id: currentBarberId
-        };
-        
-        if (!newClient.nombre || !newClient.telefono) {
-            alert("El nombre y el teléfono son obligatorios.");
-            return;
-        }
+    e.preventDefault();
 
-        const { data, error } = await supabaseClient
-            .from('clientes')
-            .insert(newClient)
-            .select()
-            .single();
+    // Ya no se usa FormData, se obtienen los valores por su ID único
+    const newClient = {
+        nombre: document.getElementById('add-client-nombre').value,
+        apellido: document.getElementById('add-client-apellido').value,
+        telefono: document.getElementById('add-client-telefono').value,
+        temas_conversacion: document.getElementById('add-client-temas').value,
+        barbero_id: currentBarberId
+    };
 
-        if (error) {
-            console.error("Error añadiendo cliente:", error);
-            alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
-            return;
-        }
-        
-        await fetchAndRenderClients();
-        addClientForm.reset();
+    if (!newClient.nombre || !newClient.telefono) {
+        alert("El nombre y el teléfono son obligatorios.");
+        return;
     }
+
+    const { data, error } = await supabaseClient
+        .from('clientes')
+        .insert(newClient)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error añadiendo cliente:", error);
+        alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
+        return;
+    }
+
+    await fetchAndRenderClients();
+    addClientForm.reset(); // Esto seguirá funcionando para limpiar el formulario
+}
     
     /**
      * Activa o desactiva el modo de edición para una tarjeta de cliente
