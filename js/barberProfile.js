@@ -105,10 +105,12 @@ async function initProfileModule() {
         setupAlertModalListeners(); // <-- AÑADIR ESTA LÍNEA
 
    
+startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
+
 
     await loadInitialData();
 
- startReminderChecker(); // <-- AÑADIR ESTA LÍNEA
+ 
  
     supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
@@ -2405,4 +2407,25 @@ function setupAlertModalListeners() {
     
     // Evita que el modal se cierre al hacer clic dentro de él
     if(modal) modal.addEventListener('click', (e) => e.stopPropagation());
+}
+
+// AÑADE ESTA NUEVA FUNCIÓN EN js/barberProfile.js
+
+/**
+ * Inicia un ciclo de verificación para buscar citas próximas y mostrar alertas.
+ */
+function startAppointmentChecker() {
+    // Si ya existe un intervalo, lo limpiamos para evitar duplicados.
+    if (appointmentCheckInterval) {
+        clearInterval(appointmentCheckInterval);
+    }
+
+    // 1. Ejecutamos la verificación una vez tan pronto como se inicia.
+    checkUpcomingAppointments();
+
+    // 2. Establecemos un intervalo para que se repita cada 60 segundos (60000 ms).
+    // Esto es suficiente para no sobrecargar el sistema y dar el aviso a tiempo.
+    appointmentCheckInterval = setInterval(checkUpcomingAppointments, 60000);
+
+    console.log("✅ Verificador de citas próximas iniciado. Se ejecutará cada minuto.");
 }
