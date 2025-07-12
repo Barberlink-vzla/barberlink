@@ -250,10 +250,10 @@ modal-save-status.error { color: var(--danger-color); }
             <button class="alert-modal-close" id="confirmation-modal-close-btn" aria-label="Cerrar modal">&times;</button>
             <h3>Confirmar Asistencia</h3>
             <p id="confirmation-modal-text">¿El cliente se presentó a su cita?</p>
-            <div class="confirmation-buttons">
-                <button id="confirm-arrival-btn" class="style-button confirm-btn"><i class="fas fa-check"></i> Sí, se presentó</button>
-                <button id="confirm-noshow-btn" class="style-button noshow-btn"><i class="fas fa-times"></i> No se presentó</button>
-            </div>
+            <div class="modal-button-group">
+    <button id="confirm-arrival-btn" class="style-button confirm-btn"><i class="fas fa-check"></i> Sí, se presentó</button>
+    <button id="confirm-noshow-btn" class="style-button noshow-btn"><i class="fas fa-times"></i> No se presentó</button>
+</div>
         </div>
     </div>
     
@@ -309,10 +309,10 @@ modal-save-status.error { color: var(--danger-color); }
 
             <div id="walk-in-client-type-selection">
                 <p><strong>¿El cliente es nuevo o ya lo has atendido antes?</strong></p>
-                <div class="confirmation-buttons">
-                    <button id="walk-in-frequent-client-btn" class="style-button confirm-btn"><i class="fas fa-user-check"></i> Cliente Frecuente</button>
-                    <button id="walk-in-new-client-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-user-plus"></i> Cliente Nuevo</button>
-                </div>
+                <div class="modal-button-group">
+    <button id="walk-in-frequent-client-btn" class="style-button confirm-btn"><i class="fas fa-user-check"></i> Cliente Frecuente</button>
+    <button id="walk-in-new-client-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-user-plus"></i> Cliente Nuevo</button>
+</div>
             </div>
 
             <form id="walk-in-form" style="display: none;" novalidate>
@@ -356,10 +356,10 @@ modal-save-status.error { color: var(--danger-color); }
 
             <div id="modal-action-buttons-view">
                 <p>¿Qué deseas hacer para el <strong id="modal-selected-date-text"></strong>?</p>
-                <div class="confirmation-buttons">
-                    <button id="modal-view-bookings-btn" class="style-button confirm-btn"><i class="fas fa-list-ul"></i> Ver Citas del Día</button>
-                    <button id="modal-edit-availability-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-edit"></i> Editar Horarios</button>
-                </div>
+                <div class="modal-button-group">
+    <button id="modal-view-bookings-btn" class="style-button confirm-btn"><i class="fas fa-list-ul"></i> Ver Citas del Día</button>
+    <button id="modal-edit-availability-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-edit"></i> Editar Horarios</button>
+</div>
             </div>
 
             <div id="modal-content-view" style="display: none;">
