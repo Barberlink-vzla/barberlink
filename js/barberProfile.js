@@ -399,9 +399,11 @@ function handleWalkInClientSelection(client) {
     resultsList.style.display = 'none';
 }
 
+
 /**
  * Maneja el envío del formulario de visita inmediata.
- * Crea el cliente (si es nuevo), crea la cita y abre el modal de pago.
+ * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
+ * El modal de pago se mostrará automáticamente cuando el servicio termine.
  */
 async function handleWalkInSubmit(e) {
     e.preventDefault();
@@ -435,7 +437,6 @@ async function handleWalkInSubmit(e) {
 
         if (clientError) throw new Error(`Error al guardar cliente: ${clientError.message}`);
         
-        // Notifica a otros módulos que un cliente pudo haber cambiado.
         document.dispatchEvent(new CustomEvent('clientListChanged'));
         
         const now = new Date();
@@ -455,9 +456,7 @@ async function handleWalkInSubmit(e) {
             estado: APPOINTMENT_STATUS.IN_PROGRESS, // Se marca como "en proceso" directamente
             metodo_pago: null,
             estado_pago: 'pendiente',
-            // ================== INICIO DE LA CORRECCIÓN ==================
-            precio_final: serviceData.precio // ¡CORREGIDO! Guardamos el precio del servicio.
-            // =================== FIN DE LA CORRECCIÓN ====================
+            precio_final: serviceData.precio
         };
 
         const { data: insertedCita, error: citaError } = await supabaseClient
@@ -468,19 +467,24 @@ async function handleWalkInSubmit(e) {
 
         if (citaError) throw new Error(`Error al crear la cita: ${citaError.message}`);
 
-        // Añadimos la cita al set de "ya notificadas" para que el sistema no intente cobrarle inmediatamente.
         promptedConfirmationIds.add(insertedCita.id);
         
+        // --- INICIO DEL CAMBIO CLAVE ---
+
+        // 1. Mensaje de éxito actualizado: Ahora informa al barbero del nuevo comportamiento.
         walkInStatus.textContent = '¡Servicio iniciado! El pago se solicitará al finalizar.';
         walkInStatus.className = 'status-message success';
         
-        // Notifica al dashboard y a los reportes que los datos han cambiado.
+        // 2. Notifica a otros módulos que los datos han cambiado (esto ya estaba y es correcto).
         document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
 
+        // 3. Eliminamos la llamada directa a showPaymentModal() y simplemente cerramos el modal de "visita inmediata"
+        //    después de un momento para que el barbero pueda leer el mensaje de éxito.
         setTimeout(() => {
             closeWalkInModal();
-            showPaymentModal(insertedCita); // Abrir directamente el modal de pago
-        }, 1500);
+        }, 2000);
+
+        // --- FIN DEL CAMBIO CLAVE ---
 
     } catch (error) {
         console.error("Error en visita inmediata:", error);
