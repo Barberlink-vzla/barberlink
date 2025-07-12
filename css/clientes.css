@@ -1,9 +1,6 @@
 /* css/clientes.css */
 
 /* --- Contenedor Principal de la Sección de Clientes --- */
-/* YA NO SE APLICA EL DISPLAY DIRECTAMENTE AL ID #clientes */
-
-/* NUEVO: Contenedor interno para el layout */
 .clientes-layout {
     display: flex;
     flex-direction: column;
@@ -54,7 +51,8 @@
 /* --- Contenedor de la Lista de Clientes --- */
 #client-list-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* MEJORA RESPONSIVE: Ajustamos minmax para que en móviles (menos de 350px) las tarjetas puedan ser más pequeñas. */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 25px;
 }
 
@@ -67,7 +65,7 @@
     flex-direction: column;
     border: 1px solid var(--border-color);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    position: relative; /* Necesario para el posicionamiento del overlay */
+    position: relative;
 }
 
 .client-card:hover {
@@ -75,11 +73,36 @@
     box-shadow: 0 12px 25px rgba(0,0,0,0.6);
 }
 
+/* =================================================================== */
+/* ===== INICIO: MEJORAS RESPONSIVE PARA LA TARJETA DE CLIENTE ===== */
+/* =================================================================== */
+
+.client-card-content {
+    display: flex;
+    /* Por defecto (móvil), los elementos se apilan verticalmente */
+    flex-direction: column;
+    flex-grow: 1; /* Para que la tarjeta se expanda si es necesario */
+}
+
 .client-photo {
     width: 100%;
-    height: 180px;
+    /* Altura flexible basada en el ancho de la tarjeta para mantener proporción */
+    aspect-ratio: 16 / 9;
     background-color: #333;
     position: relative;
+    flex-shrink: 0; /* Evita que la foto se encoja */
+}
+
+/* En pantallas más grandes, la foto se va a la izquierda */
+@media (min-width: 500px) {
+    .client-card-content {
+        flex-direction: row; /* Elementos en fila */
+    }
+    .client-photo {
+        width: 150px; /* Ancho fijo para la foto */
+        height: auto;   /* La altura se ajustará automáticamente */
+        aspect-ratio: auto;
+    }
 }
 
 .client-photo img {
@@ -104,23 +127,26 @@
     color: white;
     font-size: 2.5em;
     opacity: 0.8;
-    pointer-events: none; /* Para que el clic pase a la imagen */
+    pointer-events: none;
 }
 
 .client-details {
-    padding: 20px;
+    padding: 15px 20px; /* Padding ligeramente reducido para móviles */
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .client-name {
     color: #fff;
-    font-size: 1.4em;
-    margin-bottom: 10px;
+    font-size: 1.3em; /* Tamaño de fuente ajustado */
+    margin-bottom: 8px;
 }
 
 .client-phone {
     color: var(--login-primary-accent);
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    font-size: 1em;
 }
 .client-phone i {
     margin-right: 8px;
@@ -129,15 +155,16 @@
 .client-topics-title {
     font-weight: bold;
     color: var(--secondary-text-color);
-    font-size: 0.9em;
+    font-size: 0.85em;
     margin-bottom: 5px;
 }
 
 .client-topics-text {
     font-style: italic;
     color: var(--primary-text-color);
-    white-space: pre-wrap; /* Mantiene saltos de línea */
-    font-size: 0.95em;
+    white-space: pre-wrap;
+    font-size: 0.9em;
+    flex-grow: 1; /* Ocupa el espacio restante */
 }
 
 /* Modo Edición */
@@ -166,7 +193,13 @@
     display: flex;
     background: rgba(0,0,0,0.2);
     border-top: 1px solid var(--border-color);
+    flex-shrink: 0; /* Evita que la barra de acciones se encoja */
 }
+
+/* =================================================================== */
+/* ===== FIN: MEJORAS RESPONSIVE PARA LA TARJETA DE CLIENTE ====== */
+/* =================================================================== */
+
 
 .client-action-btn {
     flex: 1;
@@ -251,8 +284,6 @@
     border-radius: 4px;
     transition: width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Transición suave */
 }
-
-
 /* === FIN: ESTILOS PARA EL OVERLAY DE CARGA === */
 
 
@@ -309,7 +340,7 @@
 
 /* ===== INICIO: ESTILOS PARA ALERTA DE DEUDA ===== */
 .client-card.has-debt {
-    border-left-color: var(--danger-color);
+    border-left: 4px solid var(--danger-color);
 }
 .client-debt-alert {
     position: absolute;
@@ -325,5 +356,7 @@
     align-items: center;
     gap: 5px;
     z-index: 5;
+    /* MEJORA: Sombra sutil para que resalte más */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
 }
 /* ===== FIN: ESTILOS PARA ALERTA DE DEUDA ===== */
