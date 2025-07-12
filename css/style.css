@@ -40,6 +40,10 @@
     padding: 0;
     list-style: none;
     outline: none;
+    
+      -webkit-tap-highlight-color: transparent;
+    -webkit-focus-ring-color: transparent; /* Opcional: También elimina el anillo de foco en algunos casos */
+    outline: none; /* Ya lo tienes, pero es relevante aquí */
 }
 
 body {
