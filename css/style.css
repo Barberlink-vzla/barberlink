@@ -1484,41 +1484,58 @@ body.barber-profile-page {
 
 /* ===== FIN: NUEVOS ESTILOS PARA MODAL ===== */
 
-/* ===== INICIO: NUEVOS ESTILOS PARA MODAL DE CONFIRMACIÓN ===== */
-.confirmation-buttons {
+/* =================================================================== */
+/* === INICIO: GRUPO DE BOTONES DE MODAL (RESPONSIVE MEJORADO) === */
+/* =================================================================== */
+
+/* 1. Estilos por defecto (Móvil): Los botones se apilan verticalmente. */
+.modal-button-group {
     display: flex;
-    gap: 15px;
-    margin-top: 25px;
+    flex-direction: column; /* Apila los botones uno encima del otro */
+    gap: 15px;             /* Espacio vertical entre los botones */
+    margin-top: 25px;      /* Espacio desde el contenido del modal hacia los botones */
+    width: 100%;           /* Ocupa todo el ancho disponible */
 }
-.confirmation-buttons .style-button {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: #fff; /* Texto blanco para mayor contraste */
+
+/* Hacemos que cada botón dentro del grupo ocupe el 100% del ancho */
+.modal-button-group .style-button {
+    width: 100%;
+    margin: 0; /* Reseteamos cualquier margen que pueda tener el botón */
+    padding-top: 14px;    /* Aumentamos el padding para que sean más fáciles de tocar */
+    padding-bottom: 14px;
+    font-size: 1.05em;    /* Hacemos la letra un poco más grande */
 }
-.confirmation-buttons .style-button.confirm-btn {
+
+/* 2. Estilos para pantallas más grandes (Escritorio): Los botones se ponen en fila. */
+@media (min-width: 600px) {
+    .modal-button-group {
+        flex-direction: row; /* Cambiamos la dirección a horizontal */
+    }
+
+    .modal-button-group .style-button {
+        width: auto;     /* El ancho se ajusta al contenido */
+        flex-grow: 1;    /* Permite que los botones crezcan para ocupar el espacio equitativamente */
+    }
+}
+
+/* Estilos específicos para los colores de los botones (los mantenemos) */
+.modal-button-group .confirm-btn {
     background: var(--success-color);
 }
-.confirmation-buttons .style-button.confirm-btn:hover {
+.modal-button-group .confirm-btn:hover {
     background: var(--success-hover-color);
     filter: brightness(1.1);
 }
-.confirmation-buttons .style-button.noshow-btn {
+.modal-button-group .noshow-btn {
     background: var(--danger-color);
 }
-.confirmation-buttons .style-button.noshow-btn:hover {
+.modal-button-group .noshow-btn:hover {
     background: var(--danger-hover-color);
     filter: brightness(1.1);
 }
-#confirmation-modal p {
-    text-align: center;
-    font-size: 1.1em;
-    color: var(--primary-text-color);
-    margin-bottom: 0;
-}
-/* ===== FIN: NUEVOS ESTILOS PARA MODAL DE CONFIRMACIÓN ===== */
+/* ================================================================= */
+/* === FIN: GRUPO DE BOTONES DE MODAL (RESPONSIVE MEJORADO)      === */
+/* ================================================================= */
 /* ===================================================================== */
 /* ===== INICIO: REGLAS PARA VISIBILIDAD DE CAMPANA DE NOTIFICACIÓN ==== */
 /* ===================================================================== */
