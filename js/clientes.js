@@ -60,21 +60,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * Genera el HTML para la tarjeta de un cliente, incluyendo la alerta de deuda si es necesario.
-     * @param {object} client - El objeto del cliente desde Supabase, con la propiedad `has_debt`.
-     */
-    function createClientCardHTML(client) {
-        const defaultPhoto = 'https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg';
-        const photoUrl = client.foto_perfil_url || defaultPhoto;
+  // En tu archivo: js/clientes.js
 
-        const debtAlertHTML = client.has_debt 
-            ? `<div class="client-debt-alert"><i class="fas fa-exclamation-circle"></i> Cliente con pago pendiente</div>`
-            : '';
+/**
+ * Genera el HTML para la tarjeta de un cliente, incluyendo la alerta de deuda si es necesario.
+ * @param {object} client - El objeto del cliente desde Supabase, con la propiedad `has_debt`.
+ */
+function createClientCardHTML(client) {
+    const defaultPhoto = 'https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg';
+    const photoUrl = client.foto_perfil_url || defaultPhoto;
 
-        return `
-            <div class="client-card ${client.has_debt ? 'has-debt' : ''}" id="client-card-${client.id}" data-client-id="${client.id}">
-                ${debtAlertHTML}
+    const debtAlertHTML = client.has_debt 
+        ? `<div class="client-debt-alert"><i class="fas fa-exclamation-circle"></i> Pago pendiente</div>`
+        : '';
+
+    return `
+        <div class="client-card ${client.has_debt ? 'has-debt' : ''}" id="client-card-${client.id}" data-client-id="${client.id}">
+            ${debtAlertHTML}
+            
+            <div class="client-card-content">
                 <div class="client-photo">
                     <img src="${photoUrl}" alt="Foto de ${client.nombre}">
                     <input type="file" class="edit-client-photo-input" accept="image/*" style="display:none;">
@@ -93,24 +97,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="tel" class="edit-client-phone" id="edit-client-phone-${client.id}" name="client-phone-${client.id}" value="${client.telefono || ''}">
                         <textarea class="edit-client-topics" id="edit-client-topics-${client.id}" name="client-topics-${client.id}">${client.temas_conversacion || ''}</textarea>
                     </div>
+                </div>
+            </div>
+
+            <div class="client-actions">
+                <button class="client-action-btn edit-btn"><i class="fas fa-edit"></i> Editar</button>
+                <button class="client-action-btn save-btn" style="display:none;"><i class="fas fa-save"></i> Guardar</button>
+                <button class="client-action-btn delete-btn"><i class="fas fa-trash"></i></button>
+            </div>
+            
+            <div class="client-card-overlay">
+                <div class="overlay-content">
+                    <p class="progress-status-text">Iniciando...</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill"></div>
                     </div>
-                <div class="client-actions">
-                    <button class="client-action-btn edit-btn"><i class="fas fa-edit"></i> Editar</button>
-                    <button class="client-action-btn save-btn" style="display:none;"><i class="fas fa-save"></i> Guardar</button>
-                    <button class="client-action-btn delete-btn"><i class="fas fa-trash"></i></button>
                 </div>
-                
-                <div class="client-card-overlay">
-                    <div class="overlay-content">
-                        <p class="progress-status-text">Iniciando...</p>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill"></div>
-                        </div>
-                    </div>
-                </div>
-                </div>
-        `;
-    }
+            </div>
+        </div>
+    `;
+}
 
 
     /**
