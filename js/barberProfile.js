@@ -113,6 +113,7 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
 
     await loadInitialData();
     
+    
      // --- LÓGICA DE CARGA MEJORADA ---
     const appLoader = document.getElementById('app-loader');
     
@@ -126,6 +127,9 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
     // --- FIN DE LA MEJORA ---
     
      handlePushNotificationRedirect();
+       // ¡AQUÍ ES DONDE AÑADES LA LÍNEA!
+    handleUrlParameters();
+    
 
  
  
@@ -163,6 +167,8 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
         }
     });
 }
+
+
 
 // --- LÓGICA DE CARGA DE DATOS ---
 async function fetchBarberClients() {
@@ -2486,5 +2492,75 @@ function handlePushNotificationRedirect() {
 
         // Limpia los parámetros de la URL para que no se repita la acción si el usuario recarga.
         history.replaceState(null, '', window.location.pathname);
+    }
+}
+
+// --- CÓDIGO PARA PEGAR AL FINAL DE barberProfile.js ---
+
+function handleUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fechaCita = urlParams.get('fecha');
+    const citaId = urlParams.get('citaId');
+    const action = urlParams.get('action');
+
+    if (!citaId) {
+        if (window.location.search) {
+            history.replaceState(null, '', window.location.pathname);
+        }
+        return;
+    }
+
+    console.log(`Parámetros de URL detectados: citaId=${citaId}, fecha=${fechaCita}, action=${action}`);
+
+    if (action === 'confirm_attendance') {
+        console.log(`Acción: Abrir modal de confirmación para la cita ${citaId}`);
+        fetchCitaAndShowModal(citaId, showConfirmationModal);
+    } else if (action === 'register_payment') {
+        console.log(`Acción: Abrir modal de pago para la cita ${citaId}`);
+        fetchCitaAndShowModal(citaId, showPaymentModal);
+    } else if (fechaCita) {
+        console.log(`Acción: Navegar al calendario en la fecha ${fechaCita}`);
+        document.dispatchEvent(new CustomEvent('navigateToDate', {
+            detail: {
+                dateString: fechaCita,
+                citaId: citaId
+            }
+        }));
+    }
+
+    history.replaceState(null, '', window.location.pathname);
+}
+
+async function fetchCitaAndShowModal(citaId, modalFunction) {
+    if (!supabaseClient) {
+        console.error("Supabase client no está disponible para buscar la cita.");
+        return;
+    }
+
+    const appLoader = document.getElementById('app-loader');
+    if (appLoader) appLoader.classList.remove('hidden');
+
+    try {
+        const { data: cita, error } = await supabaseClient
+            .from('citas')
+            .select('*')
+            .eq('id', citaId)
+            .single();
+
+        if (error) {
+            throw new Error(`No se pudo encontrar la cita ${citaId}: ${error.message}`);
+        }
+
+        if (cita) {
+            modalFunction(cita);
+        } else {
+            throw new Error(`La cita con ID ${citaId} no fue encontrada.`);
+        }
+
+    } catch (err) {
+        console.error("Error al buscar y mostrar el modal:", err);
+        alert("Hubo un problema al cargar los detalles de la cita. Por favor, recarga la página.");
+    } finally {
+        if (appLoader) appLoader.classList.add('hidden');
     }
 }
