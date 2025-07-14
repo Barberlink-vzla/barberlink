@@ -118,33 +118,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Lógica Realtime ---
-    function setupRealtimeListener() {
-        if (!currentUserId) return;
-        // Elimina canal anterior si existe
-        if (notificationChannel) {
-            supabaseClient.removeChannel(notificationChannel);
-            notificationChannel = null;
-        }
+    // En /js/notificacion.js
 
-        const channelName = `realtime:notifications:${currentUserId}`;
-        notificationChannel = supabaseClient
-            .channel(channelName)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notificaciones',
-                    filter: `barbero_id=eq.${currentUserId}`
-                },
-                (payload) => {
-                    handleNewNotification(payload.new);
-                }
-            )
-            .subscribe((status, error) => {
-                isRealtimeActive = status === 'SUBSCRIBED';
-            });
+function setupRealtimeListener() {
+    if (!currentUserId) return;
+    if (notificationChannel) {
+        supabaseClient.removeChannel(notificationChannel);
+        notificationChannel = null;
     }
+
+    const channelName = `realtime:notifications:${currentUserId}`;
+    console.log(`[Realtime] Suscribiéndose al canal: ${channelName}`); // <-- AÑADIR ESTO
+
+    notificationChannel = supabaseClient
+        .channel(channelName)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'notificaciones',
+                filter: `barbero_id=eq.${currentUserId}`
+            },
+            (payload) => {
+                // AÑADIR ESTE LOG PARA VER SI LLEGA EL EVENTO
+                console.log('[Realtime] ¡Payload recibido!:', payload);
+                handleNewNotification(payload.new);
+            }
+        )
+        .subscribe((status, error) => {
+            // AÑADIR ESTOS LOGS PARA VER EL ESTADO DE LA CONEXIÓN
+            console.log(`[Realtime] Nuevo estado de la suscripción: ${status}`);
+            if (error) {
+                console.error('[Realtime] Error en la suscripción:', error);
+            }
+            isRealtimeActive = status === 'SUBSCRIBED';
+        });
+}
     
     async function handleNewNotification(newNotificationData) {
         // Evita duplicados: verifica si ya existe por ID
