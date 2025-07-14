@@ -321,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 endTime: endTime,
                 finalPrice: selectedService.precio,
                 serviceType: selectedServiceType
+                estimatedDuration: selectedService.duracion_minutos 
             };
 
             console.log("bookingPayload enviado a create-booking:", JSON.stringify(bookingPayload, null, 2));
