@@ -2086,6 +2086,87 @@ async function saveAvailabilityForDay(dayIndex) {
     }
 }
 
+// Pega estas dos funciones en tu archivo /js/barberProfile.js
+
+/**
+ * Revisa los parámetros de la URL al cargar la página para ejecutar acciones directas.
+ * Por ejemplo, abrir un modal específico tras hacer clic en una notificación push.
+ */
+function handleUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    const citaId = urlParams.get('citaId');
+    const fechaCita = urlParams.get('fecha');
+
+    // Si no hay acción o ID, no hacemos nada.
+    if (!citaId) {
+        // Limpiamos la URL si no hay parámetros relevantes para evitar recargas con acciones viejas.
+        if (window.location.search) {
+            history.replaceState(null, '', window.location.pathname);
+        }
+        return;
+    }
+
+    console.log(`Parámetros de URL detectados: action=${action}, citaId=${citaId}, fecha=${fechaCita}`);
+
+    // Determinar qué modal abrir basado en la acción
+    if (action === 'confirm_attendance') {
+        console.log(`Acción: Abrir modal de confirmación para la cita ${citaId}`);
+        fetchCitaAndShowModal(citaId, showConfirmationModal);
+    } else if (action === 'register_payment') {
+        console.log(`Acción: Abrir modal de pago para la cita ${citaId}`);
+        fetchCitaAndShowModal(citaId, showPaymentModal);
+    } else if (fechaCita) {
+        // Esta acción es para el recordatorio, que solo navega al calendario
+        console.log(`Acción: Navegar al calendario en la fecha ${fechaCita}`);
+        document.dispatchEvent(new CustomEvent('navigateToDate', {
+            detail: { dateString: fechaCita, citaId: citaId }
+        }));
+    }
+
+    // Limpiamos la URL después de procesar la acción para que no se repita en una recarga.
+    history.replaceState(null, '', window.location.pathname);
+}
+
+/**
+ * Función auxiliar para buscar los datos completos de una cita por su ID y
+ * luego invocar una función de modal, pasándole esos datos.
+ * @param {string} citaId - El ID de la cita a buscar.
+ * @param {function} modalFunction - La función que mostrará el modal (ej: showConfirmationModal).
+ */
+async function fetchCitaAndShowModal(citaId, modalFunction) {
+    if (!supabaseClient) {
+        console.error("Supabase client no está disponible para buscar la cita.");
+        return;
+    }
+    
+    // Muestra un loader general si existe
+    const appLoader = document.getElementById('app-loader');
+    if (appLoader) appLoader.classList.remove('hidden');
+
+    try {
+        const { data: cita, error } = await supabaseClient
+            .from('citas')
+            .select('*') // Seleccionamos todo para que el modal tenga toda la info
+            .eq('id', citaId)
+            .single();
+
+        if (error) {
+            throw new Error(`No se pudo encontrar la cita ${citaId}: ${error.message}`);
+        }
+        if (cita) {
+            modalFunction(cita); // ¡Éxito! Llamamos a la función del modal con los datos
+        } else {
+            throw new Error(`La cita con ID ${citaId} no fue encontrada.`);
+        }
+    } catch (err) {
+        console.error("Error al buscar y mostrar el modal:", err);
+        alert("Hubo un problema al cargar los detalles de la cita desde la notificación. Por favor, recarga la página.");
+    } finally {
+        if (appLoader) appLoader.classList.add('hidden'); // Ocultamos el loader
+    }
+}
+
 
 // --- INICIAR ---
 document.addEventListener('DOMContentLoaded', initProfileModule);
