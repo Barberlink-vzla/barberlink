@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 startTime: startTime,
                 endTime: endTime,
                 finalPrice: selectedService.precio,
-                serviceType: selectedServiceType
+                serviceType: selectedServiceType,
                 estimatedDuration: selectedService.duracion_minutos 
             };
 
