@@ -2564,3 +2564,58 @@ async function fetchCitaAndShowModal(citaId, modalFunction) {
         if (appLoader) appLoader.classList.add('hidden');
     }
 }
+
+// /js/barberProfile.js
+
+// ... (tu código existente) ...
+
+// Agrega esta función para manejar las acciones desde la URL.
+function handleUrlActions() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    const citaId = urlParams.get('citaId');
+
+    if (!action || !citaId) {
+        return; // No hay acción que realizar.
+    }
+
+    // Buscamos la cita en la lista de citas ya cargada.
+    // Asumimos que tienes una variable como 'todasLasCitas' o similar.
+    // Si no, necesitarías buscarla en el DOM o hacer un fetch.
+    const citaCard = document.querySelector(`.cita-card[data-id='${citaId}']`);
+    if (!citaCard) {
+        console.warn(`No se encontró la tarjeta de la cita con ID: ${citaId}`);
+        return;
+    }
+
+    if (action === 'confirm_attendance') {
+        // Obtenemos los datos de la tarjeta para pasarlos al modal.
+        const clienteNombre = citaCard.querySelector('.cliente-nombre').textContent;
+        const horaCita = citaCard.querySelector('.cita-hora').textContent;
+        
+        // Llenamos y mostramos el modal de confirmación.
+        // (Asegúrate de que los IDs y clases coincidan con tu HTML)
+        document.getElementById('confirmAttendanceModal').style.display = 'block';
+        document.getElementById('attendanceCitaId').value = citaId;
+        document.getElementById('attendanceClientName').textContent = clienteNombre;
+        document.getElementById('attendanceCitaTime').textContent = horaCita;
+
+    } else if (action === 'request_payment') {
+        // Llenamos y mostramos el modal de pago.
+        // (Asegúrate de que los IDs y clases coincidan con tu HTML)
+        const servicio = citaCard.dataset.servicio; // Asumiendo que guardas los datos en el dataset
+        const precio = citaCard.dataset.precio;
+
+        document.getElementById('paymentModal').style.display = 'block';
+        document.getElementById('paymentCitaId').value = citaId;
+        document.getElementById('paymentClientName').textContent = citaCard.querySelector('.cliente-nombre').textContent;
+        document.getElementById('paymentService').textContent = servicio;
+        document.getElementById('paymentAmount').textContent = precio;
+    }
+    
+    // Opcional: Limpiar la URL para que la acción no se repita si el usuario recarga la página.
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+// Llama a la función cuando el DOM esté completamente cargado.
+document.addEventListener('DOMContentLoaded', handleUrlActions);
