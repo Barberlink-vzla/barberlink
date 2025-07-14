@@ -2578,11 +2578,14 @@ function handlePushNotificationRedirect() {
 
 // --- CÓDIGO PARA PEGAR AL FINAL DE barberProfile.js ---
 
+// Agrega este bloque de código a tu archivo js/barberProfile.js
+// La función `handleUrlParameters` ya existe, solo necesitas añadir el nuevo caso `else if`.
+
 function handleUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
-    const fechaCita = urlParams.get('fecha');
-    const citaId = urlParams.get('citaId');
-    const action = urlParams.get('action');
+    const action = urlParams.get('action'); //
+    const citaId = urlParams.get('citaId'); //
+    const fechaCita = urlParams.get('fecha'); //
 
     if (!citaId) {
         if (window.location.search) {
@@ -2591,25 +2594,34 @@ function handleUrlParameters() {
         return;
     }
 
-    console.log(`Parámetros de URL detectados: citaId=${citaId}, fecha=${fechaCita}, action=${action}`);
+    console.log(`Parámetros de URL detectados: action=${action}, citaId=${citaId}, fecha=${fechaCita}`); //
 
-    if (action === 'confirm_attendance') {
+    if (action === 'confirm_attendance') { //
         console.log(`Acción: Abrir modal de confirmación para la cita ${citaId}`);
-        fetchCitaAndShowModal(citaId, showConfirmationModal);
-    } else if (action === 'register_payment') {
+        fetchCitaAndShowModal(citaId, showConfirmationModal); //
+    } 
+    // --- INICIO DE LA MEJORA ---
+    else if (action === 'show_reminder') {
+        console.log(`Acción: Abrir modal de recordatorio para la cita ${citaId}`);
+        // Esta función ya existe en tu código y es perfecta para esto.
+        // Busca la cita y le pasa los datos a la función `showReminderAlert`.
+        fetchCitaAndShowModal(citaId, showReminderAlert); //
+    } 
+    // --- FIN DE LA MEJORA ---
+    else if (action === 'register_payment') { //
         console.log(`Acción: Abrir modal de pago para la cita ${citaId}`);
-        fetchCitaAndShowModal(citaId, showPaymentModal);
-    } else if (fechaCita) {
+        fetchCitaAndShowModal(citaId, showPaymentModal); //
+    } else if (fechaCita) { //
         console.log(`Acción: Navegar al calendario en la fecha ${fechaCita}`);
         document.dispatchEvent(new CustomEvent('navigateToDate', {
             detail: {
                 dateString: fechaCita,
                 citaId: citaId
             }
-        }));
+        })); //
     }
 
-    history.replaceState(null, '', window.location.pathname);
+    history.replaceState(null, '', window.location.pathname); //
 }
 
 async function fetchCitaAndShowModal(citaId, modalFunction) {
@@ -2645,6 +2657,8 @@ async function fetchCitaAndShowModal(citaId, modalFunction) {
         if (appLoader) appLoader.classList.add('hidden');
     }
 }
+
+
 
 // /js/barberProfile.js
 
@@ -2700,3 +2714,6 @@ function handleUrlActions() {
 
 // Llama a la función cuando el DOM esté completamente cargado.
 document.addEventListener('DOMContentLoaded', handleUrlActions);
+
+
+
