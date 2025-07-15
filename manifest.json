@@ -4,8 +4,8 @@
   "description": "Tu agenda digital para gestionar citas de barbería.",
   "start_url": "/barberlink/barber_profile.html",
   "display": "standalone",
-  "background_color": "##2a2a2a",
-  "theme_color": "##2a2a2a", 
+  "background_color": "#2a2a2a",
+  "theme_color": "#2a2a2a", 
   "icons": [
     {
       "src": "images/icons/icon-192x192.png",
