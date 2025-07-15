@@ -1822,6 +1822,26 @@ function setupEventListeners() {
             filterAndRenderTransactions();
         });
     }
+    
+      // --- INICIO DEL CÓDIGO A AÑADIR ---
+
+    // Listener para el botón de cambio de moneda en el Panel de Control
+    const toggleIncomeBtn = document.getElementById('toggle-income-currency-btn');
+    const incomeUsdEl = document.getElementById('stat-monthly-income-usd');
+    const incomeVesEl = document.getElementById('stat-monthly-income-ves');
+
+    if (toggleIncomeBtn && incomeUsdEl && incomeVesEl) {
+        toggleIncomeBtn.addEventListener('click', () => {
+            // Revisa si la tarjeta de USD está visible
+            const isUsdVisible = incomeUsdEl.style.display === 'block';
+            
+            // Oculta una y muestra la otra
+            incomeUsdEl.style.display = isUsdVisible ? 'none' : 'block';
+            incomeVesEl.style.display = isUsdVisible ? 'block' : 'none';
+        });
+    }
+
+    // --- FIN DEL CÓDIGO A AÑADIR ---
 }
 
 
