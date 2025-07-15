@@ -1,4 +1,42 @@
-// js/reserva.js
+// EN: js/reserva.js (Pega esto al inicio del script)
+
+const currencyManager = {
+    rate: 0,
+    markup: 0,
+    finalRate: 0,
+    primaryCurrency: 'USD',
+    secondaryCurrency: 'VES',
+
+    async init(supabaseClient, barberData) {
+        this.markup = barberData.porcentaje_markup_tasa || 0;
+        this.primaryCurrency = barberData.moneda_primaria || 'USD';
+        this.secondaryCurrency = barberData.moneda_secundaria || 'VES';
+
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('get-bcv-rate');
+            if (error) throw error;
+            this.rate = data.rate || 0;
+            this.finalRate = this.rate * (1 + this.markup / 100);
+            console.log(`CurrencyManager en Reserva: Tasa Final=${this.finalRate.toFixed(2)}`);
+        } catch (error) {
+            console.error("Error al obtener la tasa de cambio en reserva:", error);
+            this.rate = 0;
+            this.finalRate = 0;
+        }
+    },
+
+    formatPrice(usdAmount) {
+        if (typeof usdAmount !== 'number') usdAmount = 0;
+        const primaryFormatted = `${this.primaryCurrency} ${usdAmount.toFixed(2)}`;
+        if (this.finalRate > 0) {
+            const secondaryAmount = usdAmount * this.finalRate;
+            const secondaryFormatted = `${this.secondaryCurrency} ${secondaryAmount.toFixed(2)}`;
+            return `${primaryFormatted} (${secondaryFormatted})`;
+        }
+        return primaryFormatted;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // Verificación inicial de que el cliente de Supabase está disponible.
     if (typeof supabaseClient === 'undefined') {
@@ -81,12 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+   // EN: js/reserva.js
+// REEMPLAZA tu función fetchBarberData actual con esta
+
     const fetchBarberData = async () => {
         if (!barberId) return;
 
+        // 1. Añadimos los nuevos campos de moneda a la consulta
         const { data, error } = await supabaseClient
             .from('barberos')
-            .select('nombre, telefono, foto_perfil_url')
+            .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa') // <-- CAMPOS AÑADIDOS
             .eq('user_id', barberId)
             .single();
 
@@ -97,12 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         barberData = data;
+
+        // 2. INICIALIZAMOS el gestor de moneda con los datos del barbero
+        await currencyManager.init(supabaseClient, barberData);
+
+        // 3. El resto del código continúa como antes
         barberNameTitle.textContent = `Reservar con ${data.nombre}`;
         if (data.foto_perfil_url) {
             barberProfileImg.src = data.foto_perfil_url;
         }
     };
-
+    
     const fetchServicesForBarber = async () => {
         if (!barberId || !selectedServiceType) return;
         const serviceTableName = 'barbero_servicios';
@@ -147,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const serviceName = service.nombre_personalizado || service.servicios_maestro?.nombre || 'Servicio sin nombre';
             const servicePrice = service.precio || 0;
             const serviceDuration = service.duracion_minutos || 30;
-            option.textContent = `${serviceName} - $${servicePrice} (${serviceDuration} min)`;
+            option.textContent = `${serviceName} - ${currencyManager.formatPrice(servicePrice)} (${serviceDuration} min)`;
             option.dataset.serviceData = JSON.stringify(service);
             serviceSelect.appendChild(option);
         });
@@ -234,7 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Barbero:</strong> ${barberData.nombre}</p>
             <p><strong>Modalidad:</strong> ${serviceLocation}</p>
             <p><strong>Servicio:</strong> ${serviceName}</p>
-            <p><strong>Precio:</strong> $${selectedService.precio}</p>
+           // EN: js/reserva.js -> DENTRO DE la función updateBookingSummary
+
+<p><strong>Precio:</strong> ${currencyManager.formatPrice(selectedService.precio)}</p>
             <p><strong>Fecha:</strong> ${date}</p>
             <p><strong>Hora:</strong> ${time}</p>
             <p><strong>Cliente:</strong> ${clientName.trim()}</p>
