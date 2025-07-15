@@ -1285,18 +1285,28 @@ function renderReportCharts(data) {
     }
     
     const incomeChartData = groupDataForChart(data.income.data, data.period, 'fecha_cita', 'sum', 'precio_final');
-    ReportCharts.renderChart({
-        chartId: 'income-area-chart',
-        series: incomeChartData.series,
-        categories: incomeChartData.categories,
-        total: data.income.total,
-        percentage: data.income.percentage,
-        valueElId: 'income-stat-value',
-        percentageElId: 'income-percentage',
-        prefix: '$',
-        decimals: 2,
-        themeColor: 'var(--success-color)'
-    });
+// 1. Renderizamos el GRÁFICO sin que actualice el texto
+ReportCharts.renderChart({
+    chartId: 'income-area-chart',
+    series: incomeChartData.series,
+    categories: incomeChartData.categories,
+    themeColor: 'var(--success-color)',
+    // Se eliminan las propiedades que actualizaban el texto
+});
+
+// 2. Actualizamos el texto de las tarjetas y el porcentaje manualmente
+const incomeStatUsd = document.getElementById('income-stat-value');
+const incomeStatVes = document.getElementById('income-stat-value-ves');
+const incomePercentageEl = document.getElementById('income-percentage');
+
+if(incomeStatUsd) incomeStatUsd.textContent = `$${data.income.total.toFixed(2)}`;
+if(incomeStatVes) incomeStatVes.textContent = currencyManager.getSecondaryValueText(data.income.total);
+
+// Esto actualiza el indicador de porcentaje (+-%)
+ReportCharts.updateChartInfo({
+    percentage: data.income.percentage,
+    percentageElId: 'income-percentage',
+});
 
     const appointmentsChartData = groupDataForChart(data.appointments.data, data.period, 'fecha_cita', 'count');
     ReportCharts.renderChart({
@@ -1825,23 +1835,25 @@ function setupEventListeners() {
     
       // --- INICIO DEL CÓDIGO A AÑADIR ---
 
-    // Listener para el botón de cambio de moneda en el Panel de Control
-    const toggleIncomeBtn = document.getElementById('toggle-income-currency-btn');
-    const incomeUsdEl = document.getElementById('stat-monthly-income-usd');
-    const incomeVesEl = document.getElementById('stat-monthly-income-ves');
+   // js/barberProfile.js -> dentro de setupEventListeners()
 
-    if (toggleIncomeBtn && incomeUsdEl && incomeVesEl) {
-        toggleIncomeBtn.addEventListener('click', () => {
-            // Revisa si la tarjeta de USD está visible
-            const isUsdVisible = incomeUsdEl.style.display === 'block';
-            
-            // Oculta una y muestra la otra
-            incomeUsdEl.style.display = isUsdVisible ? 'none' : 'block';
-            incomeVesEl.style.display = isUsdVisible ? 'block' : 'none';
-        });
+// Listener para el botón de cambio de moneda en REPORTES
+const toggleReportBtn = document.getElementById('toggle-report-currency-btn');
+const reportUsdEl = document.getElementById('income-stat-value');
+const reportVesEl = document.getElementById('income-stat-value-ves');
+
+if (toggleReportBtn && reportUsdEl && reportVesEl) {
+    toggleReportBtn.addEventListener('click', () => {
+        const isUsdVisible = reportUsdEl.style.display === 'block';
+        
+        reportUsdEl.style.display = isUsdVisible ? 'none' : 'block';
+        reportVesEl.style.display = isUsdVisible ? 'block' : 'none';
+    });
     }
 
     // --- FIN DEL CÓDIGO A AÑADIR ---
+    
+    
 }
 
 
