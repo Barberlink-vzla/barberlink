@@ -1009,15 +1009,11 @@ async function saveCurrencySettings() {
 async function loadDashboardStats() {
     const loadingStatus = document.getElementById('dashboard-loading-status');
     const statsGrid = document.getElementById('dashboard-stats-grid');
-    
-    // --- INICIO DE LA CORRECCIÓN ---
     const incomeUsdEl = document.getElementById('stat-monthly-income-usd');
     const incomeVesEl = document.getElementById('stat-monthly-income-ves');
-    // --- FIN DE LA CORRECCIÓN ---
 
     if (!loadingStatus || !statsGrid || !currentUserId || !incomeUsdEl || !incomeVesEl) {
-        console.error("Faltan elementos del dashboard, se cancela la carga de estadísticas.");
-        return;
+        return; // Salir si faltan elementos
     }
 
     loadingStatus.style.display = 'block';
@@ -1027,31 +1023,42 @@ async function loadDashboardStats() {
         const today = new Date().toISOString().split('T')[0];
         const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
+        // --- CAMBIO CLAVE: Dos consultas de ingresos, una para cada moneda ---
         const [
             { count: activeBookings, error: bookingsError },
             { count: totalClients, error: clientsError },
-            { data: monthlyIncomeData, error: incomeError }
+            { data: incomeDataUsd, error: incomeErrorUsd },
+            { data: incomeDataVes, error: incomeErrorVes }
         ] = await Promise.all([
+            // Consultas de reservas y clientes (sin cambios)
             supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', today),
             supabaseClient.from('clientes').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId),
-            supabaseClient.from('citas').select('precio_final').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).lte('fecha_cita', today).eq('estado', APPOINTMENT_STATUS.COMPLETED).eq('estado_pago', 'pagado')
+            
+            // Nueva consulta: Sumar solo los ingresos en USD
+            supabaseClient.from('citas').select('monto').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada').eq('estado_pago', 'pagado').eq('moneda', 'USD'),
+            
+            // Nueva consulta: Sumar solo los ingresos en VES
+            supabaseClient.from('citas').select('monto').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada').eq('estado_pago', 'pagado').eq('moneda', 'VES')
         ]);
+        // --- FIN DEL CAMBIO ---
 
-        if (bookingsError) throw new Error(`Error al cargar reservas: ${bookingsError.message}`);
-        if (clientsError) throw new Error(`Error al cargar clientes: ${clientsError.message}`);
-        if (incomeError) throw new Error(`Error al cargar ingresos: ${incomeError.message}`);
+        // Validar todos los posibles errores
+        if (bookingsError) throw new Error(`Error en reservas: ${bookingsError.message}`);
+        if (clientsError) throw new Error(`Error en clientes: ${clientsError.message}`);
+        if (incomeErrorUsd) throw new Error(`Error en ingresos USD: ${incomeErrorUsd.message}`);
+        if (incomeErrorVes) throw new Error(`Error en ingresos VES: ${incomeErrorVes.message}`);
 
-        const monthlyIncome = (monthlyIncomeData || []).reduce((sum, item) => sum + (item.precio_final || 0), 0);
+        // Sumar los totales de cada moneda
+        const monthlyIncomeUsd = (incomeDataUsd || []).reduce((sum, item) => sum + (item.monto || 0), 0);
+        const monthlyIncomeVes = (incomeDataVes || []).reduce((sum, item) => sum + (item.monto || 0), 0);
         
         document.getElementById('stat-active-bookings').textContent = activeBookings || 0;
         document.getElementById('stat-unique-clients').textContent = totalClients || 0;
 
-        // --- INICIO DE LA CORRECCIÓN ---
-        // Se actualizan los elementos correctos usando el currencyManager
-        incomeUsdEl.textContent = `USD ${monthlyIncome.toFixed(2)}`;
-        incomeVesEl.textContent = currencyManager.getSecondaryValueText(monthlyIncome);
-        // --- FIN DE LA CORRECCIÓN ---
-
+        // Actualizar las tarjetas de ingresos con los saldos independientes
+        incomeUsdEl.textContent = `USD ${monthlyIncomeUsd.toFixed(2)}`;
+        incomeVesEl.textContent = `VES ${monthlyIncomeVes.toFixed(2)}`;
+        
         loadingStatus.style.display = 'none';
         statsGrid.style.display = 'grid';
 
