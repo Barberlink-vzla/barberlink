@@ -2098,9 +2098,9 @@ function handleUrlParameters() {
     const citaId = urlParams.get('citaId');
     const fechaCita = urlParams.get('fecha');
 
-    // Si no hay acción o ID, no hacemos nada.
+    // Si no hay un ID de cita en la URL, no hacemos nada.
     if (!citaId) {
-        // Limpiamos la URL si no hay parámetros relevantes para evitar recargas con acciones viejas.
+        // Limpiamos la URL si tenía parámetros irrelevantes para evitar recargas con acciones viejas.
         if (window.location.search) {
             history.replaceState(null, '', window.location.pathname);
         }
@@ -2109,18 +2109,29 @@ function handleUrlParameters() {
 
     console.log(`Parámetros de URL detectados: action=${action}, citaId=${citaId}, fecha=${fechaCita}`);
 
-    // Determinar qué modal abrir basado en la acción
+    // Determina qué modal o acción ejecutar basado en el parámetro 'action'.
     if (action === 'confirm_attendance') {
         console.log(`Acción: Abrir modal de confirmación para la cita ${citaId}`);
         fetchCitaAndShowModal(citaId, showConfirmationModal);
-    } else if (action === 'register_payment') {
+    } 
+    // --- ✅ INICIO DE LA NUEVA LÓGICA ---
+    else if (action === 'register_payment') {
         console.log(`Acción: Abrir modal de pago para la cita ${citaId}`);
-        fetchCitaAndShowModal(citaId, showPaymentModal);
-    } else if (fechaCita) {
-        // Esta acción es para el recordatorio, que solo navega al calendario
+        fetchCitaAndShowModal(citaId, showPaymentModal); // Llama al modal de pago.
+    } 
+    // --- ✅ FIN DE LA NUEVA LÓGICA ---
+    else if (action === 'show_reminder') {
+        console.log(`Acción: Abrir modal de recordatorio para la cita ${citaId}`);
+        fetchCitaAndShowModal(citaId, showReminderAlert);
+    } 
+    else if (fechaCita) {
+        // Esta acción es para el recordatorio, que solo navega al calendario.
         console.log(`Acción: Navegar al calendario en la fecha ${fechaCita}`);
         document.dispatchEvent(new CustomEvent('navigateToDate', {
-            detail: { dateString: fechaCita, citaId: citaId }
+            detail: {
+                dateString: fechaCita,
+                citaId: citaId
+            }
         }));
     }
 
