@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Barbero:</strong> ${barberData.nombre}</p>
             <p><strong>Modalidad:</strong> ${serviceLocation}</p>
             <p><strong>Servicio:</strong> ${serviceName}</p>
-           // EN: js/reserva.js -> DENTRO DE la función updateBookingSummary
+           
 
 <p><strong>Precio:</strong> ${currencyManager.formatPrice(selectedService.precio)}</p>
             <p><strong>Fecha:</strong> ${date}</p>
