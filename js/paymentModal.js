@@ -101,13 +101,12 @@ function handlePaymentMethodChange() {
  * Maneja el guardado de la información de pago.
  * @param {Event} e - El evento de envío del formulario.
  */
+
 async function handleSavePayment(e) {
     e.preventDefault();
     if (!currentCitaForPayment) return;
 
     const paymentMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked').value;
-    
-    // Determinamos el método de pago detallado para la DB
     let detailedPaymentMethod = e.target.dataset.method || paymentMethod;
 
     savePaymentBtn.disabled = true;
@@ -120,25 +119,42 @@ async function handleSavePayment(e) {
     paymentStatusMessage.textContent = 'Procesando...';
     paymentStatusMessage.className = 'status-message processing';
 
+    // --- INICIO DE LA NUEVA LÓGICA ---
     const esDeuda = (detailedPaymentMethod === 'no_pagado');
     const fechaLimite = esDeuda ? deadlineInput.value : null;
 
-    if (esDeuda) {
-        if (!fechaLimite) {
-            alert('Por favor, establece una fecha límite para el pago.');
-            resetButtons();
-            return;
-        }
+    if (esDeuda && !fechaLimite) {
+        alert('Por favor, establece una fecha límite para el pago.');
+        resetButtons();
+        return;
     }
 
+    // Inicializamos los montos
+    let monto_usd = 0;
+    let monto_ves = 0;
+    const precioBaseUSD = currentCitaForPayment.precio_final || 0;
+
+    if (!esDeuda) {
+        // Determinamos qué columna llenar basado en el método de pago
+        if (detailedPaymentMethod === 'efectivo_usd') {
+            monto_usd = precioBaseUSD;
+        } else { // Para efectivo_ves, transferencia, pago_movil
+            // Calculamos el monto en VES y lo guardamos
+            monto_ves = precioBaseUSD * currencyManager.finalRate;
+        }
+    }
+    
+    // El objeto que se enviará a la base de datos
     const updateData = {
         estado: 'completada',
-        metodo_pago: detailedPaymentMethod, // ej: 'efectivo_usd', 'transferencia', 'no_pagado'
+        metodo_pago: detailedPaymentMethod,
         estado_pago: esDeuda ? 'pendiente' : 'pagado',
         fecha_limite_pago: fechaLimite,
-        // El precio_final en la DB SIEMPRE se queda en USD para consistencia en los reportes.
-        // No lo modificamos aquí.
+        monto_recibido_usd: monto_usd, // <-- NUEVO
+        monto_recibido_ves: monto_ves  // <-- NUEVO
+        // precio_final se mantiene intacto en USD como referencia
     };
+    // --- FIN DE LA NUEVA LÓGICA ---
 
     try {
         const { error } = await supabaseClient
