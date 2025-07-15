@@ -134,6 +134,17 @@
                     <select id="service-select" required>
                         <option value="" disabled selected>Cargando servicios...</option>
                     </select>
+                    <div class="currency-selection">
+    <p><strong>Selecciona tu moneda de pago:</strong></p>
+    <div class="radio-group">
+        <input type="radio" id="pay-usd" name="payment_currency" value="USD" checked>
+        <label for="pay-usd"><i class="fas fa-dollar-sign"></i> Dólares (USD)</label>
+    </div>
+    <div class="radio-group">
+        <input type="radio" id="pay-ves" name="payment_currency" value="VES">
+        <label for="pay-ves"><i class="fas fa-money-bill-wave"></i> Bolívares (VES)</label>
+    </div>
+</div>
                 </div>
                 <div class="navigation-buttons">
                     <button type="button" class="style-button" id="next-step-1">Siguiente <i class="fas fa-arrow-right"></i></button>
