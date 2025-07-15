@@ -320,6 +320,12 @@ async function loadInitialData() {
         renderServices(barberServicesRes.data);
         renderBookingLink(currentUserId); 
         
+         // ¡Movemos el bloque aquí, dentro del 'try' donde 'barberProfile' sí existe!
+        const markupInput = document.getElementById('tasa-markup');
+        if (markupInput && barberProfile.porcentaje_markup_tasa != null) {
+            markupInput.value = barberProfile.porcentaje_markup_tasa;
+        }
+        
         initCalendar();
         loadDashboardStats();
         document.querySelector('.menu-link[data-target="dashboard"]').dataset.loaded = true;
@@ -330,10 +336,6 @@ async function loadInitialData() {
         if (saveStatus) saveStatus.textContent = `Error al cargar: ${error.message}`;
     }
     
-    const markupInput = document.getElementById('tasa-markup');
-if (markupInput && barberProfile.porcentaje_markup_tasa != null) {
-    markupInput.value = barberProfile.porcentaje_markup_tasa;
-}
 }
 
 
