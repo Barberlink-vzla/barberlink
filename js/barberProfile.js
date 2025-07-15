@@ -41,6 +41,73 @@ const notifiedAppointmentIds = new Set(); // Guarda IDs de citas ya notificadas 
 const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const monthsOfYear = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
+
+// EN: js/barberProfile.js (Pega esto cerca del inicio)
+
+const currencyManager = {
+    rate: 0,
+    markup: 0,
+    finalRate: 0,
+    primaryCurrency: 'USD',
+    secondaryCurrency: 'VES',
+
+    /**
+     * Inicializa el gestor, obtiene la tasa de cambio y el markup del barbero.
+     */
+    async init(supabaseClient, barberProfile) {
+        this.markup = barberProfile.porcentaje_markup_tasa || 0;
+        this.primaryCurrency = barberProfile.moneda_primaria || 'USD';
+        this.secondaryCurrency = barberProfile.moneda_secundaria || 'VES';
+
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('get-bcv-rate');
+            if (error) throw error;
+            this.rate = data.rate || 0;
+            this.finalRate = this.rate * (1 + this.markup / 100);
+            console.log(`Tasas cargadas: BCV=${this.rate}, Markup=${this.markup}%, Final=${this.finalRate.toFixed(2)}`);
+        } catch (error) {
+            console.error("Error al obtener la tasa de cambio:", error);
+            // Fallback por si la API falla
+            this.rate = 0;
+            this.finalRate = 0;
+        }
+    },
+
+    /**
+     * Formatea un precio en USD a un string con ambas monedas.
+     * @param {number} usdAmount - La cantidad en USD.
+     * @returns {string} - El precio formateado, ej: "$10.00 (Bs. 365.25)"
+     */
+    formatPrice(usdAmount) {
+        if (typeof usdAmount !== 'number') {
+            usdAmount = 0;
+        }
+        
+        const primaryFormatted = `${this.primaryCurrency} ${usdAmount.toFixed(2)}`;
+        
+        if (this.finalRate > 0) {
+            const secondaryAmount = usdAmount * this.finalRate;
+            const secondaryFormatted = `${this.secondaryCurrency} ${secondaryAmount.toFixed(2)}`;
+            return `${primaryFormatted} (${secondaryFormatted})`;
+        }
+        
+        return primaryFormatted; // Si no hay tasa, muestra solo USD
+    },
+
+    /**
+     * Devuelve solo el valor en la moneda secundaria (Bolívares).
+     * @param {number} usdAmount - La cantidad en USD.
+     * @returns {string} - El precio formateado en la moneda secundaria.
+     */
+    getSecondaryValueText(usdAmount) {
+        if (typeof usdAmount !== 'number' || this.finalRate <= 0) {
+            return `${this.secondaryCurrency} 0.00`;
+        }
+        const secondaryAmount = usdAmount * this.finalRate;
+        return `${this.secondaryCurrency} ${secondaryAmount.toFixed(2)}`;
+    }
+};
+
 // --- Elementos del DOM ---
 const profileContent = document.getElementById('profile-content');
 const servicesSection = document.getElementById('services-section');
@@ -207,7 +274,7 @@ async function loadInitialData() {
         const { data: barberProfile, error: barberError } = await 
         supabaseClient
             .from('barberos')
-            .select('id, nombre, telefono, foto_perfil_url')
+            .select('id, nombre, telefono, foto_perfil_url, porcentaje_markup_tasa')
             .eq('user_id', currentUserId)
             .single();
 
@@ -218,6 +285,8 @@ async function loadInitialData() {
         }
 
         currentBarberProfileId = barberProfile.id;
+        await currencyManager.init(supabaseClient, barberProfile);
+
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
         // ================== INICIO DE LA CORRECCIÓN ==================
@@ -260,7 +329,14 @@ async function loadInitialData() {
         console.error('Error cargando datos iniciales:', error);
         if (saveStatus) saveStatus.textContent = `Error al cargar: ${error.message}`;
     }
+    
+    const markupInput = document.getElementById('tasa-markup');
+if (markupInput && barberProfile.porcentaje_markup_tasa != null) {
+    markupInput.value = barberProfile.porcentaje_markup_tasa;
 }
+}
+
+
 // ===== INICIO: LÓGICA DEL MODAL DE VISITA INMEDIATA =====
 
 /**
@@ -909,6 +985,23 @@ function setupMobileMenu() {
     menuLinks.forEach(link => link.addEventListener('click', closeMenu));
 }
 
+async function saveCurrencySettings() {
+    const markupInput = document.getElementById('tasa-markup');
+    if (!markupInput) return;
+
+    const markupValue = parseFloat(markupInput.value) || 0;
+
+    const { error } = await supabaseClient
+        .from('barberos')
+        .update({ porcentaje_markup_tasa: markupValue })
+        .eq('user_id', currentUserId); // O usa currentBarberProfileId si lo prefieres
+
+    if (error) {
+        throw new Error(`Error al guardar configuración de moneda: ${error.message}`);
+    }
+}
+
+
 async function loadDashboardStats() {
     const loadingStatus = document.getElementById('dashboard-loading-status');
     const statsGrid = document.getElementById('dashboard-stats-grid');
@@ -939,7 +1032,8 @@ async function loadDashboardStats() {
         
         document.getElementById('stat-active-bookings').textContent = activeBookings || 0;
         document.getElementById('stat-unique-clients').textContent = totalClients || 0;
-        document.getElementById('stat-monthly-income').textContent = `$${monthlyIncome.toFixed(2)}`;
+        document.getElementById('stat-monthly-income').textContent = currencyManager.formatPrice(monthlyIncome);
+
         
         loadingStatus.style.display = 'none';
         statsGrid.style.display = 'grid';
@@ -1227,8 +1321,8 @@ function renderTransactionList(appointmentsToRender) {
         const isDebt = item.estado_pago === 'pendiente' || (item.estado === 'pendiente' && item.estado_pago !== 'pagado');
         
         const amountDisplay = isDebt 
-            ? `- $${(item.precio_final || 0).toFixed(2)}`
-            : `+ $${(item.precio_final || 0).toFixed(2)}`;
+               ? `- ${currencyManager.formatPrice(item.precio_final || 0)}`  
+               :`+ ${currencyManager.formatPrice(item.precio_final || 0)}`;
 
         const itemClass = isDebt ? 'transaction-item is-debt' : 'transaction-item';
 
@@ -1859,6 +1953,8 @@ async function saveAllChanges() {
         const updatedProfile = await saveBasicProfile();
         await saveServices();
         await saveAvailability();
+        await saveCurrencySettings(); // <-- AÑADE ESTA LLAMADA
+
 
         // Volvemos a renderizar el formulario con la nueva información.
         if (updatedProfile) {
