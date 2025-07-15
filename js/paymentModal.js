@@ -1,4 +1,4 @@
-// js/paymentModal.js
+// REEMPLAZA TODO EL CONTENIDO DE js/paymentModal.js CON ESTO
 
 // Estado y elementos del DOM para el modal de pago
 let currentCitaForPayment = null;
@@ -7,44 +7,50 @@ const paymentModal = document.getElementById('payment-modal');
 const paymentForm = document.getElementById('payment-form');
 const paymentCloseBtn = document.getElementById('payment-modal-close-btn');
 const paymentClientName = document.getElementById('payment-client-name');
-const paymentServiceName = document.getElementById('payment-service-name'); // Nuevo: para mostrar el servicio
 const paymentAmount = document.getElementById('payment-amount');
 const paymentCitaIdInput = document.getElementById('payment-cita-id');
 const deadlineContainer = document.getElementById('payment-deadline-container');
 const deadlineInput = document.getElementById('payment-deadline-date');
-const savePaymentBtn = document.getElementById('save-payment-btn');
-const paymentStatusMessage = document.getElementById('payment-status-message'); // Nuevo: para mensajes de estado
+const paymentStatusMessage = document.getElementById('payment-status-message');
 
-// REEMPLAZA ESTA FUNCIÓN EN js/paymentModal.js
+// --- NUEVOS ELEMENTOS ---
+const cashOptionsContainer = document.getElementById('cash-payment-options');
+const payCashUsdBtn = document.getElementById('pay-cash-usd-btn');
+const payCashVesBtn = document.getElementById('pay-cash-ves-btn');
+const savePaymentBtn = document.getElementById('save-payment-btn');
+
 /**
  * Muestra el modal de pago y lo puebla con los datos de la cita.
  * @param {object} cita - El objeto de la cita a pagar.
  */
 function showPaymentModal(cita) {
     if (!paymentOverlay || !cita) {
-        console.error("No se pudo mostrar el modal de pago. Faltan elementos o datos de la cita.");
-        alert("Error al abrir el modal de pago.");
+        console.error("No se pudo mostrar el modal de pago. Faltan elementos o datos.");
         return;
     }
 
     currentCitaForPayment = cita;
     paymentClientName.textContent = cita.cliente_nombre;
 
-    // ================== INICIO DE LA CORRECCIÓN ==================
-    // Se añade una comprobación robusta para evitar errores si precio_final es null o undefined.
-    const precio = cita.precio_final ?? 0;
-    if (cita.precio_final == null) {
-        console.warn(`La cita ID ${cita.id} no tenía un precio_final definido. Se usó 0 como fallback.`);
-    }
-    paymentAmount.textContent = `$${precio.toFixed(2)}`;
-    // =================== FIN DE LA CORRECCIÓN ====================
+    const precioFinal = cita.precio_final ?? 0;
+    // Usamos el currencyManager global para mostrar el precio en ambas monedas
+    paymentAmount.innerHTML = currencyManager.formatPrice(precioFinal);
     
     paymentCitaIdInput.value = cita.id;
 
     // Resetear el formulario a su estado inicial
     paymentForm.reset();
-    document.getElementById('pay-efectivo').checked = true;
+    paymentStatusMessage.textContent = '';
+    paymentStatusMessage.className = 'status-message';
+    
+    // Ocultar todos los botones de acción al inicio
+    cashOptionsContainer.style.display = 'none';
+    savePaymentBtn.style.display = 'none';
     deadlineContainer.style.display = 'none';
+    
+    // Forzar la selección por defecto y disparar el evento de cambio
+    document.getElementById('pay-efectivo').checked = true;
+    handlePaymentMethodChange();
 
     paymentOverlay.classList.add('active');
 }
@@ -60,6 +66,38 @@ function closePaymentModal() {
 }
 
 /**
+ * Maneja el cambio en el método de pago seleccionado.
+ */
+function handlePaymentMethodChange() {
+    const selectedMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked').value;
+
+    // Ocultar todo por defecto
+    cashOptionsContainer.style.display = 'none';
+    savePaymentBtn.style.display = 'none';
+    deadlineContainer.style.display = 'none';
+    paymentStatusMessage.textContent = ''; // Limpiar mensajes
+
+    const precioFinal = currentCitaForPayment.precio_final ?? 0;
+
+    if (selectedMethod === 'efectivo') {
+        cashOptionsContainer.style.display = 'block';
+    } else if (selectedMethod === 'no_pagado') {
+        savePaymentBtn.style.display = 'block';
+        savePaymentBtn.innerHTML = '<i class="fas fa-user-clock"></i> Registrar Deuda y Finalizar';
+        deadlineContainer.style.display = 'block';
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        deadlineInput.value = tomorrow.toISOString().split('T')[0];
+    } else { // Transferencia o Pago Móvil
+        savePaymentBtn.style.display = 'block';
+        savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Registrar Pago y Finalizar';
+        // Mostrar el monto en Bolívares
+        paymentStatusMessage.textContent = `Monto a registrar en ${currencyManager.secondaryCurrency}: ${currencyManager.getSecondaryValueText(precioFinal)}`;
+        paymentStatusMessage.className = 'status-message info';
+    }
+}
+
+/**
  * Maneja el guardado de la información de pago.
  * @param {Event} e - El evento de envío del formulario.
  */
@@ -67,40 +105,39 @@ async function handleSavePayment(e) {
     e.preventDefault();
     if (!currentCitaForPayment) return;
 
+    const paymentMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked').value;
+    
+    // Determinamos el método de pago detallado para la DB
+    let detailedPaymentMethod = e.target.dataset.method || paymentMethod;
+
     savePaymentBtn.disabled = true;
-    savePaymentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-    paymentStatusMessage.textContent = '';
+    payCashUsdBtn.disabled = true;
+    payCashVesBtn.disabled = true;
+    
+    const spinner = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    if (savePaymentBtn.style.display !== 'none') savePaymentBtn.innerHTML = spinner;
+    
+    paymentStatusMessage.textContent = 'Procesando...';
     paymentStatusMessage.className = 'status-message processing';
 
-    const formData = new FormData(paymentForm);
-    const metodoPago = formData.get('metodo_pago');
-    const esDeuda = (metodoPago === 'no_pagado');
+    const esDeuda = (detailedPaymentMethod === 'no_pagado');
     const fechaLimite = esDeuda ? deadlineInput.value : null;
 
-    // Validar fecha límite si es deuda
     if (esDeuda) {
         if (!fechaLimite) {
-            paymentStatusMessage.textContent = 'Por favor, establece una fecha límite para el pago.';
-            paymentStatusMessage.className = 'status-message error';
-            savePaymentBtn.disabled = false;
-            savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
-            return;
-        }
-        const today = new Date().toISOString().split('T')[0];
-        if (fechaLimite <= today) {
-            paymentStatusMessage.textContent = 'La fecha límite debe ser posterior a hoy.';
-            paymentStatusMessage.className = 'status-message error';
-            savePaymentBtn.disabled = false;
-            savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
+            alert('Por favor, establece una fecha límite para el pago.');
+            resetButtons();
             return;
         }
     }
 
     const updateData = {
         estado: 'completada',
-        metodo_pago: metodoPago,
+        metodo_pago: detailedPaymentMethod, // ej: 'efectivo_usd', 'transferencia', 'no_pagado'
         estado_pago: esDeuda ? 'pendiente' : 'pagado',
-        fecha_limite_pago: fechaLimite
+        fecha_limite_pago: fechaLimite,
+        // El precio_final en la DB SIEMPRE se queda en USD para consistencia en los reportes.
+        // No lo modificamos aquí.
     };
 
     try {
@@ -111,29 +148,28 @@ async function handleSavePayment(e) {
 
         if (error) throw error;
 
-        // Éxito: notificar a la aplicación
         document.dispatchEvent(new CustomEvent('paymentProcessed', {
-            detail: { 
-                citaId: currentCitaForPayment.id,
-                clienteId: currentCitaForPayment.cliente_id 
-            }
+            detail: { citaId: currentCitaForPayment.id }
         }));
         
-        paymentStatusMessage.textContent = '¡Pago registrado con éxito! La cita ha sido finalizada.';
+        paymentStatusMessage.textContent = '¡Operación registrada con éxito! La cita ha sido finalizada.';
         paymentStatusMessage.className = 'status-message success';
         
-        // Cerrar el modal después de 2 segundos
-        setTimeout(() => {
-            closePaymentModal();
-        }, 2000);
+        setTimeout(closePaymentModal, 2000);
 
     } catch (error) {
         console.error('Error al guardar el pago:', error);
         paymentStatusMessage.textContent = `Error: ${error.message}`;
         paymentStatusMessage.className = 'status-message error';
-        savePaymentBtn.disabled = false;
-        savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Guardar y Finalizar Cita';
+        resetButtons();
     }
+}
+
+function resetButtons() {
+    savePaymentBtn.disabled = false;
+    payCashUsdBtn.disabled = false;
+    payCashVesBtn.disabled = false;
+    handlePaymentMethodChange(); // Restaura el texto original de los botones
 }
 
 /**
@@ -142,25 +178,27 @@ async function handleSavePayment(e) {
 function setupPaymentModalListeners() {
     if (!paymentForm) return;
 
+    // El submit del formulario ahora es manejado por los botones directamente
     paymentForm.addEventListener('submit', handleSavePayment);
+
+    // Los botones de efectivo ahora disparan el guardado
+    payCashUsdBtn.addEventListener('click', (e) => {
+        e.target.dataset.method = 'efectivo_usd';
+        handleSavePayment(e);
+    });
+    payCashVesBtn.addEventListener('click', (e) => {
+        e.target.dataset.method = 'efectivo_ves';
+        handleSavePayment(e);
+    });
+
     if (paymentCloseBtn) paymentCloseBtn.addEventListener('click', closePaymentModal);
     if (paymentOverlay) paymentOverlay.addEventListener('click', (e) => {
         if (e.target === paymentOverlay) closePaymentModal();
     });
 
-    // Listener para mostrar/ocultar el campo de fecha límite
+    // Listener para mostrar/ocultar campos según el método de pago
     paymentForm.querySelectorAll('input[name="metodo_pago"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.value === 'no_pagado') {
-                deadlineContainer.style.display = 'block';
-                // Establecer fecha por defecto: mañana
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                deadlineInput.value = tomorrow.toISOString().split('T')[0];
-            } else {
-                deadlineContainer.style.display = 'none';
-            }
-        });
+        radio.addEventListener('change', handlePaymentMethodChange);
     });
 }
 
