@@ -32,25 +32,24 @@ function showPaymentModal(cita) {
     currentCitaForPayment = cita;
     paymentClientName.textContent = cita.cliente_nombre;
 
-    const precioFinal = cita.precio_final ?? 0;
-    // Usamos el currencyManager global para mostrar el precio en ambas monedas
-    paymentAmount.innerHTML = currencyManager.formatPrice(precioFinal);
+    // --- CAMBIO CLAVE: Mostrar el monto y la moneda guardados en la cita ---
+    const monto = cita.monto ?? 0;
+    const moneda = cita.moneda ?? 'USD';
+    paymentAmount.innerHTML = `${moneda} ${monto.toFixed(2)}`;
+    // --- FIN DEL CAMBIO ---
     
     paymentCitaIdInput.value = cita.id;
-
-    // Resetear el formulario a su estado inicial
     paymentForm.reset();
     paymentStatusMessage.textContent = '';
     paymentStatusMessage.className = 'status-message';
     
-    // Ocultar todos los botones de acción al inicio
+    // Simplificamos la lógica: ya no hay que elegir moneda aquí.
     cashOptionsContainer.style.display = 'none';
     savePaymentBtn.style.display = 'none';
     deadlineContainer.style.display = 'none';
     
-    // Forzar la selección por defecto y disparar el evento de cambio
-    document.getElementById('pay-efectivo').checked = true;
-    handlePaymentMethodChange();
+    document.getElementById('pay-transferencia').checked = true;
+    handlePaymentMethodChange(); // Esto seguirá funcionando para las opciones (transferencia, deuda, etc.)
 
     paymentOverlay.classList.add('active');
 }
@@ -122,28 +121,21 @@ async function handleSavePayment(e) {
     // --- INICIO DE LA NUEVA LÓGICA ---
     const esDeuda = (detailedPaymentMethod === 'no_pagado');
     const fechaLimite = esDeuda ? deadlineInput.value : null;
-
-    if (esDeuda && !fechaLimite) {
-        alert('Por favor, establece una fecha límite para el pago.');
-        resetButtons();
-        return;
-    }
-
-    // Inicializamos los montos
+    
+     // --- CAMBIO CLAVE: Asignar el monto a la columna correcta ---
     let monto_usd = 0;
     let monto_ves = 0;
-    const precioBaseUSD = currentCitaForPayment.precio_final || 0;
+    const montoCita = currentCitaForPayment.monto || 0;
+    const monedaCita = currentCitaForPayment.moneda || 'USD';
 
     if (!esDeuda) {
-        // Determinamos qué columna llenar basado en el método de pago
-        if (detailedPaymentMethod === 'efectivo_usd') {
-            monto_usd = precioBaseUSD;
-        } else { // Para efectivo_ves, transferencia, pago_movil
-            // Calculamos el monto en VES y lo guardamos
-            monto_ves = precioBaseUSD * currencyManager.finalRate;
+        if (monedaCita === 'USD') {
+            monto_usd = montoCita;
+        } else { // Si la moneda de la cita era VES
+            monto_ves = montoCita;
         }
     }
-    
+    // --- FIN DEL CAMBIO ---
     // El objeto que se enviará a la base de datos
     const updateData = {
         estado: 'completada',
