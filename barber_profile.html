@@ -300,6 +300,20 @@ modal-save-status.error { color: var(--danger-color); }
             </form>
         </div>
     </div>
+    
+    <div id="cash-payment-options" class="modal-button-group" style="display: none; margin-top: 15px;">
+    <p><strong>¿En qué moneda se recibió el efectivo?</strong></p>
+    <button type="button" id="pay-cash-usd-btn" class="style-button confirm-btn">
+        <i class="fas fa-dollar-sign"></i> Recibido en USD
+    </button>
+    <button type="button" id="pay-cash-ves-btn" class="style-button" style="background-color: var(--login-primary-accent);">
+        <i class="fas fa-money-bill-wave"></i> Recibido en VES
+    </button>
+</div>
+
+<button type="submit" id="save-payment-btn" class="style-button confirm-btn" style="width: 100%; margin-top: 20px; display: none;">
+    <i class="fas fa-save"></i> Guardar y Finalizar Cita
+</button>
 
     <div class="alert-modal-overlay" id="walk-in-modal-overlay">
         <div class="alert-modal" id="walk-in-modal">
@@ -601,6 +615,17 @@ modal-save-status.error { color: var(--danger-color); }
                     <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Datos Básicos</h3>
                     <div id="profile-content"><p>Cargando perfil...</p></div>
                 </div>
+                
+                <div class="profile-section-card">
+    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Configuración de Moneda</h3>
+    <p>Establece un porcentaje adicional para sumarle a la tasa de cambio oficial del BCV al calcular los precios en Bolívares.</p>
+    <div class="input-group">
+        <i class="fas fa-percentage"></i>
+        <input type="number" id="tasa-markup" name="tasa-markup" placeholder=" " step="0.5" min="0" value="0">
+        <label for="tasa-markup">Porcentaje Adicional sobre la Tasa (%)</label>
+    </div>
+    <p class="availability-instructions">Ejemplo: Si la tasa BCV es 36.50 y pones 5%, el cálculo se hará con 38.33.</p>
+</div>
                 <div class="profile-section-card">
                     <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Notificaciones Push</h3>
                     <p>Activa las notificaciones para recibir alertas en tu dispositivo incluso con la app cerrada.</p>
