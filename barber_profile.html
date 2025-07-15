@@ -205,7 +205,32 @@ modal-save-status.error { color: var(--danger-color); }
     color: var(--secondary-text-color);
     background: none;
     border: none;
+   cursor: pointer;
+   
+   /* Pega esto al final de la etiqueta <style> en barber_profile.html */
+.stat-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.currency-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    color: var(--primary-text-color);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.currency-toggle-btn:hover {
+    background: var(--login-primary-accent);
+    transform: rotate(90deg);
+}
 }
     </style>
 </head>
@@ -467,11 +492,21 @@ modal-save-status.error { color: var(--danger-color); }
                         <div class="stat-value" id="stat-unique-clients">0</div>
                         <div class="stat-label">Clientes Totales</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
-                        <div class="stat-value" id="stat-monthly-income">$0.00</div>
-                        <div class="stat-label">Ingresos (Mes Actual)</div>
-                    </div>
+                   <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+    
+    <div class="stat-value-container">
+        <div class="stat-value" id="stat-monthly-income-usd" style="display: block;">USD 0.00</div>
+        <div class="stat-value" id="stat-monthly-income-ves" style="display: none;">Bs 0.00</div>
+    </div>
+
+    <div class="stat-label">
+        Ingresos (Mes Actual)
+        <button id="toggle-income-currency-btn" class="currency-toggle-btn" title="Cambiar moneda">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+</div>
                     <div class="stat-card action-card" id="show-walk-in-modal-btn" role="button" tabindex="0">
                         <div class="stat-icon"><i class="fas fa-walking"></i></div>
                         <div class="stat-value" style="font-size: 1.8em; color: #fff;">Visita Inmediata</div>
@@ -545,16 +580,19 @@ modal-save-status.error { color: var(--danger-color); }
                 
                 <div id="report-stats-grid" class="report-stats-grid">
                     <div class="stat-chart-card">
-                        <div class="stat-chart-header">
-                            <div class="stat-chart-main-value">
-                                <div id="income-stat-value" class="stat-value">$0.00</div>
-                                <div class="stat-label">Ingresos</div>
-                            </div>
-                            <div id="income-percentage" class="stat-chart-percentage neutral">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 5px; transition: transform 0.4s ease;"><path d="M12 4L18 10M12 20V4M12 4L6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                <span>0%</span>
-                            </div>
-                        </div>
+                       <div class="stat-chart-header">
+    <div class="stat-chart-main-value">
+        <div id="income-stat-value" class="stat-value">$0.00</div>
+        <div class="stat-label">Ingresos</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="income-percentage" class="stat-chart-percentage neutral">
+            </div>
+        <button id="toggle-report-currency-btn" class="currency-toggle-btn" title="Cambiar moneda">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+</div>
                         <div id="income-area-chart"></div>
                     </div>
                     <div class="stat-chart-card">
