@@ -266,29 +266,39 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentStep === 4) updateBookingSummary();
     };
     
-    const updateBookingSummary = () => {
-        if (!selectedService) {
-            bookingSummary.innerHTML = "<p>Error: No se ha seleccionado un servicio.</p>";
-            return;
-        }
-        const serviceName = selectedService.nombre_personalizado || selectedService.nombre || 'Servicio';
-        const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const time = timeSelect.options[timeSelect.selectedIndex].textContent;
-        const clientName = clientSearchInput.value;
-        const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
+   const updateBookingSummary = () => {
+    if (!selectedService) {
+        bookingSummary.innerHTML = "<p>Error: No se ha seleccionado un servicio.</p>";
+        return;
+    }
 
-        bookingSummary.innerHTML = `
-            <p><strong>Barbero:</strong> ${barberData.nombre}</p>
-            <p><strong>Modalidad:</strong> ${serviceLocation}</p>
-            <p><strong>Servicio:</strong> ${serviceName}</p>
-           
+    // --- CAMBIO CLAVE: Obtener la moneda seleccionada ---
+    const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
+    let priceText = '';
+    
+    if (selectedCurrency === 'USD') {
+        priceText = `USD ${selectedService.precio.toFixed(2)}`;
+    } else {
+        const vesAmount = selectedService.precio * currencyManager.finalRate;
+        priceText = `VES ${vesAmount.toFixed(2)}`;
+    }
+    // --- FIN DEL CAMBIO ---
 
-<p><strong>Precio:</strong> ${currencyManager.formatPrice(selectedService.precio)}</p>
-            <p><strong>Fecha:</strong> ${date}</p>
-            <p><strong>Hora:</strong> ${time}</p>
-            <p><strong>Cliente:</strong> ${clientName.trim()}</p>
-        `;
-    };
+    const serviceName = selectedService.nombre_personalizado || selectedService.nombre || 'Servicio';
+    const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const time = timeSelect.options[timeSelect.selectedIndex].textContent;
+    const clientName = clientSearchInput.value;
+    const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
+
+    bookingSummary.innerHTML = `
+        <p><strong>Barbero:</strong> ${barberData.nombre}</p>
+        <p><strong>Modalidad:</strong> ${serviceLocation}</p>
+        <p><strong>Servicio:</strong> ${serviceName}</p>
+        <p><strong>Precio a Pagar:</strong> ${priceText}</p> <p><strong>Fecha:</strong> ${date}</p>
+        <p><strong>Hora:</strong> ${time}</p>
+        <p><strong>Cliente:</strong> ${clientName.trim()}</p>
+    `;
+};
 
     const showClientResults = (searchTerm) => {
         clientResultsList.innerHTML = '';
@@ -359,6 +369,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (submitButton) submitButton.disabled = false;
                 return;
             }
+            
+             const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
+    let finalAmount = 0;
+    
+    if (selectedCurrency === 'USD') {
+        finalAmount = selectedService.precio;
+    } else {
+        finalAmount = selectedService.precio * currencyManager.finalRate;
+    }
 
             const bookingPayload = {
                 barberId: barberId,
@@ -368,6 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 bookingDate: dateInput.value,
                 startTime: startTime,
                 endTime: endTime,
+                  monto: finalAmount, // <-- Columna renombrada
+        moneda: selectedCurrency, // <-- Nueva columna
                 finalPrice: selectedService.precio,
                 serviceType: selectedServiceType,
                 estimatedDuration: selectedService.duracion_minutos 
