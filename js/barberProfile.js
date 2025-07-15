@@ -1004,10 +1004,21 @@ async function saveCurrencySettings() {
 }
 
 
+// js/barberProfile.js
+
 async function loadDashboardStats() {
     const loadingStatus = document.getElementById('dashboard-loading-status');
     const statsGrid = document.getElementById('dashboard-stats-grid');
-    if (!loadingStatus || !statsGrid || !currentUserId) return;
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    const incomeUsdEl = document.getElementById('stat-monthly-income-usd');
+    const incomeVesEl = document.getElementById('stat-monthly-income-ves');
+    // --- FIN DE LA CORRECCIÓN ---
+
+    if (!loadingStatus || !statsGrid || !currentUserId || !incomeUsdEl || !incomeVesEl) {
+        console.error("Faltan elementos del dashboard, se cancela la carga de estadísticas.");
+        return;
+    }
 
     loadingStatus.style.display = 'block';
     statsGrid.style.display = 'none';
@@ -1034,9 +1045,13 @@ async function loadDashboardStats() {
         
         document.getElementById('stat-active-bookings').textContent = activeBookings || 0;
         document.getElementById('stat-unique-clients').textContent = totalClients || 0;
-        document.getElementById('stat-monthly-income').textContent = currencyManager.formatPrice(monthlyIncome);
 
-        
+        // --- INICIO DE LA CORRECCIÓN ---
+        // Se actualizan los elementos correctos usando el currencyManager
+        incomeUsdEl.textContent = `USD ${monthlyIncome.toFixed(2)}`;
+        incomeVesEl.textContent = currencyManager.getSecondaryValueText(monthlyIncome);
+        // --- FIN DE LA CORRECCIÓN ---
+
         loadingStatus.style.display = 'none';
         statsGrid.style.display = 'grid';
 
@@ -1046,7 +1061,12 @@ async function loadDashboardStats() {
         statsGrid.style.display = 'grid';
         document.getElementById('stat-active-bookings').textContent = '-';
         document.getElementById('stat-unique-clients').textContent = 'Error';
-        document.getElementById('stat-monthly-income').textContent = '-';
+        
+        // --- INICIO DE LA CORRECCIÓN ---
+        // También se actualiza el bloque catch para usar los IDs correctos
+        if(incomeUsdEl) incomeUsdEl.textContent = 'USD --';
+        if(incomeVesEl) incomeVesEl.textContent = 'Bs --';
+        // --- FIN DE LA CORRECCIÓN ---
     }
 }
 
