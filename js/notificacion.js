@@ -122,38 +122,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupRealtimeListener() {
     if (!currentUserId) return;
-    if (notificationChannel) {
-        supabaseClient.removeChannel(notificationChannel);
-        notificationChannel = null;
-    }
 
     const channelName = `realtime:notifications:${currentUserId}`;
-    console.log(`[Realtime] Suscribiéndose al canal: ${channelName}`); // <-- AÑADIR ESTO
 
-    notificationChannel = supabaseClient
-        .channel(channelName)
-        .on(
-            'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notificaciones',
-                filter: `barbero_id=eq.${currentUserId}`
-            },
-            (payload) => {
-                // AÑADIR ESTE LOG PARA VER SI LLEGA EL EVENTO
-                console.log('[Realtime] ¡Payload recibido!:', payload);
-                handleNewNotification(payload.new);
-            }
-        )
-        .subscribe((status, error) => {
-            // AÑADIR ESTOS LOGS PARA VER EL ESTADO DE LA CONEXIÓN
-            console.log(`[Realtime] Nuevo estado de la suscripción: ${status}`);
-            if (error) {
-                console.error('[Realtime] Error en la suscripción:', error);
-            }
-            isRealtimeActive = status === 'SUBSCRIBED';
-        });
+    // Si ya hay canal, lo cerramos antes de crear uno nuevo
+    if (notificationChannel) {
+        supabaseClient.removeChannel(notificationChannel);
+    }
+
+    const retryRealtime = () => {
+        notificationChannel = supabaseClient
+            .channel(channelName)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notificaciones',
+                    filter: `barbero_id=eq.${currentUserId}`
+                },
+                (payload) => {
+                    console.log('[Realtime] Nueva notificación:', payload.new);
+                    handleNewNotification(payload.new);
+                }
+            )
+            .subscribe((status, error) => {
+                console.log(`[Realtime] Estado: ${status}`);
+                if (error) {
+                    console.warn('[Realtime] Error:', error.message);
+                    // Reintento después de 5 segundos
+                    setTimeout(retryRealtime, 5000);
+                }
+            });
+    };
+
+    retryRealtime();
 }
     
     async function handleNewNotification(newNotificationData) {
