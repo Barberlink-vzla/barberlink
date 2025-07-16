@@ -326,6 +326,83 @@ function setupSwipeToDelete() {
         await deleteNotification(notificationId);
       }
     });
+    
+    function setupSwipeToDelete() {
+  const items = document.querySelectorAll('.notification-item');
+  
+  items.forEach(item => {
+    let startX = 0;
+    let currentX = 0;
+
+    // Touch events para móvil
+    item.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+    });
+
+    item.addEventListener('touchmove', (e) => {
+      currentX = e.touches[0].clientX;
+      const diff = startX - currentX;
+      
+      if (diff > 50) {
+        item.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
+      }
+    });
+
+    item.addEventListener('touchend', () => {
+      const diff = startX - currentX;
+      
+      if (diff > 80) {
+        const id = item.dataset.id;
+        item.style.transition = 'transform 0.3s, opacity 0.3s';
+        item.style.transform = 'translateX(-100%)';
+        item.style.opacity = '0';
+        
+        setTimeout(() => {
+          deleteNotification(id);
+        }, 300);
+      } else {
+        item.style.transform = 'translateX(0)';
+      }
+    });
+
+    // Mouse events para desktop
+    let isMouseDown = false;
+    
+    item.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      startX = e.clientX;
+    });
+
+    item.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      currentX = e.clientX;
+      const diff = startX - currentX;
+      
+      if (diff > 0) {
+        item.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
+      }
+    });
+
+    item.addEventListener('mouseup', () => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      
+      const diff = startX - currentX;
+      
+      if (diff > 80) {
+        const id = item.dataset.id;
+        deleteNotification(id);
+      } else {
+        item.style.transform = 'translateX(0)';
+      }
+    });
+
+    item.addEventListener('mouseleave', () => {
+      item.style.transform = 'translateX(0)';
+      isMouseDown = false;
+    });
+  });
+}
 
     // Click en el botón de borrar
     const deleteBtn = item.querySelector('.delete-action');
@@ -343,7 +420,7 @@ function setupSwipeToDelete() {
  * Borra permanentemente una notificación de la base de datos
  */
 async function deleteNotification(notificationId) {
-  if (!confirm('¿Estás seguro de que quieres borrar esta notificación permanentemente?')) return;
+  if (!notificationId || !supabaseClient) return;
 
   const { error } = await supabaseClient
     .from('notificaciones')
@@ -351,8 +428,7 @@ async function deleteNotification(notificationId) {
     .eq('id', notificationId);
 
   if (error) {
-    console.error('Error al borrar notificación:', error);
-    alert('No se pudo borrar la notificación.');
+    console.error('Error al borrar:', error);
     return;
   }
 
