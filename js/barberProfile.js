@@ -1197,8 +1197,8 @@ async function loadDashboardStats() {
         loadingStatus.textContent = 'Error al cargar estadísticas.';
         loadingStatus.style.color = 'var(--danger-color)';
     }
-    } 
-
+    
+}
 
 
 // ===== FUNCIONES PARA REPORTES =====
