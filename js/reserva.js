@@ -266,38 +266,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentStep === 4) updateBookingSummary();
     };
     
-   const updateBookingSummary = () => {
+// EN: js/reserva.js
+
+const updateBookingSummary = () => {
     if (!selectedService) {
         bookingSummary.innerHTML = "<p>Error: No se ha seleccionado un servicio.</p>";
         return;
     }
 
-    // --- CAMBIO CLAVE: Obtener la moneda seleccionada ---
-    const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
-    let priceText = '';
-    
-    if (selectedCurrency === 'USD') {
-        priceText = `USD ${selectedService.precio.toFixed(2)}`;
-    } else {
-        const vesAmount = selectedService.precio * currencyManager.finalRate;
-        priceText = `VES ${vesAmount.toFixed(2)}`;
-    }
-    // --- FIN DEL CAMBIO ---
-
+    // El precio base siempre es en USD desde el servicio seleccionado
+    const basePriceUSD = selectedService.precio || 0;
     const serviceName = selectedService.nombre_personalizado || selectedService.nombre || 'Servicio';
     const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const time = timeSelect.options[timeSelect.selectedIndex].textContent;
     const clientName = clientSearchInput.value;
     const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
 
+    // --- INICIO DE LA MEJORA CLAVE ---
+
+    // Precios en ambas monedas
+    const priceUSDText = `USD ${basePriceUSD.toFixed(2)}`;
+    let priceVESText = 'Calculando...';
+    if (currencyManager.finalRate > 0) {
+        const vesAmount = basePriceUSD * currencyManager.finalRate;
+        priceVESText = `VES ${vesAmount.toFixed(2)}`;
+    }
+
     bookingSummary.innerHTML = `
         <p><strong>Barbero:</strong> ${barberData.nombre}</p>
         <p><strong>Modalidad:</strong> ${serviceLocation}</p>
         <p><strong>Servicio:</strong> ${serviceName}</p>
-        <p><strong>Precio a Pagar:</strong> ${priceText}</p> <p><strong>Fecha:</strong> ${date}</p>
+        <p><strong>Fecha:</strong> ${date}</p>
         <p><strong>Hora:</strong> ${time}</p>
         <p><strong>Cliente:</strong> ${clientName.trim()}</p>
+        
+        <div class="payment-currency-selection">
+            <h4>Selecciona tu Moneda de Pago</h4>
+            <div class="radio-group-summary">
+                <input type="radio" id="currency-usd" name="payment_currency" value="USD" checked>
+                <label for="currency-usd">
+                    <i class="fas fa-dollar-sign"></i> Pagar en Dólares
+                    <span class="price-display">${priceUSDText}</span>
+                </label>
+            </div>
+            <div class="radio-group-summary">
+                <input type="radio" id="currency-ves" name="payment_currency" value="VES" ${currencyManager.finalRate <= 0 ? 'disabled' : ''}>
+                <label for="currency-ves">
+                    <i class="fas fa-money-bill-wave"></i> Pagar en Bolívares
+                    <span class="price-display">${priceVESText}</span>
+                </label>
+            </div>
+        </div>
     `;
+    // --- FIN DE LA MEJORA CLAVE ---
 };
 
     const showClientResults = (searchTerm) => {
@@ -338,84 +359,90 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================================
     // LÓGICA DE ENVÍO DE RESERVA
     // =================================================================================
-    async function handleBookingSubmit(e) {
-        e.preventDefault();
-        if (!selectedService) {
-            alert("Por favor selecciona un servicio antes de continuar.");
+   // EN: js/reserva.js
+
+async function handleBookingSubmit(e) {
+    e.preventDefault();
+    if (!selectedService) {
+        alert("Por favor selecciona un servicio antes de continuar.");
+        return;
+    }
+    statusMessage.textContent = 'Procesando tu reserva...';
+    statusMessage.className = 'status-message';
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+
+    try {
+        const startTime = timeSelect.value;
+        const selectedSlot = availableSlots.find(slot => slot.start_time === startTime);
+
+        if (!selectedSlot) {
+            alert("El horario seleccionado ya no está disponible. Por favor, recarga o elige otro.");
+            if (submitButton) submitButton.disabled = false;
             return;
         }
-        statusMessage.textContent = 'Procesando tu reserva...';
-        statusMessage.className = 'status-message';
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton) submitButton.disabled = true;
-        try {
-            const startTime = timeSelect.value;
-            const selectedSlot = availableSlots.find(slot => slot.start_time === startTime);
+        
+        const endTime = selectedSlot.hora_fin || selectedSlot.end_time || selectedSlot.hora_fin_cita;
 
-            // Validación extra de slot y endTime
-            if (!selectedSlot) {
-                alert("El horario seleccionado ya no está disponible. Por favor, recarga o elige otro.");
-                if (submitButton) submitButton.disabled = false;
-                return;
-            }
-            // --- CAMBIO CLAVE: Usar el nombre correcto del campo de fin ---
-            const endTime = selectedSlot.hora_fin || selectedSlot.end_time || selectedSlot.hora_fin_cita;
-
-            console.log("Slot seleccionado:", selectedSlot, "Campos:", Object.keys(selectedSlot));
-            console.log("Valor de endTime:", endTime);
-
-            if (!endTime) {
-                alert("Error interno: el horario de fin no se pudo determinar. Por favor, selecciona otra hora.");
-                if (submitButton) submitButton.disabled = false;
-                return;
-            }
-            
-             const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
-    let finalAmount = 0;
-    
-    if (selectedCurrency === 'USD') {
-        finalAmount = selectedService.precio;
-    } else {
-        finalAmount = selectedService.precio * currencyManager.finalRate;
-    }
-
-            const bookingPayload = {
-                barberId: barberId,
-                clientName: clientSearchInput.value.trim(),
-                clientPhone: clientPhoneInput.value.trim(),
-                serviceId: selectedService.id,
-                bookingDate: dateInput.value,
-                startTime: startTime,
-                endTime: endTime,
-                  monto: finalAmount, // <-- Columna renombrada
-        moneda: selectedCurrency, // <-- Nueva columna
-                finalPrice: selectedService.precio,
-                serviceType: selectedServiceType,
-                estimatedDuration: selectedService.duracion_minutos 
-            };
-
-            console.log("bookingPayload enviado a create-booking:", JSON.stringify(bookingPayload, null, 2));
-            const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
-                body: bookingPayload
-            });
-            if (functionError) {
-                const errorMessage = functionError.context?.errorMessage || `No se pudo crear la cita: ${functionError.message}`;
-                throw new Error(errorMessage);
-            }
-            form.style.display = 'none';
-            progressBarSteps.forEach(s => s.parentElement.style.display = 'none');
-            successMessageContainer.style.display = 'block';
-            statusMessage.textContent = '';
-            generateWhatsAppLink(bookingResult.bookingData);
-        } catch (error) {
-            console.error("Error en el proceso de reserva:", error);
-            statusMessage.textContent = `Error: ${error.message}`;
-            statusMessage.className = 'status-message error';
+        if (!endTime) {
+            alert("Error interno: el horario de fin no se pudo determinar. Por favor, selecciona otra hora.");
             if (submitButton) submitButton.disabled = false;
-            alert(error.message + "\n\nSe recargarán los horarios disponibles.");
-            fetchAvailability(dateInput.value);
+            return;
         }
+
+        // --- INICIO DE LA NUEVA LÓGICA DE MONEDA ---
+        const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
+        const basePriceUSD = selectedService.precio || 0;
+        let finalAmount = 0;
+
+        if (selectedCurrency === 'USD') {
+            finalAmount = basePriceUSD;
+        } else { // VES
+            finalAmount = basePriceUSD * currencyManager.finalRate;
+        }
+        // --- FIN DE LA NUEVA LÓGICA DE MONEDA ---
+
+        const bookingPayload = {
+            barberId: barberId,
+            clientName: clientSearchInput.value.trim(),
+            clientPhone: clientPhoneInput.value.trim(),
+            serviceId: selectedService.id,
+            bookingDate: dateInput.value,
+            startTime: startTime,
+            endTime: endTime,
+            monto: finalAmount, // <-- El monto en la moneda seleccionada
+            moneda: selectedCurrency, // <-- La moneda seleccionada
+            precio_final: basePriceUSD, // <-- El precio de referencia en USD
+            serviceType: selectedServiceType,
+            estimatedDuration: selectedService.duracion_minutos
+        };
+
+        console.log("bookingPayload enviado a create-booking:", JSON.stringify(bookingPayload, null, 2));
+
+        const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
+            body: bookingPayload
+        });
+
+        if (functionError) {
+            const errorMessage = functionError.context?.errorMessage || `No se pudo crear la cita: ${functionError.message}`;
+            throw new Error(errorMessage);
+        }
+
+        form.style.display = 'none';
+        progressBarSteps.forEach(s => s.parentElement.style.display = 'none');
+        successMessageContainer.style.display = 'block';
+        statusMessage.textContent = '';
+        generateWhatsAppLink(bookingResult.bookingData);
+
+    } catch (error) {
+        console.error("Error en el proceso de reserva:", error);
+        statusMessage.textContent = `Error: ${error.message}`;
+        statusMessage.className = 'status-message error';
+        if (submitButton) submitButton.disabled = false;
+        alert(error.message + "\n\nSe recargarán los horarios disponibles.");
+        fetchAvailability(dateInput.value);
     }
+}
 
     const generateWhatsAppLink = (bookingInfo) => {
         if (!barberData?.telefono) {
