@@ -361,29 +361,6 @@ modal-save-status.error { color: var(--danger-color); }
     <button id="walk-in-new-client-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-user-plus"></i> Cliente Nuevo</button>
 </div>
 
-<div class="alert-modal-overlay" id="password-confirm-modal-overlay">
-    <div class="alert-modal" id="password-confirm-modal">
-        <button class="alert-modal-close" id="password-confirm-close-btn">&times;</button>
-        <h3 id="password-confirm-title">Confirmar Acción</h3>
-        <p>Para continuar, por favor ingresa tu contraseña. Esta es una medida de seguridad.</p>
-
-        <div class="input-group" style="margin-top: 20px;">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="password-confirm-input" placeholder=" " required>
-            <label for="password-confirm-input">Contraseña de tu cuenta</label>
-        </div>
-
-        <div id="password-confirm-status" class="status-message" style="margin-top: 15px;"></div>
-
-        <div class="modal-button-group">
-            <button id="password-confirm-action-btn" class="style-button confirm-btn">
-                <i class="fas fa-check"></i> Confirmar y Borrar
-            </button>
-        </div>
-    </div>
-</div>
-
-
             </div>
 
             <form id="walk-in-form" style="display: none;" novalidate>
@@ -419,6 +396,32 @@ modal-save-status.error { color: var(--danger-color); }
             </form>
         </div>
     </div>
+    
+    
+    
+    <div class="alert-modal-overlay" id="password-confirm-modal-overlay">
+    <div class="alert-modal" id="password-confirm-modal">
+        <button class="alert-modal-close" id="password-confirm-close-btn">&times;</button>
+        <h3 id="password-confirm-title">Confirmar Acción</h3>
+        <p>Para continuar, por favor ingresa tu contraseña. Esta es una medida de seguridad.</p>
+
+        <div class="input-group" style="margin-top: 20px;">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password-confirm-input" placeholder=" " required>
+            <label for="password-confirm-input">Contraseña de tu cuenta</label>
+        </div>
+
+        <div id="password-confirm-status" class="status-message" style="margin-top: 15px;"></div>
+
+        <div class="modal-button-group">
+            <button id="password-confirm-action-btn" class="style-button confirm-btn">
+                <i class="fas fa-check"></i> Confirmar y Borrar
+            </button>
+        </div>
+    </div>
+</div>
+    
+    
 
     <div class="alert-modal-overlay" id="calendar-action-modal-overlay">
         <div class="alert-modal" id="calendar-action-modal">
