@@ -1007,6 +1007,66 @@ async function saveCurrencySettings() {
 // js/barberProfile.js
 
 async function loadDashboardStats() {
+    const loadingStatus = document.getElementById('dashboard-loading-status');
+    const statsGrid = document.getElementById('dashboard-stats-grid');
+    const incomeUsdEl = document.getElementById('stat-monthly-income-usd');
+    const incomeVesEl = document.getElementById('stat-monthly-income-ves');
+
+    // Verificación de que todos los elementos existen antes de continuar
+    if (!loadingStatus || !statsGrid || !currentUserId || !incomeUsdEl || !incomeVesEl) {
+        console.warn("No se pueden cargar las estadísticas del dashboard: faltan elementos del DOM o el ID de usuario.");
+        return;
+    }
+
+    loadingStatus.style.display = 'block';
+    statsGrid.style.display = 'none';
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+        // --- Hacemos las 4 consultas en paralelo para máxima eficiencia ---
+        const [
+            { count: activeBookings, error: bookingsError },
+            { count: totalClients, error: clientsError },
+            { data: incomeDataUsd, error: incomeErrorUsd },
+            { data: incomeDataVes, error: incomeErrorVes }
+        ] = await Promise.all([
+            supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', today),
+            supabaseClient.from('clientes').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId),
+            
+            // Sumar solo los ingresos en USD de la columna correcta
+            supabaseClient.from('citas').select('monto_recibido_usd').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada'),
+            
+            // Sumar solo los ingresos en VES de la columna correcta
+            supabaseClient.from('citas').select('monto_recibido_ves').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada')
+        ]);
+
+        if (bookingsError || clientsError || incomeErrorUsd || incomeErrorVes) {
+            console.error("Error en una de las consultas del dashboard:", { bookingsError, clientsError, incomeErrorUsd, incomeErrorVes });
+            throw new Error("No se pudieron obtener todas las estadísticas.");
+        }
+
+        // Calculamos los totales sumando los resultados
+        const monthlyIncomeUsd = (incomeDataUsd || []).reduce((sum, item) => sum + (item.monto_recibido_usd || 0), 0);
+        const monthlyIncomeVes = (incomeDataVes || []).reduce((sum, item) => sum + (item.monto_recibido_ves || 0), 0);
+        
+        // Actualizamos el HTML con los valores obtenidos
+        document.getElementById('stat-active-bookings').textContent = activeBookings || 0;
+        document.getElementById('stat-unique-clients').textContent = totalClients || 0;
+
+        incomeUsdEl.textContent = `USD ${monthlyIncomeUsd.toFixed(2)}`;
+        incomeVesEl.textContent = `VES ${monthlyIncomeVes.toFixed(2)}`; // Usamos la variable global de currencyManager
+        
+        loadingStatus.style.display = 'none';
+        statsGrid.style.display = 'grid';
+
+    } catch (error) {
+        console.error('Error fatal cargando estadísticas del dashboard:', error);
+        loadingStatus.textContent = 'Error al cargar estadísticas.';
+        loadingStatus.style.color = 'var(--danger-color)';
+    }
+} // <-- ¡ESTA ES LA LLAVE DE CIERRE QUE FALTABA!
 
 
 
