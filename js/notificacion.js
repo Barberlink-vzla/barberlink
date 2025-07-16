@@ -432,7 +432,7 @@ async function deleteNotification(notificationId) {
     return;
   }
 
-  // Actualizar la lista local y renderizar
-  window.allNotifications = window.allNotifications.filter(n => n.id !== notificationId);
+  // Aquí está la corrección: se accede directamente a 'allNotifications'
+  allNotifications = allNotifications.filter(n => String(n.id) !== String(notificationId));
   renderNotifications();
 }
