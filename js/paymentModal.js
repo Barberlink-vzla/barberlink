@@ -1,6 +1,6 @@
-// REEMPLAZA TODO EL CONTENIDO DE js/paymentModal.js CON ESTO
+// js/paymentModal.js
 
-// Estado y elementos del DOM para el modal de pago
+// Estado y elementos del DOM
 let currentCitaForPayment = null;
 const paymentOverlay = document.getElementById('payment-modal-overlay');
 const paymentModal = document.getElementById('payment-modal');
@@ -12,15 +12,11 @@ const paymentCitaIdInput = document.getElementById('payment-cita-id');
 const deadlineContainer = document.getElementById('payment-deadline-container');
 const deadlineInput = document.getElementById('payment-deadline-date');
 const paymentStatusMessage = document.getElementById('payment-status-message');
-
-// --- NUEVOS ELEMENTOS ---
 const cashOptionsContainer = document.getElementById('cash-payment-options');
-const payCashUsdBtn = document.getElementById('pay-cash-usd-btn');
-const payCashVesBtn = document.getElementById('pay-cash-ves-btn');
 const savePaymentBtn = document.getElementById('save-payment-btn');
 
 /**
- * Muestra el modal de pago y lo puebla con los datos de la cita.
+ * Muestra el modal de pago con los datos de la cita.
  * @param {object} cita - El objeto de la cita a pagar.
  */
 function showPaymentModal(cita) {
@@ -34,22 +30,13 @@ function showPaymentModal(cita) {
 
     // --- CAMBIO CLAVE: Mostrar el monto y la moneda guardados en la cita ---
     const monto = cita.monto ?? 0;
-    const moneda = cita.moneda ?? 'USD';
-    paymentAmount.innerHTML = `${moneda} ${monto.toFixed(2)}`;
+    const moneda = cita.moneda ?? 'USD'; // Default a USD si no está definido
+    paymentAmount.innerHTML = `<strong>${moneda} ${monto.toFixed(2)}</strong>`;
     // --- FIN DEL CAMBIO ---
     
     paymentCitaIdInput.value = cita.id;
     paymentForm.reset();
-    paymentStatusMessage.textContent = '';
-    paymentStatusMessage.className = 'status-message';
-    
-    // Simplificamos la lógica: ya no hay que elegir moneda aquí.
-    cashOptionsContainer.style.display = 'none';
-    savePaymentBtn.style.display = 'none';
-    deadlineContainer.style.display = 'none';
-    
-    document.getElementById('pay-transferencia').checked = true;
-    handlePaymentMethodChange(); // Esto seguirá funcionando para las opciones (transferencia, deuda, etc.)
+    resetPaymentModalUI();
 
     paymentOverlay.classList.add('active');
 }
@@ -65,34 +52,46 @@ function closePaymentModal() {
 }
 
 /**
+ * Resetea la UI del modal a su estado inicial.
+ */
+function resetPaymentModalUI() {
+    paymentStatusMessage.textContent = '';
+    paymentStatusMessage.className = 'status-message';
+    savePaymentBtn.style.display = 'block'; // Mostrar botón principal
+    savePaymentBtn.disabled = false;
+    savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Registrar Pago y Finalizar';
+    deadlineContainer.style.display = 'none'; // Ocultar campo de fecha límite
+    cashOptionsContainer.style.display = 'none'; // Ocultar opciones de efectivo
+    
+    // Seleccionar 'transferencia' por defecto al abrir
+    const defaultRadio = document.getElementById('pay-transferencia');
+    if(defaultRadio) defaultRadio.checked = true;
+}
+
+
+/**
  * Maneja el cambio en el método de pago seleccionado.
  */
 function handlePaymentMethodChange() {
-    const selectedMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked').value;
-
-    // Ocultar todo por defecto
-    cashOptionsContainer.style.display = 'none';
-    savePaymentBtn.style.display = 'none';
+    const selectedMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked')?.value;
+    
     deadlineContainer.style.display = 'none';
-    paymentStatusMessage.textContent = ''; // Limpiar mensajes
+    paymentStatusMessage.textContent = '';
+    savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Registrar Pago y Finalizar';
 
-    const precioFinal = currentCitaForPayment.precio_final ?? 0;
-
-    if (selectedMethod === 'efectivo') {
-        cashOptionsContainer.style.display = 'block';
-    } else if (selectedMethod === 'no_pagado') {
-        savePaymentBtn.style.display = 'block';
-        savePaymentBtn.innerHTML = '<i class="fas fa-user-clock"></i> Registrar Deuda y Finalizar';
+    if (selectedMethod === 'no_pagado') {
         deadlineContainer.style.display = 'block';
+        savePaymentBtn.innerHTML = '<i class="fas fa-user-clock"></i> Registrar Deuda y Finalizar';
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         deadlineInput.value = tomorrow.toISOString().split('T')[0];
-    } else { // Transferencia o Pago Móvil
-        savePaymentBtn.style.display = 'block';
-        savePaymentBtn.innerHTML = '<i class="fas fa-save"></i> Registrar Pago y Finalizar';
-        // Mostrar el monto en Bolívares
-        paymentStatusMessage.textContent = `Monto a registrar en ${currencyManager.secondaryCurrency}: ${currencyManager.getSecondaryValueText(precioFinal)}`;
-        paymentStatusMessage.className = 'status-message info';
+    } else {
+        const monedaCita = currentCitaForPayment?.moneda || 'USD';
+        // Muestra una nota informativa si el pago es en VES
+        if(monedaCita === 'VES'){
+             paymentStatusMessage.textContent = `Se registrará el monto en ${currencyManager.secondaryCurrency}.`;
+             paymentStatusMessage.className = 'status-message info';
+        }
     }
 }
 
@@ -100,34 +99,31 @@ function handlePaymentMethodChange() {
  * Maneja el guardado de la información de pago.
  * @param {Event} e - El evento de envío del formulario.
  */
-
 async function handleSavePayment(e) {
     e.preventDefault();
     if (!currentCitaForPayment) return;
 
-    const paymentMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked').value;
-    let detailedPaymentMethod = e.target.dataset.method || paymentMethod;
+    const paymentMethod = paymentForm.querySelector('input[name="metodo_pago"]:checked')?.value;
+    if(!paymentMethod) {
+        alert("Por favor, selecciona un método de pago.");
+        return;
+    }
 
     savePaymentBtn.disabled = true;
-    payCashUsdBtn.disabled = true;
-    payCashVesBtn.disabled = true;
-    
-    const spinner = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-    if (savePaymentBtn.style.display !== 'none') savePaymentBtn.innerHTML = spinner;
-    
+    savePaymentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     paymentStatusMessage.textContent = 'Procesando...';
     paymentStatusMessage.className = 'status-message processing';
 
-    // --- INICIO DE LA NUEVA LÓGICA ---
-    const esDeuda = (detailedPaymentMethod === 'no_pagado');
+    const esDeuda = (paymentMethod === 'no_pagado');
     const fechaLimite = esDeuda ? deadlineInput.value : null;
     
-     // --- CAMBIO CLAVE: Asignar el monto a la columna correcta ---
+    // --- INICIO DE LA NUEVA LÓGICA DE REGISTRO DE PAGO ---
     let monto_usd = 0;
     let monto_ves = 0;
     const montoCita = currentCitaForPayment.monto || 0;
     const monedaCita = currentCitaForPayment.moneda || 'USD';
 
+    // Solo se registra el monto si no es una deuda
     if (!esDeuda) {
         if (monedaCita === 'USD') {
             monto_usd = montoCita;
@@ -135,18 +131,16 @@ async function handleSavePayment(e) {
             monto_ves = montoCita;
         }
     }
-    // --- FIN DEL CAMBIO ---
-    // El objeto que se enviará a la base de datos
+    
     const updateData = {
         estado: 'completada',
-        metodo_pago: detailedPaymentMethod,
+        metodo_pago: paymentMethod,
         estado_pago: esDeuda ? 'pendiente' : 'pagado',
         fecha_limite_pago: fechaLimite,
-        monto_recibido_usd: monto_usd, // <-- NUEVO
-        monto_recibido_ves: monto_ves  // <-- NUEVO
-        // precio_final se mantiene intacto en USD como referencia
+        monto_recibido_usd: monto_usd, // Columna para ingresos en USD
+        monto_recibido_ves: monto_ves  // Columna para ingresos en VES
     };
-    // --- FIN DE LA NUEVA LÓGICA ---
+    // --- FIN DE LA NUEVA LÓGICA DE REGISTRO DE PAGO ---
 
     try {
         const { error } = await supabaseClient
@@ -169,15 +163,9 @@ async function handleSavePayment(e) {
         console.error('Error al guardar el pago:', error);
         paymentStatusMessage.textContent = `Error: ${error.message}`;
         paymentStatusMessage.className = 'status-message error';
-        resetButtons();
+        savePaymentBtn.disabled = false;
+        handlePaymentMethodChange(); // Restaura el texto original del botón
     }
-}
-
-function resetButtons() {
-    savePaymentBtn.disabled = false;
-    payCashUsdBtn.disabled = false;
-    payCashVesBtn.disabled = false;
-    handlePaymentMethodChange(); // Restaura el texto original de los botones
 }
 
 /**
@@ -186,25 +174,13 @@ function resetButtons() {
 function setupPaymentModalListeners() {
     if (!paymentForm) return;
 
-    // El submit del formulario ahora es manejado por los botones directamente
     paymentForm.addEventListener('submit', handleSavePayment);
-
-    // Los botones de efectivo ahora disparan el guardado
-    payCashUsdBtn.addEventListener('click', (e) => {
-        e.target.dataset.method = 'efectivo_usd';
-        handleSavePayment(e);
-    });
-    payCashVesBtn.addEventListener('click', (e) => {
-        e.target.dataset.method = 'efectivo_ves';
-        handleSavePayment(e);
-    });
 
     if (paymentCloseBtn) paymentCloseBtn.addEventListener('click', closePaymentModal);
     if (paymentOverlay) paymentOverlay.addEventListener('click', (e) => {
         if (e.target === paymentOverlay) closePaymentModal();
     });
 
-    // Listener para mostrar/ocultar campos según el método de pago
     paymentForm.querySelectorAll('input[name="metodo_pago"]').forEach(radio => {
         radio.addEventListener('change', handlePaymentMethodChange);
     });
