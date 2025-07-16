@@ -1007,75 +1007,7 @@ async function saveCurrencySettings() {
 // js/barberProfile.js
 
 async function loadDashboardStats() {
-    const loadingStatus = document.getElementById('dashboard-loading-status');
-    const statsGrid = document.getElementById('dashboard-stats-grid');
-    const incomeUsdEl = document.getElementById('stat-monthly-income-usd');
-    const incomeVesEl = document.getElementById('stat-monthly-income-ves');
 
-    if (!loadingStatus || !statsGrid || !currentUserId || !incomeUsdEl || !incomeVesEl) {
-        return; // Salir si faltan elementos
-    }
-
-    loadingStatus.style.display = 'block';
-    statsGrid.style.display = 'none';
-
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-
-        // --- CAMBIO CLAVE: Dos consultas de ingresos, una para cada moneda ---
-        const [
-            { count: activeBookings, error: bookingsError },
-            { count: totalClients, error: clientsError },
-            { data: incomeDataUsd, error: incomeErrorUsd },
-            { data: incomeDataVes, error: incomeErrorVes }
-        ] = await Promise.all([
-            // Consultas de reservas y clientes (sin cambios)
-            supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', today),
-            supabaseClient.from('clientes').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId),
-            
-            // Nueva consulta: Sumar solo los ingresos en USD
-            supabaseClient.from('citas').select('monto').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada').eq('estado_pago', 'pagado').eq('moneda', 'USD'),
-            
-            // Nueva consulta: Sumar solo los ingresos en VES
-            supabaseClient.from('citas').select('monto').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada').eq('estado_pago', 'pagado').eq('moneda', 'VES')
-        ]);
-        // --- FIN DEL CAMBIO ---
-
-        // Validar todos los posibles errores
-        if (bookingsError) throw new Error(`Error en reservas: ${bookingsError.message}`);
-        if (clientsError) throw new Error(`Error en clientes: ${clientsError.message}`);
-        if (incomeErrorUsd) throw new Error(`Error en ingresos USD: ${incomeErrorUsd.message}`);
-        if (incomeErrorVes) throw new Error(`Error en ingresos VES: ${incomeErrorVes.message}`);
-
-        // Sumar los totales de cada moneda
-        const monthlyIncomeUsd = (incomeDataUsd || []).reduce((sum, item) => sum + (item.monto || 0), 0);
-        const monthlyIncomeVes = (incomeDataVes || []).reduce((sum, item) => sum + (item.monto || 0), 0);
-        
-        document.getElementById('stat-active-bookings').textContent = activeBookings || 0;
-        document.getElementById('stat-unique-clients').textContent = totalClients || 0;
-
-        // Actualizar las tarjetas de ingresos con los saldos independientes
-        incomeUsdEl.textContent = `USD ${monthlyIncomeUsd.toFixed(2)}`;
-        incomeVesEl.textContent = `VES ${monthlyIncomeVes.toFixed(2)}`;
-        
-        loadingStatus.style.display = 'none';
-        statsGrid.style.display = 'grid';
-
-    } catch (error) {
-        console.error('Error cargando estadísticas:', error);
-        loadingStatus.textContent = 'Error al cargar estadísticas.';
-        statsGrid.style.display = 'grid';
-        document.getElementById('stat-active-bookings').textContent = '-';
-        document.getElementById('stat-unique-clients').textContent = 'Error';
-        
-        // --- INICIO DE LA CORRECCIÓN ---
-        // También se actualiza el bloque catch para usar los IDs correctos
-        if(incomeUsdEl) incomeUsdEl.textContent = 'USD --';
-        if(incomeVesEl) incomeVesEl.textContent = 'Bs --';
-        // --- FIN DE LA CORRECCIÓN ---
-    }
-}
 
 
 // ===== FUNCIONES PARA REPORTES =====
@@ -1187,6 +1119,32 @@ async function loadReportData(period = 'week') {
             .filter(item => item.estado_pago === 'pagado')
             .reduce((sum, item) => sum + (item.monto || 0), 0);
 
+
+
+// --- NUEVO CÁLCULO DE INGRESOS ---
+        const calculateTotalIncome = (transactions) => {
+            let usd = 0;
+            let ves = 0;
+            (transactions || []).forEach(item => {
+                usd += item.monto_recibido_usd || 0;
+                ves += item.monto_recibido_ves || 0;
+            });
+            return { usd, ves };
+        };
+
+        const currentIncome = calculateTotalIncome(currentTransactionsRes.data);
+        const previousIncome = calculateTotalIncome(previousTransactionsRes.data);
+
+        // Para el gráfico y el porcentaje, unificamos a USD
+        const currentTotalEquivalentUSD = currentIncome.usd + (currentIncome.ves / (currencyManager.finalRate || 1));
+        const previousTotalEquivalentUSD = previousIncome.usd + (previousIncome.ves / (currencyManager.finalRate || 1));
+
+        let incomePercentage = 0;
+        if (previousTotalEquivalentUSD > 0) {
+            incomePercentage = ((currentTotalEquivalentUSD - previousTotalEquivalentUSD) / previousTotalEquivalentUSD) * 100;
+        } else if (currentTotalEquivalentUSD > 0) {
+            incomePercentage = 100;
+        }
         const incomePreviousTotal = (previousIncomeRes.data || []).reduce((sum, item) => sum + (item.monto || 0), 0);
         
         let incomePercentage = 0;
@@ -1214,10 +1172,14 @@ async function loadReportData(period = 'week') {
         
         const reportData = {
             period,
-            income: { total: incomeCurrentTotal, percentage: incomePercentage, data: currentTransactionsRes.data || [] },
-            appointments: { total: appointmentsTotal, percentage: appointmentsPercentage, data: currentAppointmentsRes.data || [] },
-            clients: { total: clientsTotal, percentage: clientsPercentage, data: currentClientsRes.data || [] }
-        };
+            income: { 
+                totalUSD: currentIncome.usd, 
+                totalVES: currentIncome.ves,
+                percentage: incomePercentage, 
+                data: currentTransactionsRes.data || [],
+                // Pasamos el total equivalente para la gráfica
+                totalEquivalentUSD: currentTotalEquivalentUSD
+            },
         
         currentPeriodAppointments = [...(currentTransactionsRes.data || [])];
         renderReportCharts(reportData);
@@ -1237,7 +1199,9 @@ async function loadReportData(period = 'week') {
 }
 
 
-function groupDataForChart(data, period, dateField, mode = 'count', sumField = 'monto') {
+// EN: js/barberProfile.js
+
+function groupDataForChart(data, period, dateField, mode = 'count', sumFieldOrFn = 'monto') {
     const formatLabel = (date, p) => {
         if (p === 'year') return monthsOfYear[date.getMonth()].substring(0, 3);
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -1246,41 +1210,34 @@ function groupDataForChart(data, period, dateField, mode = 'count', sumField = '
     const { current } = getPeriodDates(period);
     const startDate = new Date(current.start + 'T00:00:00');
     const endDate = new Date(current.end + 'T23:59:59');
-    
+
     let groups = {};
     let categories = [];
-    
-    if (period === 'year') {
-        for (let i = 0; i < 12; i++) {
-            const monthName = monthsOfYear[i].substring(0, 3);
-            groups[monthName] = 0;
-            categories.push(monthName);
-        }
-    } else { 
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-            const label = formatLabel(new Date(d), period);
-            if (!groups.hasOwnProperty(label)) {
-                groups[label] = 0;
-                categories.push(label);
-            }
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const label = formatLabel(new Date(d), period);
+        if (!groups.hasOwnProperty(label)) {
+            groups[label] = 0;
+            categories.push(label);
         }
     }
-    
+
     data.forEach(item => {
-        if (mode === 'sum' && item.estado_pago !== 'pagado') {
-            return;
-        }
         const date = new Date(item[dateField]);
         const label = formatLabel(date, period);
         if (groups.hasOwnProperty(label)) {
             if (mode === 'sum') {
-                groups[label] += item[sumField] || 0;
+                // Si sumFieldOrFn es una función, la usamos, si no, usamos el campo
+                const valueToAdd = typeof sumFieldOrFn === 'function' 
+                    ? sumFieldOrFn(item)
+                    : (item[sumFieldOrFn] || 0);
+                groups[label] += valueToAdd;
             } else {
                 groups[label] += 1;
             }
         }
     });
-    
+
     return { series: Object.values(groups), categories };
 }
 
@@ -1290,30 +1247,36 @@ function renderReportCharts(data) {
         console.error("Módulo ReportCharts no encontrado.");
         return;
     }
-    
-    const incomeChartData = groupDataForChart(data.income.data, data.period, 'fecha_cita', 'sum', 'monto');
-// 1. Renderizamos el GRÁFICO sin que actualice el texto
-ReportCharts.renderChart({
-    chartId: 'income-area-chart',
-    series: incomeChartData.series,
-    categories: incomeChartData.categories,
-    themeColor: 'var(--success-color)',
-    // Se eliminan las propiedades que actualizaban el texto
-});
 
-// 2. Actualizamos el texto de las tarjetas y el porcentaje manualmente
-const incomeStatUsd = document.getElementById('income-stat-value');
-const incomeStatVes = document.getElementById('income-stat-value-ves');
-const incomePercentageEl = document.getElementById('income-percentage');
+    // El gráfico de ingresos se renderiza con los datos unificados en USD para mostrar la tendencia
+    const incomeChartData = groupDataForChart(
+        data.income.data, 
+        data.period, 
+        'fecha_cita', 
+        'sum', 
+        // Función personalizada para sumar el equivalente en USD
+        (item) => (item.monto_recibido_usd || 0) + ((item.monto_recibido_ves || 0) / (currencyManager.finalRate || 1))
+    );
 
-if(incomeStatUsd) incomeStatUsd.textContent = `$${data.income.total.toFixed(2)}`;
-if(incomeStatVes) incomeStatVes.textContent = currencyManager.getSecondaryValueText(data.income.total);
+    ReportCharts.renderChart({
+        chartId: 'income-area-chart',
+        series: incomeChartData.series,
+        categories: incomeChartData.categories,
+        themeColor: 'var(--success-color)',
+    });
 
-// Esto actualiza el indicador de porcentaje (+-%)
-ReportCharts.updateChartInfo({
-    percentage: data.income.percentage,
-    percentageElId: 'income-percentage',
-});
+    // PERO: Actualizamos el texto de las tarjetas con los valores REALES y separados
+    const incomeStatUsd = document.getElementById('income-stat-value');
+    const incomeStatVes = document.getElementById('income-stat-value-ves');
+
+    if(incomeStatUsd) incomeStatUsd.textContent = `USD ${data.income.totalUSD.toFixed(2)}`;
+    if(incomeStatVes) incomeStatVes.textContent = `VES ${data.income.totalVES.toFixed(2)}`;
+
+    ReportCharts.updateChartInfo({
+        percentage: data.income.percentage,
+        percentageElId: 'income-percentage',
+    });
+
 
     const appointmentsChartData = groupDataForChart(data.appointments.data, data.period, 'fecha_cita', 'count');
     ReportCharts.renderChart({
@@ -1860,6 +1823,33 @@ if (toggleReportBtn && reportUsdEl && reportVesEl) {
 
     // --- FIN DEL CÓDIGO A AÑADIR ---
     
+    // EN: js/barberProfile.js -> dentro de setupEventListeners()
+
+// Listener para el botón de cambio de moneda en DASHBOARD
+const toggleDashboardBtn = document.getElementById('toggle-income-currency-btn');
+const dashboardUsdEl = document.getElementById('stat-monthly-income-usd');
+const dashboardVesEl = document.getElementById('stat-monthly-income-ves');
+
+if (toggleDashboardBtn && dashboardUsdEl && dashboardVesEl) {
+    toggleDashboardBtn.addEventListener('click', () => {
+        const isUsdVisible = dashboardUsdEl.style.display === 'block';
+        dashboardUsdEl.style.display = isUsdVisible ? 'none' : 'block';
+        dashboardVesEl.style.display = isUsdVisible ? 'block' : 'none';
+    });
+}
+
+// Listener para el botón de cambio de moneda en REPORTES
+const toggleReportBtn = document.getElementById('toggle-report-currency-btn');
+const reportUsdEl = document.getElementById('income-stat-value');
+const reportVesEl = document.getElementById('income-stat-value-ves');
+
+if (toggleReportBtn && reportUsdEl && reportVesEl) {
+    toggleReportBtn.addEventListener('click', () => {
+        const isUsdVisible = reportUsdEl.style.display === 'block';
+        reportUsdEl.style.display = isUsdVisible ? 'none' : 'block';
+        reportVesEl.style.display = isUsdVisible ? 'block' : 'none';
+    });
+}
     
 }
 
