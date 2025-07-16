@@ -154,6 +154,17 @@ const walkInStatus = document.getElementById('walk-in-status');
 // --- FIN: Elementos del DOM para el nuevo modal ---
 
 
+// js/barberProfile.js
+
+// ... (después de las otras variables del DOM)
+const deleteHistoryBtn = document.getElementById('delete-history-btn');
+const passwordConfirmOverlay = document.getElementById('password-confirm-modal-overlay');
+const passwordConfirmCloseBtn = document.getElementById('password-confirm-close-btn');
+const passwordConfirmActionBtn = document.getElementById('password-confirm-action-btn');
+const passwordConfirmInput = document.getElementById('password-confirm-input');
+const passwordConfirmStatus = document.getElementById('password-confirm-status');
+
+
 // --- INICIALIZACIÓN ---
 async function initProfileModule() {
     if (typeof supabaseClient === 'undefined') {
@@ -173,6 +184,9 @@ async function initProfileModule() {
     setupCalendarActionModal();
         setupReminderModalListeners(); // <-- AÑADIR ESTA LÍNEA
         setupAlertModalListeners(); // <-- AÑADIR ESTA LÍNEA
+        
+        setupPasswordConfirmModalListeners(); // <-- ¡AÑADE ESTA LÍNEA AQUÍ!
+
 
    
 startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
@@ -909,6 +923,100 @@ async function markAppointmentAsNoShow(citaId, citaDate) {
 }
 
 
+// Pega estas funciones en js/barberProfile.js
+
+/**
+ * Abre el modal para que el usuario ingrese su contraseña antes de una acción peligrosa.
+ */
+function openPasswordConfirmModal() {
+    if (!passwordConfirmOverlay) return;
+    // Resetea el estado del modal cada vez que se abre
+    passwordConfirmInput.value = '';
+    passwordConfirmStatus.textContent = '';
+    passwordConfirmStatus.className = 'status-message';
+    passwordConfirmActionBtn.disabled = false;
+    passwordConfirmActionBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar y Borrar';
+    passwordConfirmOverlay.classList.add('active');
+}
+
+/**
+ * Cierra el modal de confirmación de contraseña.
+ */
+function closePasswordConfirmModal() {
+    if (passwordConfirmOverlay) {
+        passwordConfirmOverlay.classList.remove('active');
+    }
+}
+
+/**
+ * Maneja el proceso de borrado de datos históricos después de verificar la contraseña.
+ */
+async function handleConfirmDataDeletion() {
+    const password = passwordConfirmInput.value;
+    if (!password) {
+        passwordConfirmStatus.textContent = 'Por favor, introduce tu contraseña.';
+        passwordConfirmStatus.className = 'status-message error';
+        return;
+    }
+
+    passwordConfirmActionBtn.disabled = true;
+    passwordConfirmActionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+    passwordConfirmStatus.textContent = 'Verificando credenciales...';
+    passwordConfirmStatus.className = 'status-message';
+
+    try {
+        // 1. Obtener el email del usuario actual para la re-autenticación
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user || !user.email) {
+            throw new Error("No se pudo obtener la información del usuario actual.");
+        }
+
+        // 2. Verificar la contraseña. Este es el paso de seguridad CRÍTICO.
+        const { error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: user.email,
+            password: password,
+        });
+
+        if (authError) {
+            throw new Error("Contraseña incorrecta. Inténtalo de nuevo.");
+        }
+
+        // 3. Si la contraseña es correcta, proceder con el borrado
+        passwordConfirmStatus.textContent = 'Contraseña correcta. Borrando historial...';
+        
+        // Borramos en paralelo para más eficiencia
+        const [citasError, notificacionesError] = await Promise.all([
+            supabaseClient.from('citas').delete().eq('barbero_id', currentUserId),
+            supabaseClient.from('notificaciones').delete().eq('barbero_id', currentUserId)
+        ]);
+
+        if (citasError.error || notificacionesError.error) {
+            console.error("Error en borrado:", { citasError, notificacionesError });
+            throw new Error("Ocurrió un error al borrar los datos.");
+        }
+
+        // 4. Éxito
+        passwordConfirmStatus.textContent = '¡Historial borrado con éxito!';
+        passwordConfirmStatus.className = 'status-message success';
+
+        // Disparamos un evento para que todos los módulos se actualicen
+        document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
+        
+        setTimeout(() => {
+            closePasswordConfirmModal();
+            alert("Todo tu historial de citas y notificaciones ha sido eliminado.");
+        }, 2000);
+
+    } catch (error) {
+        console.error("Error en el proceso de borrado:", error);
+        passwordConfirmStatus.textContent = error.message;
+        passwordConfirmStatus.className = 'status-message error';
+        passwordConfirmActionBtn.disabled = false;
+        passwordConfirmActionBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar y Borrar';
+    }
+}
+
+
 // --- LÓGICA DE NAVEGACIÓN Y MENÚS ---
 
 
@@ -968,6 +1076,29 @@ function setupDashboardNavigation() {
         });
     });
 }
+
+// Pega esta función en js/barberProfile.js, junto a las otras de "setup"
+
+function setupPasswordConfirmModalListeners() {
+    if (deleteHistoryBtn) {
+        deleteHistoryBtn.addEventListener('click', openPasswordConfirmModal);
+    }
+    if (passwordConfirmOverlay) {
+        // Cierra el modal si se hace clic fuera del contenido
+        passwordConfirmOverlay.addEventListener('click', (e) => {
+            if (e.target === passwordConfirmOverlay) closePasswordConfirmModal();
+        });
+    }
+    if (passwordConfirmCloseBtn) {
+        passwordConfirmCloseBtn.addEventListener('click', closePasswordConfirmModal);
+    }
+    if (passwordConfirmActionBtn) {
+        passwordConfirmActionBtn.addEventListener('click', handleConfirmDataDeletion);
+    }
+}
+
+
+
 function setupMobileMenu() {
     const menuToggle = document.querySelector('.mobile-menu-toggle');
     const menu = document.querySelector('.dashboard-menu');
