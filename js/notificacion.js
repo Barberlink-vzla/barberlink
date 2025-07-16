@@ -70,53 +70,52 @@ document.addEventListener('DOMContentLoaded', () => {
         renderNotifications();
     }
 
-    function renderNotifications() {
-        const unreadCount = allNotifications.filter(n => !n.leido).length;
-        notificationCounts.forEach(el => {
-            el.textContent = unreadCount;
-            el.style.display = unreadCount > 0 ? 'flex' : 'none';
-        });
+  function renderNotifications() {
+  const unreadCount = allNotifications.filter(n => !n.leido).length;
+  notificationCounts.forEach(el => {
+    el.textContent = unreadCount;
+    el.style.display = unreadCount > 0 ? 'flex' : 'none';
+  });
 
-        notificationLists.forEach(list => {
-            if (allNotifications.length === 0) {
-                list.innerHTML = '<li class="notification-item no-notifications">No tienes notificaciones.</li>';
-                return;
-            }
-            
-            list.innerHTML = allNotifications.map((n, index) => {
-                const timeAgo = getTimeAgo(new Date(n.created_at));
-                const isUnread = !n.leido ? 'unread' : '';
-                const icon = getIconForType(n.tipo);
-                
-                // =========== INICIO DE LA MEJORA ===========
-                // Construimos el mensaje incluyendo el tipo de servicio si existe
-                let message = n.mensaje || 'Notificación sin mensaje.';
-                if (n.cita && n.cita.tipo_servicio) {
-                    const tipoServicioTexto = n.cita.tipo_servicio === 'domicilio' ? ' (A Domicilio)' : ' (En Estudio)';
-                    // Insertamos el tipo de servicio en el mensaje
-                    if (message.includes("ha reservado")) {
-                        message = message.replace("ha reservado", `ha reservado ${tipoServicioTexto}`);
-                    } else {
-                        message += tipoServicioTexto;
-                    }
-                }
-                // ============ FIN DE LA MEJORA ============
-
-                return `
-                    <li class="notification-item ${isUnread}">
-                        <a href="#" class="notification-link" data-index="${index}">
-                            <i class="${icon}"></i>
-                            <div>
-                                <p>${message}</p>
-                                <small>${timeAgo}</small>
-                            </div>
-                        </a>
-                    </li>
-                `;
-            }).join('');
-        });
+  notificationLists.forEach(list => {
+    if (allNotifications.length === 0) {
+      list.innerHTML = '<li class="notification-item no-notifications">No tienes notificaciones.</li>';
+      return;
     }
 
+    list.innerHTML = allNotifications.map((n, index) => {
+      const timeAgo = getTimeAgo(new Date(n.created_at));
+      const isUnread = !n.leido ? 'unread' : '';
+      const icon = getIconForType(n.tipo);
+
+      let message = n.mensaje || 'Notificación sin mensaje.';
+      if (n.cita && n.cita.tipo_servicio) {
+        const tipoServicioTexto = n.cita.tipo_servicio === 'domicilio' ? ' (A Domicilio)' : ' (En Estudio)';
+        message += tipoServicioTexto;
+      }
+
+      return `
+        <li class="notification-item ${isUnread}" data-id="${n.id}">
+          <div class="notification-content">
+            <a href="#" class="notification-link" data-index="${index}">
+              <i class="${icon}"></i>
+              <div>
+                <p>${message}</p>
+                <small>${timeAgo}</small>
+              </div>
+            </a>
+          </div>
+          <div class="delete-action" data-id="${n.id}">
+            <i class="fas fa-trash"></i>
+          </div>
+        </li>
+      `;
+    }).join('');
+
+    // Agregar eventos de deslizar y borrar
+    setupSwipeToDelete();
+  });
+}
     // --- Lógica Realtime ---
     // En /js/notificacion.js
 
@@ -292,3 +291,76 @@ function setupRealtimeListener() {
     // --- Iniciar ---
     initNotifications();
 });
+
+/**
+ * Configura el deslizamiento y borrado de notificaciones
+ */
+function setupSwipeToDelete() {
+  const notificationItems = document.querySelectorAll('.notification-item');
+
+  notificationItems.forEach(item => {
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+
+    item.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isSwiping = true;
+    });
+
+    item.addEventListener('touchmove', (e) => {
+      if (!isSwiping) return;
+      currentX = e.touches[0].clientX;
+      const diff = currentX - startX;
+
+      if (diff < -50) {
+        item.classList.add('swiped');
+      } else {
+        item.classList.remove('swiped');
+      }
+    });
+
+    item.addEventListener('touchend', async () => {
+      if (item.classList.contains('swiped')) {
+        const notificationId = item.dataset.id;
+        await deleteNotification(notificationId);
+      }
+    });
+
+    // Click en el botón de borrar
+    const deleteBtn = item.querySelector('.delete-action');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const notificationId = e.target.closest('.delete-action').dataset.id;
+        await deleteNotification(notificationId);
+      });
+    }
+  });
+}
+
+/**
+ * Borra permanentemente una notificación de la base de datos
+ */
+async function deleteNotification(notificationId) {
+  if (!confirm('¿Estás seguro de que quieres borrar esta notificación permanentemente?')) return;
+
+  const { error } = await supabaseClient
+    .from('notificaciones')
+    .delete()
+    .eq('id', notificationId);
+
+  if (error) {
+    console.error('Error al borrar notificación:', error);
+    alert('No se pudo borrar la notificación.');
+    return;
+  }
+
+  // Actualizar la lista local y renderizar
+  allNotifications = allNotifications.filter(n => n.id !== notificationId);
+  renderNotifications();
+  showToastNotification({
+    mensaje: 'Notificación eliminada',
+    tipo: 'default'
+  });
+}
