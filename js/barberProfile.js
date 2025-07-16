@@ -1066,7 +1066,7 @@ async function loadDashboardStats() {
         loadingStatus.textContent = 'Error al cargar estadísticas.';
         loadingStatus.style.color = 'var(--danger-color)';
     }
-} // <-- ¡ESTA ES LA LLAVE DE CIERRE QUE FALTABA!
+    } 
 
 
 
