@@ -1066,13 +1066,14 @@ function getPeriodDates(period) {
 
 
 
+// EN: js/barberProfile.js
+
 async function loadReportData(period = 'week') {
     const loadingStatus = document.getElementById('report-loading-status');
     const reportGrid = document.getElementById('report-stats-grid');
     const transactionListContainer = document.querySelector('.transaction-list-container');
     const transactionListEl = document.createElement('div');
     transactionListEl.id = 'transaction-list';
-
 
     if (!loadingStatus || !reportGrid || !transactionListContainer || !currentUserId) return;
 
@@ -1087,41 +1088,45 @@ async function loadReportData(period = 'week') {
     try {
         const { current, previous } = getPeriodDates(period);
 
+        // Se mantienen las consultas como las tenías
         const [
             currentTransactionsRes, 
-            previousIncomeRes,
+            previousTransactionsRes, // Esta consulta ya la tenías bien para los ingresos
             currentAppointmentsRes, 
             previousAppointmentsRes,
             currentClientsRes, 
             previousClientsRes
         ] = await Promise.all([
+            // Consulta para transacciones/ingresos del periodo actual
             supabaseClient.from('citas')
-                .select('*, barbero_servicios(*, servicios_maestro(*))')
+                .select('*, barbero_servicios(*, servicios_maestro(*))') // Trae todo para la lista
                 .eq('barbero_id', currentUserId)
                 .gte('fecha_cita', current.start)
                 .lte('fecha_cita', current.end)
-                .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.IN_PROGRESS, APPOINTMENT_STATUS.CONFIRMED]),
+                .eq('estado', 'completada'),
             
-            supabaseClient.from('citas').select('monto').eq('barbero_id', currentUserId).gte('fecha_cita', previous.start).lte('fecha_cita', previous.end).eq('estado', APPOINTMENT_STATUS.COMPLETED).eq('estado_pago', 'pagado'),
+            // Consulta para transacciones/ingresos del periodo anterior
+            supabaseClient.from('citas')
+                .select('monto_recibido_usd, monto_recibido_ves') // Solo los montos
+                .eq('barbero_id', currentUserId)
+                .gte('fecha_cita', previous.start)
+                .lte('fecha_cita', previous.end)
+                .eq('estado', 'completada'),
             
-            supabaseClient.from('citas').select('fecha_cita', { count: 'exact' }).eq('barbero_id', currentUserId).gte('fecha_cita', current.start).lte('fecha_cita', current.end)
-                .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.IN_PROGRESS, APPOINTMENT_STATUS.CONFIRMED]),
-            
-            supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', previous.start).lte('fecha_cita', previous.end).in('estado', [APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.IN_PROGRESS, APPOINTMENT_STATUS.CONFIRMED]),
+            // Consultas para citas y clientes (estas se mantienen)
+            supabaseClient.from('citas').select('fecha_cita', { count: 'exact' }).eq('barbero_id', currentUserId).gte('fecha_cita', current.start).lte('fecha_cita', current.end).in('estado', ['completada', 'en proceso', 'confirmada']),
+            supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', previous.start).lte('fecha_cita', previous.end).in('estado', ['completada', 'en proceso', 'confirmada']),
             supabaseClient.from('clientes').select('created_at', { count: 'exact' }).eq('barbero_id', currentUserId).gte('created_at', current.start + 'T00:00:00').lte('created_at', current.end + 'T23:59:59'),
             supabaseClient.from('clientes').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('created_at', previous.start + 'T00:00:00').lte('created_at', previous.end + 'T23:59:59'),
         ]);
 
-        const errors = [currentTransactionsRes, previousIncomeRes, currentAppointmentsRes, previousAppointmentsRes, currentClientsRes, previousClientsRes].map(r => r.error).filter(Boolean);
+        const errors = [currentTransactionsRes, previousTransactionsRes, currentAppointmentsRes, previousAppointmentsRes, currentClientsRes, previousClientsRes].map(r => r.error).filter(Boolean);
         if (errors.length > 0) throw new Error(errors.map(e => e.message).join(', '));
         
-        const incomeCurrentTotal = (currentTransactionsRes.data || [])
-            .filter(item => item.estado_pago === 'pagado')
-            .reduce((sum, item) => sum + (item.monto || 0), 0);
-
-
-
-// --- NUEVO CÁLCULO DE INGRESOS ---
+        // --- INICIO DE LA CORRECCIÓN LÓGICA ---
+        // Se declara una sola vez y se usa para todos los cálculos.
+        
+        // 1. Cálculo de ingresos con ambas monedas
         const calculateTotalIncome = (transactions) => {
             let usd = 0;
             let ves = 0;
@@ -1135,25 +1140,20 @@ async function loadReportData(period = 'week') {
         const currentIncome = calculateTotalIncome(currentTransactionsRes.data);
         const previousIncome = calculateTotalIncome(previousTransactionsRes.data);
 
-        // Para el gráfico y el porcentaje, unificamos a USD
+        // 2. Cálculo del porcentaje de ingresos unificando a USD (solo para comparación)
         const currentTotalEquivalentUSD = currentIncome.usd + (currentIncome.ves / (currencyManager.finalRate || 1));
         const previousTotalEquivalentUSD = previousIncome.usd + (previousIncome.ves / (currencyManager.finalRate || 1));
 
-        let incomePercentage = 0;
+        let incomePercentage = 0; // <-- ÚNICA DECLARACIÓN DE LA VARIABLE
         if (previousTotalEquivalentUSD > 0) {
             incomePercentage = ((currentTotalEquivalentUSD - previousTotalEquivalentUSD) / previousTotalEquivalentUSD) * 100;
         } else if (currentTotalEquivalentUSD > 0) {
             incomePercentage = 100;
         }
-        const incomePreviousTotal = (previousIncomeRes.data || []).reduce((sum, item) => sum + (item.monto || 0), 0);
         
-        let incomePercentage = 0;
-        if (incomePreviousTotal > 0) {
-            incomePercentage = ((incomeCurrentTotal - incomePreviousTotal) / incomePreviousTotal) * 100;
-        } else if (incomeCurrentTotal > 0) {
-            incomePercentage = 100;
-        }
+        // --- SE ELIMINAN LAS DECLARACIONES REDUNDANTES DE AQUÍ ---
 
+        // 3. Cálculo de citas y clientes (sin cambios)
         const appointmentsTotal = currentAppointmentsRes.count || 0;
         let appointmentsPercentage = 0;
         if (previousAppointmentsRes.count > 0) {
@@ -1170,16 +1170,27 @@ async function loadReportData(period = 'week') {
             clientsPercentage = 100;
         }
         
+        // 4. Se construye el objeto final de datos para los reportes
         const reportData = {
             period,
             income: { 
                 totalUSD: currentIncome.usd, 
                 totalVES: currentIncome.ves,
                 percentage: incomePercentage, 
-                data: currentTransactionsRes.data || [],
-                // Pasamos el total equivalente para la gráfica
-                totalEquivalentUSD: currentTotalEquivalentUSD
+                data: currentTransactionsRes.data || []
             },
+            appointments: {
+                total: appointmentsTotal,
+                percentage: appointmentsPercentage,
+                data: currentAppointmentsRes.data || []
+            },
+            clients: {
+                total: clientsTotal,
+                percentage: clientsPercentage,
+                data: currentClientsRes.data || []
+            }
+        };
+        // --- FIN DE LA CORRECCIÓN LÓGICA ---
         
         currentPeriodAppointments = [...(currentTransactionsRes.data || [])];
         renderReportCharts(reportData);
