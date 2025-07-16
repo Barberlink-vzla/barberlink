@@ -540,7 +540,7 @@ async function handleWalkInSubmit(e) {
             estado: APPOINTMENT_STATUS.IN_PROGRESS, // Se marca como "en proceso" directamente
             metodo_pago: null,
             estado_pago: 'pendiente',
-            precio_final: serviceData.precio
+            monto: serviceData.precio
         };
 
         const { data: insertedCita, error: citaError } = await supabaseClient
@@ -1170,7 +1170,7 @@ async function loadReportData(period = 'week') {
                 .lte('fecha_cita', current.end)
                 .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.IN_PROGRESS, APPOINTMENT_STATUS.CONFIRMED]),
             
-            supabaseClient.from('citas').select('precio_final').eq('barbero_id', currentUserId).gte('fecha_cita', previous.start).lte('fecha_cita', previous.end).eq('estado', APPOINTMENT_STATUS.COMPLETED).eq('estado_pago', 'pagado'),
+            supabaseClient.from('citas').select('monto').eq('barbero_id', currentUserId).gte('fecha_cita', previous.start).lte('fecha_cita', previous.end).eq('estado', APPOINTMENT_STATUS.COMPLETED).eq('estado_pago', 'pagado'),
             
             supabaseClient.from('citas').select('fecha_cita', { count: 'exact' }).eq('barbero_id', currentUserId).gte('fecha_cita', current.start).lte('fecha_cita', current.end)
                 .in('estado', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.IN_PROGRESS, APPOINTMENT_STATUS.CONFIRMED]),
@@ -1185,9 +1185,9 @@ async function loadReportData(period = 'week') {
         
         const incomeCurrentTotal = (currentTransactionsRes.data || [])
             .filter(item => item.estado_pago === 'pagado')
-            .reduce((sum, item) => sum + (item.precio_final || 0), 0);
+            .reduce((sum, item) => sum + (item.monto || 0), 0);
 
-        const incomePreviousTotal = (previousIncomeRes.data || []).reduce((sum, item) => sum + (item.precio_final || 0), 0);
+        const incomePreviousTotal = (previousIncomeRes.data || []).reduce((sum, item) => sum + (item.monto || 0), 0);
         
         let incomePercentage = 0;
         if (incomePreviousTotal > 0) {
@@ -1237,7 +1237,7 @@ async function loadReportData(period = 'week') {
 }
 
 
-function groupDataForChart(data, period, dateField, mode = 'count', sumField = 'precio_final') {
+function groupDataForChart(data, period, dateField, mode = 'count', sumField = 'monto') {
     const formatLabel = (date, p) => {
         if (p === 'year') return monthsOfYear[date.getMonth()].substring(0, 3);
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -1291,7 +1291,7 @@ function renderReportCharts(data) {
         return;
     }
     
-    const incomeChartData = groupDataForChart(data.income.data, data.period, 'fecha_cita', 'sum', 'precio_final');
+    const incomeChartData = groupDataForChart(data.income.data, data.period, 'fecha_cita', 'sum', 'monto');
 // 1. Renderizamos el GRÁFICO sin que actualice el texto
 ReportCharts.renderChart({
     chartId: 'income-area-chart',
@@ -1360,8 +1360,8 @@ function renderTransactionList(appointmentsToRender) {
         const isDebt = item.estado_pago === 'pendiente' || (item.estado === 'pendiente' && item.estado_pago !== 'pagado');
         
         const amountDisplay = isDebt 
-               ? `- ${currencyManager.formatPrice(item.precio_final || 0)}`  
-               :`+ ${currencyManager.formatPrice(item.precio_final || 0)}`;
+               ? `- ${currencyManager.formatPrice(item.monto || 0)}`  
+               :`+ ${currencyManager.formatPrice(item.monto || 0)}`;
 
         const itemClass = isDebt ? 'transaction-item is-debt' : 'transaction-item';
 
