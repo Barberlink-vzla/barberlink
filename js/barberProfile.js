@@ -1758,6 +1758,8 @@ async function navigateToDateFromNotification(dateString) {
         if (loader) loader.classList.remove('active');
     }
 }
+// EN: js/barberProfile.js
+
 function setupEventListeners() {
     if (logoutProfileButton) logoutProfileButton.addEventListener('click', logout);
     if (saveAllButton) saveAllButton.addEventListener('click', saveAllChanges);
@@ -1814,54 +1816,35 @@ function setupEventListeners() {
         });
     }
     
-      // --- INICIO DEL CÓDIGO A AÑADIR ---
+    // --- INICIO DEL BLOQUE DE CÓDIGO CORRECTO (SIN DUPLICADOS) ---
 
-   // js/barberProfile.js -> dentro de setupEventListeners()
+    // Listener para el botón de cambio de moneda en DASHBOARD
+    const toggleDashboardBtn = document.getElementById('toggle-income-currency-btn');
+    const dashboardUsdEl = document.getElementById('stat-monthly-income-usd');
+    const dashboardVesEl = document.getElementById('stat-monthly-income-ves');
 
-// Listener para el botón de cambio de moneda en REPORTES
-const toggleReportBtn = document.getElementById('toggle-report-currency-btn');
-const reportUsdEl = document.getElementById('income-stat-value');
-const reportVesEl = document.getElementById('income-stat-value-ves');
-
-if (toggleReportBtn && reportUsdEl && reportVesEl) {
-    toggleReportBtn.addEventListener('click', () => {
-        const isUsdVisible = reportUsdEl.style.display === 'block';
-        
-        reportUsdEl.style.display = isUsdVisible ? 'none' : 'block';
-        reportVesEl.style.display = isUsdVisible ? 'block' : 'none';
-    });
+    if (toggleDashboardBtn && dashboardUsdEl && dashboardVesEl) {
+        toggleDashboardBtn.addEventListener('click', () => {
+            const isUsdVisible = dashboardUsdEl.style.display === 'block';
+            dashboardUsdEl.style.display = isUsdVisible ? 'none' : 'block';
+            dashboardVesEl.style.display = isUsdVisible ? 'block' : 'none';
+        });
     }
 
-    // --- FIN DEL CÓDIGO A AÑADIR ---
+    // Listener para el botón de cambio de moneda en REPORTES
+    const toggleReportBtn = document.getElementById('toggle-report-currency-btn');
+    const reportUsdEl = document.getElementById('income-stat-value');
+    const reportVesEl = document.getElementById('income-stat-value-ves');
+
+    if (toggleReportBtn && reportUsdEl && reportVesEl) {
+        toggleReportBtn.addEventListener('click', () => {
+            const isUsdVisible = reportUsdEl.style.display === 'block';
+            reportUsdEl.style.display = isUsdVisible ? 'none' : 'block';
+            reportVesEl.style.display = isUsdVisible ? 'block' : 'none';
+        });
+    }
     
-    // EN: js/barberProfile.js -> dentro de setupEventListeners()
-
-// Listener para el botón de cambio de moneda en DASHBOARD
-const toggleDashboardBtn = document.getElementById('toggle-income-currency-btn');
-const dashboardUsdEl = document.getElementById('stat-monthly-income-usd');
-const dashboardVesEl = document.getElementById('stat-monthly-income-ves');
-
-if (toggleDashboardBtn && dashboardUsdEl && dashboardVesEl) {
-    toggleDashboardBtn.addEventListener('click', () => {
-        const isUsdVisible = dashboardUsdEl.style.display === 'block';
-        dashboardUsdEl.style.display = isUsdVisible ? 'none' : 'block';
-        dashboardVesEl.style.display = isUsdVisible ? 'block' : 'none';
-    });
-}
-
-// Listener para el botón de cambio de moneda en REPORTES
-const toggleReportBtn = document.getElementById('toggle-report-currency-btn');
-const reportUsdEl = document.getElementById('income-stat-value');
-const reportVesEl = document.getElementById('income-stat-value-ves');
-
-if (toggleReportBtn && reportUsdEl && reportVesEl) {
-    toggleReportBtn.addEventListener('click', () => {
-        const isUsdVisible = reportUsdEl.style.display === 'block';
-        reportUsdEl.style.display = isUsdVisible ? 'none' : 'block';
-        reportVesEl.style.display = isUsdVisible ? 'block' : 'none';
-    });
-}
-    
+    // --- FIN DEL BLOQUE DE CÓDIGO CORRECTO ---
 }
 
 
