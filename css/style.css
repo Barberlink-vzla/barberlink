@@ -2299,3 +2299,45 @@ body.loaded .dashboard-layout {
     opacity: 0;
     visibility: hidden;
 }
+
+/* Estilos para deslizar y borrar notificaciones */
+.notification-item {
+  position: relative;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  touch-action: pan-x;
+}
+
+.notification-item.swiped {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.notification-item .delete-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 80px;
+  background-color: var(--danger-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: width 0.3s ease;
+}
+
+.notification-item .delete-action i {
+  font-size: 1.2em;
+}
+
+/* Swipe to delete - estilo móvil */
+.notification-item {
+  position: relative;
+  transition: transform 0.3s ease-out;
+  touch-action: pan-x;
+  user-select: none;
+}
+
+.notification-item .notification-content {
+  transition: transform 0.3s ease-out;
