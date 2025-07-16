@@ -433,10 +433,6 @@ async function deleteNotification(notificationId) {
   }
 
   // Actualizar la lista local y renderizar
-  allNotifications = allNotifications.filter(n => n.id !== notificationId);
+  window.allNotifications = window.allNotifications.filter(n => n.id !== notificationId);
   renderNotifications();
-  showToastNotification({
-    mensaje: 'Notificación eliminada',
-    tipo: 'default'
-  });
 }
