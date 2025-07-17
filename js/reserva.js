@@ -38,9 +38,8 @@ const currencyManager = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificación inicial de que el cliente de Supabase está disponible.
     if (typeof supabaseClient === 'undefined') {
-        console.error("Reserva Error: supabaseClient no está definido. Asegúrate de que supabaseClient.js se cargue primero.");
+        console.error("Reserva Error: supabaseClient no está definido.");
         document.body.innerHTML = '<h1>Error Crítico de Configuración</h1>';
         return;
     }
@@ -62,9 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBarSteps = document.querySelectorAll('.progress-bar-step');
     
     // Contenedores principales
+    const bookingCover = document.getElementById('booking-cover'); // <-- NUEVO
     const bookingContainer = document.getElementById('booking-container');
     const successMessageContainer = document.getElementById('booking-success-message');
     
+    // Elementos de la portada
+    const coverBarberProfileImg = document.getElementById('cover-barber-profile-img'); // <-- NUEVO
+    const coverBarberName = document.getElementById('cover-barber-name'); // <-- NUEVO
+    const showBookingModalBtn = document.getElementById('show-booking-modal-btn'); // <-- NUEVO
+
     // Modal de selección de tipo de servicio
     const serviceTypeOverlay = document.getElementById('service-type-overlay');
     const serviceTypeButtons = document.querySelectorAll('.service-type-btn');
@@ -79,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // UI y Mensajes
     const barberNameTitle = document.getElementById('barber-name-title');
-    const barberProfileImg = document.getElementById('barber-profile-img');
     const bookingSummary = document.getElementById('booking-summary');
     const statusMessage = document.getElementById('booking-status');
     const whatsappLinkContainer = document.getElementById('whatsapp-link-container');
@@ -98,9 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return id;
     };
 
+    // MODIFICADO: Esta función ahora se llama al presionar el botón de la portada.
     const initServiceTypeModal = () => {
         if (!serviceTypeOverlay) return;
 
+        // Ocultamos la portada y mostramos el modal
+        bookingCover.classList.add('hidden');
         serviceTypeOverlay.classList.add('active');
 
         serviceTypeButtons.forEach(button => {
@@ -110,44 +117,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 serviceTypeOverlay.classList.remove('active');
                 
+                // Mostramos el contenedor del formulario de reserva
                 if (bookingContainer) {
-                    bookingContainer.classList.remove('hidden');
+                    bookingContainer.style.display = 'block';
                 }
                 
+                // Cargamos los servicios correspondientes
                 fetchServicesForBarber();
             });
         });
     };
 
-   // EN: js/reserva.js
-// REEMPLAZA tu función fetchBarberData actual con esta
-
     const fetchBarberData = async () => {
         if (!barberId) return;
 
-        // 1. Añadimos los nuevos campos de moneda a la consulta
         const { data, error } = await supabaseClient
             .from('barberos')
-            .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa') // <-- CAMPOS AÑADIDOS
+            .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa')
             .eq('user_id', barberId)
             .single();
 
         if (error || !data) {
             console.error("Error fetching barber data:", error);
+            coverBarberName.textContent = "Barbero no encontrado";
             barberNameTitle.textContent = "Barbero no encontrado";
             return;
         }
 
         barberData = data;
-
-        // 2. INICIALIZAMOS el gestor de moneda con los datos del barbero
         await currencyManager.init(supabaseClient, barberData);
 
-        // 3. El resto del código continúa como antes
-        barberNameTitle.textContent = `Reservar con ${data.nombre}`;
+        // --- MODIFICADO: Poblamos los datos de la nueva portada ---
+        coverBarberName.textContent = `Barbero: ${data.nombre}`;
         if (data.foto_perfil_url) {
-            barberProfileImg.src = data.foto_perfil_url;
+            coverBarberProfileImg.src = data.foto_perfil_url;
         }
+
+        // También poblamos el título del formulario para cuando se muestre
+        barberNameTitle.textContent = `Reservar con ${data.nombre}`;
     };
     
     const fetchServicesForBarber = async () => {
@@ -199,6 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
             serviceSelect.appendChild(option);
         });
     };
+    
+    // El resto de tus funciones (fetchAvailability, populateTimeSelect, navigateToStep, etc.)
+    // permanecen exactamente iguales, ya que su lógica no se ve afectada.
+    // Solo necesitamos agregar el listener para el nuevo botón.
 
     const fetchAvailability = async (date) => {
         if (!barberId || !date || !selectedService?.duracion_minutos) {
@@ -245,10 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         timeSelect.disabled = false;
     };
-
-    // =================================================================================
-    // NAVEGACIÓN DEL FORMULARIO Y AUTOCOMPLETADO
-    // =================================================================================
+    
     const navigateToStep = (stepNumber) => {
         if (stepNumber > currentStep) {
             if (currentStep === 1 && !serviceSelect.value) { alert("Por favor, selecciona un servicio."); return; }
@@ -266,60 +274,53 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentStep === 4) updateBookingSummary();
     };
     
-// EN: js/reserva.js
+    const updateBookingSummary = () => {
+        if (!selectedService) {
+            bookingSummary.innerHTML = "<p>Error: No se ha seleccionado un servicio.</p>";
+            return;
+        }
 
-const updateBookingSummary = () => {
-    if (!selectedService) {
-        bookingSummary.innerHTML = "<p>Error: No se ha seleccionado un servicio.</p>";
-        return;
-    }
+        const basePriceUSD = selectedService.precio || 0;
+        const serviceName = selectedService.nombre_personalizado || selectedService.nombre || 'Servicio';
+        const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const time = timeSelect.options[timeSelect.selectedIndex].textContent;
+        const clientName = clientSearchInput.value;
+        const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
 
-    // El precio base siempre es en USD desde el servicio seleccionado
-    const basePriceUSD = selectedService.precio || 0;
-    const serviceName = selectedService.nombre_personalizado || selectedService.nombre || 'Servicio';
-    const date = new Date(dateInput.value + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const time = timeSelect.options[timeSelect.selectedIndex].textContent;
-    const clientName = clientSearchInput.value;
-    const serviceLocation = selectedServiceType === 'domicilio' ? 'A Domicilio' : 'En el Estudio';
+        const priceUSDText = `USD ${basePriceUSD.toFixed(2)}`;
+        let priceVESText = 'Calculando...';
+        if (currencyManager.finalRate > 0) {
+            const vesAmount = basePriceUSD * currencyManager.finalRate;
+            priceVESText = `VES ${vesAmount.toFixed(2)}`;
+        }
 
-    // --- INICIO DE LA MEJORA CLAVE ---
-
-    // Precios en ambas monedas
-    const priceUSDText = `USD ${basePriceUSD.toFixed(2)}`;
-    let priceVESText = 'Calculando...';
-    if (currencyManager.finalRate > 0) {
-        const vesAmount = basePriceUSD * currencyManager.finalRate;
-        priceVESText = `VES ${vesAmount.toFixed(2)}`;
-    }
-
-    bookingSummary.innerHTML = `
-        <p><strong>Barbero:</strong> ${barberData.nombre}</p>
-        <p><strong>Modalidad:</strong> ${serviceLocation}</p>
-        <p><strong>Servicio:</strong> ${serviceName}</p>
-        <p><strong>Fecha:</strong> ${date}</p>
-        <p><strong>Hora:</strong> ${time}</p>
-        <p><strong>Cliente:</strong> ${clientName.trim()}</p>
-        
-        <div class="payment-currency-selection">
-            <h4>Selecciona tu Moneda de Pago</h4>
-            <div class="radio-group-summary">
-                <input type="radio" id="currency-usd" name="payment_currency" value="USD" checked>
-                <label for="currency-usd">
-                    <i class="fas fa-dollar-sign"></i> Pagar en Dólares
-                    <span class="price-display">${priceUSDText}</span>
-                </label>
+        bookingSummary.innerHTML = `
+            <p><strong>Barbero:</strong> ${barberData.nombre}</p>
+            <p><strong>Modalidad:</strong> ${serviceLocation}</p>
+            <p><strong>Servicio:</strong> ${serviceName}</p>
+            <p><strong>Fecha:</strong> ${date}</p>
+            <p><strong>Hora:</strong> ${time}</p>
+            <p><strong>Cliente:</strong> ${clientName.trim()}</p>
+            
+            <div class="payment-currency-selection">
+                <h4>Selecciona tu Moneda de Pago</h4>
+                <div class="radio-group-summary">
+                    <input type="radio" id="currency-usd" name="payment_currency" value="USD" checked>
+                    <label for="currency-usd">
+                        <i class="fas fa-dollar-sign"></i> Pagar en Dólares
+                        <span class="price-display">${priceUSDText}</span>
+                    </label>
+                </div>
+                <div class="radio-group-summary">
+                    <input type="radio" id="currency-ves" name="payment_currency" value="VES" ${currencyManager.finalRate <= 0 ? 'disabled' : ''}>
+                    <label for="currency-ves">
+                        <i class="fas fa-money-bill-wave"></i> Pagar en Bolívares
+                        <span class="price-display">${priceVESText}</span>
+                    </label>
+                </div>
             </div>
-            <div class="radio-group-summary">
-                <input type="radio" id="currency-ves" name="payment_currency" value="VES" ${currencyManager.finalRate <= 0 ? 'disabled' : ''}>
-                <label for="currency-ves">
-                    <i class="fas fa-money-bill-wave"></i> Pagar en Bolívares
-                    <span class="price-display">${priceVESText}</span>
-                </label>
-            </div>
-        </div>
-    `;
-    // --- FIN DE LA MEJORA CLAVE ---
-};
+        `;
+    };
 
     const showClientResults = (searchTerm) => {
         clientResultsList.innerHTML = '';
@@ -356,93 +357,84 @@ const updateBookingSummary = () => {
         clientPhoneInput.focus();
     };
 
-    // =================================================================================
-    // LÓGICA DE ENVÍO DE RESERVA
-    // =================================================================================
-   // EN: js/reserva.js
-
-async function handleBookingSubmit(e) {
-    e.preventDefault();
-    if (!selectedService) {
-        alert("Por favor selecciona un servicio antes de continuar.");
-        return;
-    }
-    statusMessage.textContent = 'Procesando tu reserva...';
-    statusMessage.className = 'status-message';
-    const submitButton = form.querySelector('button[type="submit"]');
-    if (submitButton) submitButton.disabled = true;
-
-    try {
-        const startTime = timeSelect.value;
-        const selectedSlot = availableSlots.find(slot => slot.start_time === startTime);
-
-        if (!selectedSlot) {
-            alert("El horario seleccionado ya no está disponible. Por favor, recarga o elige otro.");
-            if (submitButton) submitButton.disabled = false;
+    async function handleBookingSubmit(e) {
+        e.preventDefault();
+        if (!selectedService) {
+            alert("Por favor selecciona un servicio antes de continuar.");
             return;
         }
-        
-        const endTime = selectedSlot.hora_fin || selectedSlot.end_time || selectedSlot.hora_fin_cita;
+        statusMessage.textContent = 'Procesando tu reserva...';
+        statusMessage.className = 'status-message';
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
 
-        if (!endTime) {
-            alert("Error interno: el horario de fin no se pudo determinar. Por favor, selecciona otra hora.");
+        try {
+            const startTime = timeSelect.value;
+            const selectedSlot = availableSlots.find(slot => slot.start_time === startTime);
+
+            if (!selectedSlot) {
+                alert("El horario seleccionado ya no está disponible. Por favor, recarga o elige otro.");
+                if (submitButton) submitButton.disabled = false;
+                return;
+            }
+            
+            const endTime = selectedSlot.hora_fin || selectedSlot.end_time || selectedSlot.hora_fin_cita;
+
+            if (!endTime) {
+                alert("Error interno: el horario de fin no se pudo determinar. Por favor, selecciona otra hora.");
+                if (submitButton) submitButton.disabled = false;
+                return;
+            }
+
+            const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
+            const basePriceUSD = selectedService.precio || 0;
+            let finalAmount = 0;
+
+            if (selectedCurrency === 'USD') {
+                finalAmount = basePriceUSD;
+            } else { // VES
+                finalAmount = basePriceUSD * currencyManager.finalRate;
+            }
+
+            const bookingPayload = {
+                barberId: barberId,
+                clientName: clientSearchInput.value.trim(),
+                clientPhone: clientPhoneInput.value.trim(),
+                serviceId: selectedService.id,
+                bookingDate: dateInput.value,
+                startTime: startTime,
+                endTime: endTime,
+                monto: finalAmount,
+                moneda: selectedCurrency,
+                precio_final: basePriceUSD,
+                serviceType: selectedServiceType,
+                estimatedDuration: selectedService.duracion_minutos
+            };
+
+            const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
+                body: bookingPayload
+            });
+
+            if (functionError) {
+                const errorMessage = functionError.context?.errorMessage || `No se pudo crear la cita: ${functionError.message}`;
+                throw new Error(errorMessage);
+            }
+
+            form.style.display = 'none';
+            progressBarSteps.forEach(s => s.parentElement.style.display = 'none');
+            successMessageContainer.style.display = 'block';
+            statusMessage.textContent = '';
+            generateWhatsAppLink(bookingResult.bookingData);
+
+        } catch (error) {
+            console.error("Error en el proceso de reserva:", error);
+            statusMessage.textContent = `Error: ${error.message}`;
+            statusMessage.className = 'status-message error';
             if (submitButton) submitButton.disabled = false;
-            return;
+            alert(error.message + "\n\nSe recargarán los horarios disponibles.");
+            fetchAvailability(dateInput.value);
         }
-
-        // --- INICIO DE LA NUEVA LÓGICA DE MONEDA ---
-        const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
-        const basePriceUSD = selectedService.precio || 0;
-        let finalAmount = 0;
-
-        if (selectedCurrency === 'USD') {
-            finalAmount = basePriceUSD;
-        } else { // VES
-            finalAmount = basePriceUSD * currencyManager.finalRate;
-        }
-        // --- FIN DE LA NUEVA LÓGICA DE MONEDA ---
-
-        const bookingPayload = {
-            barberId: barberId,
-            clientName: clientSearchInput.value.trim(),
-            clientPhone: clientPhoneInput.value.trim(),
-            serviceId: selectedService.id,
-            bookingDate: dateInput.value,
-            startTime: startTime,
-            endTime: endTime,
-            monto: finalAmount, // <-- El monto en la moneda seleccionada
-            moneda: selectedCurrency, // <-- La moneda seleccionada
-            precio_final: basePriceUSD, // <-- El precio de referencia en USD
-            serviceType: selectedServiceType,
-            estimatedDuration: selectedService.duracion_minutos
-        };
-
-        console.log("bookingPayload enviado a create-booking:", JSON.stringify(bookingPayload, null, 2));
-
-        const { data: bookingResult, error: functionError } = await supabaseClient.functions.invoke('create-booking', {
-            body: bookingPayload
-        });
-
-        if (functionError) {
-            const errorMessage = functionError.context?.errorMessage || `No se pudo crear la cita: ${functionError.message}`;
-            throw new Error(errorMessage);
-        }
-
-        form.style.display = 'none';
-        progressBarSteps.forEach(s => s.parentElement.style.display = 'none');
-        successMessageContainer.style.display = 'block';
-        statusMessage.textContent = '';
-        generateWhatsAppLink(bookingResult.bookingData);
-
-    } catch (error) {
-        console.error("Error en el proceso de reserva:", error);
-        statusMessage.textContent = `Error: ${error.message}`;
-        statusMessage.className = 'status-message error';
-        if (submitButton) submitButton.disabled = false;
-        alert(error.message + "\n\nSe recargarán los horarios disponibles.");
-        fetchAvailability(dateInput.value);
     }
-}
 
     const generateWhatsAppLink = (bookingInfo) => {
         if (!barberData?.telefono) {
@@ -462,10 +454,12 @@ async function handleBookingSubmit(e) {
             </a>`;
     };
 
-    // =================================================================================
-    // LISTENERS DE EVENTOS
-    // =================================================================================
+    // --- LISTENERS DE EVENTOS ---
     form.addEventListener('submit', handleBookingSubmit);
+    
+    // --- NUEVO: Listener para el botón de la portada ---
+    showBookingModalBtn.addEventListener('click', initServiceTypeModal);
+
     document.getElementById('next-step-1')?.addEventListener('click', () => navigateToStep(2));
     document.getElementById('prev-step-2')?.addEventListener('click', () => navigateToStep(1));
     document.getElementById('next-step-2')?.addEventListener('click', () => navigateToStep(3));
@@ -510,7 +504,7 @@ async function handleBookingSubmit(e) {
     // --- CARGA INICIAL ---
     barberId = getBarberIdFromURL();
     if(barberId) {
-        initServiceTypeModal();
+        // En lugar de llamar al modal, ahora solo cargamos los datos para la portada
         fetchBarberData();
     }
 });
