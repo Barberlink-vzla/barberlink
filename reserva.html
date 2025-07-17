@@ -8,102 +8,217 @@
     <link rel="stylesheet" href="css/style.css">
 
     <style>
-        /* Overlay para el modal de selección de tipo de servicio */
-        .service-type-modal-overlay {
-            position: fixed;
+        /* ============================================== */
+        /* === ESTILOS PARA LA NUEVA PORTADA DE RESERVA === */
+        /* ============================================== */
+
+        body.booking-page {
+            /* Usamos un fondo oscuro por si la imagen de portada tarda en cargar */
+            background-color: #1a1a1a;
+            /* Quitamos el padding para que la portada ocupe toda la pantalla */
+            padding: 0;
+        }
+
+        .booking-cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 100vh;
+            width: 100%;
+            padding: 20px;
+            color: #fff;
+            /* Fondo predeterminado con gradiente para legibilidad */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1622287929483-a6d11a3641a9?q=80&w=1964&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            /* Animación suave al aparecer/desaparecer */
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+            /* NUEVO: Capa degradada marrón transparente sobre la imagen */
+            position: relative;
+            overflow: hidden; /* Para que el pseudo-elemento no se salga */
+        }
+
+        .booking-cover::before {
+            content: '';
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 3000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
+            background: linear-gradient(to bottom, transparent 20%, rgba(139, 69, 19, 0.6) 80%); /* Degradado marrón */
+            opacity: 0.8; /* Ajusta la transparencia según necesites */
+            z-index: 1; /* Asegura que esté sobre la imagen de fondo pero debajo del contenido */
         }
 
-        .service-type-modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Contenido del modal */
-        .service-type-modal {
-            background-color: var(--login-card-bg);
-            padding: 30px 40px;
-            border-radius: 15px;
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transform: scale(0.9);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .service-type-modal-overlay.active .service-type-modal {
-            transform: scale(1);
-        }
-
-        .service-type-modal h2 {
-            font-family: var(--heading-font);
-            color: var(--login-primary-accent);
-            margin-bottom: 15px;
-        }
-
-        .service-type-modal p {
-            color: var(--secondary-text-color);
-            margin-bottom: 30px;
-        }
-
-        /* Contenedor de los botones de selección */
-        .service-type-options {
+        .booking-cover-content {
+            position: relative; /* Asegura que el contenido esté sobre el pseudo-elemento */
+            z-index: 2;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            align-items: center;
+            text-align: center;
         }
 
-        .service-type-btn {
+        .booking-cover.hidden {
+            opacity: 0;
+            visibility: hidden;
+            position: absolute; /* La quitamos del flujo del documento al ocultarse */
+        }
+
+        .cover-profile-pic {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            margin-bottom: 20px;
+            overflow: hidden; /* Asegura que la imagen no se salga del círculo */
+        }
+
+        .cover-profile-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #cover-business-name {
+            font-family: var(--heading-font);
+            font-size: 2.8em;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        #cover-barber-name {
+            font-size: 1.2em;
+            font-weight: 300;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+            margin-bottom: 10px;
+        }
+
+        .cover-stars {
+            font-size: 1.3em;
+            color: #ffc107; /* Color dorado para las estrellas */
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        #show-booking-modal-btn {
+            font-family: var(--heading-font);
+            font-size: 1.3em;
             background-color: var(--login-btn-bg);
             color: #fff;
-            border: 2px solid var(--login-btn-bg);
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: 500;
+            border: 2px solid var(--accent-color);
+            padding: 15px 40px;
+            border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+            z-index: 2; /* Asegura que el botón esté sobre el degradado */
         }
 
+        #show-booking-modal-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            background-color: var(--accent-color);
+        }
+
+        /* ======================================================== */
+        /* === AJUSTES PARA EL FORMULARIO EN DISPOSITIVOS MÓVILES === */
+        /* ======================================================== */
+
+        .container.booking-container {
+            width: 100%;
+            margin: 20px 0; /* Añadimos margen vertical para cuando se muestre */
+            padding: 20px;
+            max-width: 500px;
+        }
+
+        .barber-image-header {
+            display: none; /* Ocultamos la imagen de cabecera del formulario, ya no es necesaria */
+        }
+
+        .progress-bar-container {
+            max-width: 90%; /* Hacemos la barra de progreso un poco más compacta */
+            margin: 20px auto 30px;
+        }
+
+        @media (max-width: 400px) {
+            #cover-business-name { font-size: 2.2em; }
+            #cover-barber-name { font-size: 1.1em; }
+            .progress-bar-step::after { font-size: 0.7em; } /* Hacemos el texto de la barra más pequeño */
+        }
+
+        /* --- Estilos del modal (sin cambios, solo reubicados para claridad) --- */
+        .service-type-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Cambiado de 'flex' a 'none' por defecto */
+            justify-content: center; align-items: center;
+            z-index: 3000; opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .service-type-modal-overlay.active {
+            display: flex; opacity: 1;
+        }
+        .service-type-modal {
+            background-color: var(--login-card-bg); padding: 30px 40px;
+            border-radius: 15px; text-align: center; width: 90%; max-width: 500px;
+            border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .service-type-modal-overlay.active .service-type-modal { transform: scale(1); }
+        .service-type-modal h2 { font-family: var(--heading-font); color: var(--login-primary-accent); margin-bottom: 15px; }
+        .service-type-modal p { color: var(--secondary-text-color); margin-bottom: 30px; }
+        .service-type-options { display: flex; flex-direction: column; gap: 15px; }
+        .service-type-btn {
+            background-color: var(--login-btn-bg); color: #fff; border: 2px solid var(--login-btn-bg);
+            padding: 15px 20px; border-radius: 8px; font-size: 1.1em; font-weight: 500;
+            cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
         .service-type-btn:hover {
-            background-color: transparent;
-            color: var(--login-primary-accent);
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background-color: transparent; color: var(--login-primary-accent);
+            transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        /* Ocultar el contenedor principal de la reserva inicialmente */
-        .booking-container.hidden {
-            display: none;
-        }
     </style>
-    </head>
+</head>
 <body class="booking-page">
+
+    <div class="booking-cover" id="booking-cover" style="background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url('https://d1yei2z3i6k35z.cloudfront.net/13589354/68791912aa42b_RESERVARAHORA1.png');">
+        <div class="booking-cover-content">
+            <div class="cover-profile-pic">
+                <img id="cover-barber-profile-img" src="https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg" alt="Foto del Barbero">
+            </div>
+            <h1 id="cover-business-name">Barberia Elite</h1>
+            <p id="cover-barber-name">Cargando barbero...</p>
+            <div class="cover-stars">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+            </div>
+            <button id="show-booking-modal-btn">
+                <i class="fas fa-cut" style="margin-right: 10px;"></i>
+                RESERVAR AHORA
+                <i class="fas fa-cut" style="margin-left: 10px; transform: scaleX(-1);"></i>
+            </button>
+        </div>
+    </div>
+
 
     <div class="service-type-modal-overlay" id="service-type-overlay">
         <div class="service-type-modal">
             <h2>¿Dónde prefieres tu servicio?</h2>
-            <p>Elige cómo quieres que te atendamos para continuar con tu reserva.</p>
+            <p>Elige cómo quieres que te atendamos para continuar.</p>
             <div class="service-type-options">
                 <button class="service-type-btn" data-type="studio">
-                    <i class="fas fa-store"></i> En el Estudio del Barbero
+                    <i class="fas fa-store"></i> En el Estudio
                 </button>
                 <button class="service-type-btn" data-type="domicilio">
                     <i class="fas fa-motorcycle"></i> A Domicilio
@@ -111,12 +226,11 @@
             </div>
         </div>
     </div>
-    <div class="container booking-container hidden" id="booking-container">
-        <div class="barber-image-header">
-            <img id="barber-profile-img" src="" alt="Foto del Barbero">
-        </div>
+
+    <div class="container booking-container" id="booking-container" style="display:none;">
+
         <h1 id="barber-name-title">Reservar con [Barbero]</h1>
-        
+
         <div class="progress-bar-container">
             <div class="progress-bar-step active" data-step="1" data-step-name="Servicio">1</div>
             <div class="progress-bar-line"></div>
@@ -134,17 +248,6 @@
                     <select id="service-select" required>
                         <option value="" disabled selected>Cargando servicios...</option>
                     </select>
-                    <div class="currency-selection">
-    <p><strong>Selecciona tu moneda de pago:</strong></p>
-    <div class="radio-group">
-        <input type="radio" id="pay-usd" name="payment_currency" value="USD" checked>
-        <label for="pay-usd"><i class="fas fa-dollar-sign"></i> Dólares (USD)</label>
-    </div>
-    <div class="radio-group">
-        <input type="radio" id="pay-ves" name="payment_currency" value="VES">
-        <label for="pay-ves"><i class="fas fa-money-bill-wave"></i> Bolívares (VES)</label>
-    </div>
-</div>
                 </div>
                 <div class="navigation-buttons">
                     <button type="button" class="style-button" id="next-step-1">Siguiente <i class="fas fa-arrow-right"></i></button>
@@ -155,13 +258,11 @@
                 <h2>2. Elige Fecha y Hora</h2>
                 <div class="input-group">
                     <input type="date" id="booking-date" required>
-                    <label for="booking-date">Fecha de la cita</label>
                 </div>
                 <div class="input-group">
                     <select id="time-select" required disabled>
                         <option value="">Selecciona una fecha primero</option>
                     </select>
-                    <label for="time-select">Hora disponible</label>
                 </div>
                 <div class="navigation-buttons">
                     <button type="button" class="style-button" id="prev-step-2"><i class="fas fa-arrow-left"></i> Anterior</button>
@@ -172,7 +273,6 @@
             <div id="step-3" class="form-step">
                 <h2>3. Tus Datos</h2>
                 <p class="step-instructions">Escribe tu nombre para buscarte en nuestros clientes o para registrarte si eres nuevo.</p>
-                
                 <div class="autocomplete-container">
                     <div class="input-group">
                         <input type="text" id="cliente-search" name="cliente_search" placeholder=" " autocomplete="off">
@@ -180,12 +280,10 @@
                     </div>
                     <div id="cliente-results-list" class="autocomplete-results"></div>
                 </div>
-
                 <div class="input-group">
                     <input type="tel" id="cliente_telefono" name="cliente_telefono" placeholder=" " required>
                     <label for="cliente_telefono">Teléfono (ej: 04121234567)</label>
                 </div>
-
                 <div class="navigation-buttons">
                     <button type="button" class="style-button" id="prev-step-3"><i class="fas fa-arrow-left"></i> Anterior</button>
                     <button type="button" class="style-button" id="next-step-3">Siguiente <i class="fas fa-arrow-right"></i></button>
@@ -203,7 +301,7 @@
                 </div>
             </div>
         </form>
-        
+
         <div id="booking-success-message" style="display: none; text-align: center; padding: 20px; background: var(--login-card-bg); border-radius: 8px; margin-top: 20px;">
             <h2>¡Reserva Exitosa!</h2>
             <p>Tu cita ha sido registrada. Recibirás una notificación por WhatsApp para confirmar.</p>
