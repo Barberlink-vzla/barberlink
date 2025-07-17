@@ -151,105 +151,122 @@
     border-top: 1px solid var(--border-color-light); 
     padding-top: 15px;
     text-align: center; 
-}
-save-day-availability-btn { 
-    width: 100%; 
-    background-color: var(--success-color);
-}
-modal-save-status { 
-    margin-top: 10px; 
-    min-height: 1.2em; 
-    font-weight: 500;
-}
-modal-save-status.success { color: var(--success-color); }
-modal-save-status.error { color: var(--danger-color); }
+    }
+    #save-day-availability-btn { 
+        width: 100%; 
+        background-color: var(--success-color);
+    }
+    #modal-save-status { 
+        margin-top: 10px; 
+        min-height: 1.2em; 
+        font-weight: 500;
+    }
+    #modal-save-status.success { color: var(--success-color); }
+    #modal-save-status.error { color: var(--danger-color); }
 
-/* Estilos para el nuevo modal de alerta y el botón de WhatsApp */
-.whatsapp-button {
-    background-color: #25D366;
-    width: 100%;
-    margin-top: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-.whatsapp-button:hover {
-    background-color: #1DA851;
-}
+    /* Estilos para el nuevo modal de alerta y el botón de WhatsApp */
+    .whatsapp-button {
+        background-color: #25D366;
+        width: 100%;
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+    .whatsapp-button:hover {
+        background-color: #1DA851;
+    }
 
-#appointment-alert-modal textarea {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 5px;
-    border: 1px solid var(--border-color);
-    background-color: var(--container-bg);
-    color: var(--primary-text-color);
-    font-size: 0.95em;
-    resize: vertical;
-}
+    #appointment-alert-modal textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 5px;
+        border: 1px solid var(--border-color);
+        background-color: var(--container-bg);
+        color: var(--primary-text-color);
+        font-size: 0.95em;
+        resize: vertical;
+    }
 
-#alert-modal-subtitle {
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-    margin-top: -10px;
-    margin-bottom: 15px;
-}
+    #alert-modal-subtitle {
+        font-size: 0.9em;
+        color: var(--secondary-text-color);
+        margin-top: -10px;
+        margin-bottom: 15px;
+    }
 
-.alert-modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    color: var(--secondary-text-color);
-    background: none;
-    border: none;
-   cursor: pointer;
+    .alert-modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 1.8em;
+        color: var(--secondary-text-color);
+        background: none;
+        border: none;
+       cursor: pointer;
+    }
    
-   /* Pega esto al final de la etiqueta <style> en barber_profile.html */
-.stat-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-.currency-toggle-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--border-color);
-    color: var(--primary-text-color);
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.currency-toggle-btn:hover {
-    background: var(--login-primary-accent);
-    transform: rotate(90deg);
-}
-}
+    .stat-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .currency-toggle-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
+        color: var(--primary-text-color);
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .currency-toggle-btn:hover {
+        background: var(--login-primary-accent);
+        transform: rotate(90deg);
+    }
 
-/* Pega esto al final de la etiqueta <style> en barber_profile.html */
+    .danger-zone {
+        border: 2px solid var(--danger-color);
+        background-color: rgba(255, 82, 82, 0.05);
+    }
 
-.danger-zone {
-    border: 2px solid var(--danger-color);
-    background-color: rgba(255, 82, 82, 0.05);
-}
+    .danger-btn {
+        background-color: var(--danger-color);
+        color: #fff;
+        width: auto;
+        padding: 10px 15px;
+    }
 
-.danger-btn {
-    background-color: var(--danger-color);
-    color: #fff;
-    width: auto;
-    padding: 10px 15px;
-}
+    .danger-btn:hover {
+        background-color: #d32f2f; /* Un rojo más oscuro */
+    }
 
-.danger-btn:hover {
-    background-color: #d32f2f; /* Un rojo más oscuro */
-}
+    /* ===== INICIO: NUEVOS ESTILOS PARA LA ANIMACIÓN DE NOTIFICACIONES ===== */
+    .notification-list {
+        /* Previene que aparezca una barra de scroll horizontal durante el deslizamiento */
+        overflow-x: hidden;
+    }
+
+    .notification-item {
+        /* Propiedad clave para que la animación de volver a su sitio sea fluida */
+        transition: transform 0.3s ease-out;
+        user-select: none; /* Evita que el texto se seleccione al deslizar */
+    }
+
+    .notification-item.item-is-deleting {
+        /* Estado final de la animación de borrado: se desliza 100% a la derecha y desaparece */
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    /* ===== FIN: NUEVOS ESTILOS PARA LA ANIMACIÓN DE NOTIFICACIONES ===== */
+
     </style>
 </head>
 <body class="barber-profile-page">
