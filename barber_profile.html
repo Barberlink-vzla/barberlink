@@ -3,789 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel del Barbero</title>
-
-    <link rel="manifest" href="manifest.json">
-    
+    <title>Reservar Cita</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/clientes.css">
-    <link rel="stylesheet" href="css/report-charts.css">
-    
-    <link rel="stylesheet" href="css/calendar_mobile_fix.css">
-    
+
     <style>
-    /* Estilos adicionales para el layout del dashboard */
-    body.barber-profile-page { align-items: stretch; }
-    .dashboard-layout { display: flex; width: 100%; max-width: 1200px; min-height: 80vh; background-color: var(--container-bg); border-radius: 15px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); border: 1px solid var(--border-color); overflow: hidden; position: relative; }
-    .dashboard-menu { width: 240px; background-color: var(--login-card-bg); padding: 20px; border-right: 1px solid var(--border-color); flex-shrink: 0; display: flex; flex-direction: column; }
-    .dashboard-menu .brand { font-family: var(--heading-font); color: var(--login-primary-accent); font-size: 1.5em; text-align: center; margin-bottom: 30px; }
-    .dashboard-menu ul { list-style: none; padding: 0; flex-grow: 1; }
-    .dashboard-menu li a { display: flex; align-items: center; gap: 15px; padding: 15px; color: var(--primary-text-color); text-decoration: none; border-radius: 8px; margin-bottom: 10px; transition: background-color 0.3s, color 0.3s; }
-    .dashboard-menu li a:hover, .dashboard-menu li a.active { background-color: var(--login-btn-bg); color: #fff; }
-    .dashboard-menu .logout-link { padding: 15px; }
-    .dashboard-content { flex-grow: 1; padding: 30px; overflow-y: auto; position: relative; }
-    .content-section { display: none; }
-    .content-section.active { display: block; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
-    .stat-card { background: var(--login-card-bg); padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid var(--accent-color); }
-    .stat-card .stat-icon { font-size: 2.5em; color: var(--accent-color); margin-bottom: 10px; }
-    .stat-card .stat-value { font-size: 2.2em; font-weight: 700; color: #fff; }
-    .stat-card .stat-label { font-size: 1em; color: var(--secondary-text-color); }
-    .booking-management-layout { display: flex; gap: 20px; }
-    /* --- CORRECCIÓN APLICADA AQUÍ --- */
-    /* Se ha eliminado 'min-width: 400px;' que causaba el problema en móviles. */
-    .calendar-container { flex: 1; } 
-    .bookings-for-day-container { flex: 1; }
-    .booking-item { background-color: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid var(--login-primary-accent); }
-    .booking-item h4 { color: #fff; margin-bottom: 5px; }
-    .booking-item p { margin: 0; font-size: 0.9em; color: var(--secondary-text-color); }
-    .calendar-day.has-bookings::after { content: ''; display: block; width: 6px; height: 6px; background: var(--success-color); border-radius: 50%; margin: 2px auto 0; }
-    
-    .stat-card.action-card {
-        cursor: pointer;
-        border-left-color: var(--success-color);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .stat-card.action-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    }
-    .stat-card.action-card .stat-icon {
-        color: var(--success-color);
-    }
+        /* ============================================== */
+/* === ESTILOS OPTIMIZADOS PARA PWA/TWA MÓVIL === */
+/* ============================================== */
 
-    .transaction-item.is-debt {
-        background-color: rgba(255, 82, 82, 0.1);
-        border-left: 2px solid var(--danger-color);
-    }
-    .transaction-item.is-debt .amount-value {
-        color: var(--danger-color);
-        font-weight: bold;
-    }
-    .transaction-item.is-debt .service-name::before {
-        content: "\f071"; /* Icono de alerta de FontAwesome */
-        font-family: "Font Awesome 6 Free";
-        font-weight: 900;
-        color: var(--danger-color);
-        margin-right: 8px;
-    }
-    
-    .transaction-list-header {
-        display: grid;
-        grid-template-columns: 1fr 2fr 2fr 1fr 1.2fr;
-        gap: 15px;
-        padding: 10px 15px;
-        font-weight: bold;
-        color: var(--secondary-text-color);
-        border-bottom: 1px solid var(--border-color);
-        font-size: 0.9em;
-    }
-    .transaction-item {
-        display: grid;
-        grid-template-columns: 1fr 2fr 2fr 1fr 1.2fr;
-        gap: 15px;
-        align-items: center;
-        padding: 12px 15px;
-        border-bottom: 1px solid var(--border-color-light);
-        transition: background-color 0.2s ease;
-    }
-    
-    .cancel-debt-btn {
-        background-color: var(--success-color);
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        padding: 6px 10px;
-        font-size: 0.8em;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    .cancel-debt-btn:hover {
-        background-color: #2e7d32; /* Un verde más oscuro */
-    }
+:root {
+    --text-color-light: #F5F5DC;
+    --accent-gold: #D4AF37;
+    --accent-gold-hover: #EACD65;
+}
 
-    #section-loader-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(26, 28, 36, 0.85); /* Fondo oscuro semitransparente */
-        z-index: 2000;
-        display: none;
-        place-items: center;
-        color: var(--primary-text-color);
-        backdrop-filter: blur(5px);
-    }
-    #section-loader-overlay.active { display: grid; }
-    .loader-content { text-align: center; }
-    .loader-spinner { width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--login-primary-accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-    .loader-text { font-size: 1.1em; font-weight: 500; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+body.booking-page {
+    background-color: #1a1a1a;
+    padding: 0;
+    /* Evita el scroll horizontal, crucial en móviles */
+    overflow-x: hidden;
+}
 
-    @media (max-width: 992px) { .booking-management-layout { flex-direction: column; } }
-    @media (max-width: 768px) {
-        .dashboard-menu { position: fixed; left: -100%; top: 0; height: 100%; z-index: 1050; transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .dashboard-menu.menu-open { left: 0; }
-        .dashboard-layout { flex-direction: column; padding-top: 65px; }
-        .dashboard-content { padding: 20px 15px; }
-        .transaction-list-header { display: none; }
-        .transaction-item {
-            grid-template-columns: 1fr 1fr;
-            grid-template-areas: "client service" "date amount" "action action";
-            row-gap: 8px;
+.booking-cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    /* Usamos 100dvh (dynamic viewport height) para que ocupe toda la pantalla visible
+       incluso cuando aparecen/desaparecen las barras del navegador móvil.
+       100vh es un fallback para navegadores más antiguos. */
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    padding: 20px;
+    color: var(--text-color-light);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url('https://d1yei2z3i6k35z.cloudfront.net/13589354/68791912aa42b_RESERVARAHORA1.png');
+    background-size: cover;
+    background-position: center;
+    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.booking-cover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 30%, rgba(80, 45, 15, 0.65) 85%);
+    opacity: 0.9;
+    z-index: 1;
+}
+
+.booking-cover-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%; /* Asegura que el contenido use el ancho disponible */
+}
+
+/* --- (OPTIMIZACIÓN MÓVIL) Contenedor de la foto de perfil --- */
+.cover-profile-pic {
+    width: 130px; /* Un poco más pequeño para pantallas de móvil */
+    height: 130px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-gold); /* Borde ligeramente más fino */
+    box-shadow: 0 6px 25px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.cover-profile-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* --- (OPTIMIZACIÓN MÓVIL) Tipografía Fluida con clamp() --- */
+#cover-business-name {
+    font-family: var(--heading-font);
+    /* clamp(MIN, PREFERIDO, MAX) -> El tamaño se ajusta al ancho de la pantalla */
+    font-size: clamp(2.4rem, 10vw, 3.2rem);
+    font-weight: 700;
+    color: var(--text-color-light);
+    text-shadow: 0px 2px 10px rgba(0, 0, 0, 0.8);
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    word-break: break-word; /* Evita que el texto largo rompa el layout */
+}
+
+#cover-barber-name {
+    /* Hemos aumentado los valores para que el texto sea más grande */
+    font-size: clamp(1.3rem, 5vw, 1.8rem); 
+
+    /* Hemos cambiado 300 (ligero) por 700 (negrita) */
+    font-weight: 700; 
+    
+    color: var(--text-color-light);
+    opacity: 1; /* Le quitamos la opacidad para que resalte más */
+    text-shadow: 1px 1px 5px rgba(0,0,0,0.7);
+    margin-bottom: 20px;
+}
+
+.cover-stars {
+    font-size: clamp(1.2rem, 5vw, 1.5rem);
+    color: var(--accent-gold);
+    margin-bottom: 40px;
+    text-shadow: 0px 0px 10px rgba(212, 175, 55, 0.5);
+}
+
+
+/* --- (OPTIMIZACIÓN MÓVIL) Botón Adaptable y con Feedback Táctil --- */
+#show-booking-modal-btn {
+    font-family: var(--primary-font);
+    font-size: clamp(1rem, 4vw, 1.1rem);
+    font-weight: 600;
+    background-color: transparent;
+    color: var(--text-color-light);
+    border: 2px solid var(--text-color-light);
+    /* El padding vertical es más importante para el área táctil */
+    padding: 18px 20px;
+    /* El botón ocupa un ancho relativo, pero con un máximo */
+    width: 85%;
+    max-width: 380px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Transición más rápida para respuesta app-like */
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    z-index: 2;
+    -webkit-tap-highlight-color: transparent; /* Quita el horrible resaltado azul en Chrome móvil */
+}
+
+#show-booking-modal-btn:hover {
+    transform: translateY(-5px);
+    background-color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    color: #1a1a1a;
+    box-shadow: 0 10px 25px rgba(212, 175, 55, 0.3);
+}
+
+/* :active es CRUCIAL para el feedback instantáneo en móviles al tocar */
+#show-booking-modal-btn:active {
+    transform: translateY(-2px) scale(0.98); /* Ligero hundimiento al presionar */
+    background-color: var(--accent-gold-hover);
+    border-color: var(--accent-gold-hover);
+    color: #1a1a1a;
+}
+
+/* (El resto del CSS para el modal y el formulario permanece igual) */
+
+.service-type-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); display: none;
+    justify-content: center; align-items: center;
+    z-index: 3000; opacity: 0; transition: opacity 0.4s ease;
+}
+/* ... (el resto del css no necesita cambios) ... */
+        /* ======================================================== */
+        /* === AJUSTES PARA EL FORMULARIO EN DISPOSITIVOS MÓVILES === */
+        /* ======================================================== */
+
+        .container.booking-container {
+            width: 100%;
+            margin: 20px 0; /* Añadimos margen vertical para cuando se muestre */
+            padding: 20px;
+            max-width: 500px;
         }
-        .transaction-item span:nth-child(1) { grid-area: date; }
-        .transaction-item span:nth-child(2) { grid-area: client; font-weight: bold; }
-        .transaction-item span:nth-child(3) { grid-area: service; }
-        .transaction-item span:nth-child(4) { grid-area: amount; }
-        .transaction-item div:nth-child(5) { grid-area: action; }
-    }
-    
-    .modal-save-actions { 
-    margin-top: 20px; 
-    border-top: 1px solid var(--border-color-light); 
-    padding-top: 15px;
-    text-align: center; 
-    }
-    #save-day-availability-btn { 
-        width: 100%; 
-        background-color: var(--success-color);
-    }
-    #modal-save-status { 
-        margin-top: 10px; 
-        min-height: 1.2em; 
-        font-weight: 500;
-    }
-    #modal-save-status.success { color: var(--success-color); }
-    #modal-save-status.error { color: var(--danger-color); }
 
-    /* Estilos para el nuevo modal de alerta y el botón de WhatsApp */
-    .whatsapp-button {
-        background-color: #25D366;
-        width: 100%;
-        margin-top: 15px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-    }
-    .whatsapp-button:hover {
-        background-color: #1DA851;
-    }
+        .barber-image-header {
+            display: none; /* Ocultamos la imagen de cabecera del formulario, ya no es necesaria */
+        }
 
-    #appointment-alert-modal textarea {
-        width: 100%;
-        padding: 10px;
-        margin-top: 10px;
-        border-radius: 5px;
-        border: 1px solid var(--border-color);
-        background-color: var(--container-bg);
-        color: var(--primary-text-color);
-        font-size: 0.95em;
-        resize: vertical;
-    }
+        .progress-bar-container {
+            max-width: 90%; /* Hacemos la barra de progreso un poco más compacta */
+            margin: 20px auto 30px;
+        }
 
-    #alert-modal-subtitle {
-        font-size: 0.9em;
-        color: var(--secondary-text-color);
-        margin-top: -10px;
-        margin-bottom: 15px;
-    }
+        @media (max-width: 400px) {
+            #cover-business-name { font-size: 2.2em; }
+            #cover-barber-name { font-size: 1.1em; }
+            .progress-bar-step::after { font-size: 0.7em; } /* Hacemos el texto de la barra más pequeño */
+        }
 
-    .alert-modal-close {
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        font-size: 1.8em;
-        color: var(--secondary-text-color);
-        background: none;
-        border: none;
-       cursor: pointer;
-    }
-   
-    .stat-label {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-    .currency-toggle-btn {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid var(--border-color);
-        color: var(--primary-text-color);
-        border-radius: 50%;
-        width: 28px;
-        height: 28px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .currency-toggle-btn:hover {
-        background: var(--login-primary-accent);
-        transform: rotate(90deg);
-    }
-
-    .danger-zone {
-        border: 2px solid var(--danger-color);
-        background-color: rgba(255, 82, 82, 0.05);
-    }
-
-    .danger-btn {
-        background-color: var(--danger-color);
-        color: #fff;
-        width: auto;
-        padding: 10px 15px;
-    }
-
-    .danger-btn:hover {
-        background-color: #d32f2f; /* Un rojo más oscuro */
-    }
-
-    /* ===== INICIO: NUEVOS ESTILOS PARA LA ANIMACIÓN DE NOTIFICACIONES ===== */
-    .notification-list {
-        /* Previene que aparezca una barra de scroll horizontal durante el deslizamiento */
-        overflow-x: hidden;
-    }
-
-    .notification-item {
-        /* Propiedad clave para que la animación de volver a su sitio sea fluida */
-        transition: transform 0.3s ease-out;
-        user-select: none; /* Evita que el texto se seleccione al deslizar */
-    }
-
-    .notification-item.item-is-deleting {
-        /* Estado final de la animación de borrado: se desliza 100% a la derecha y desaparece */
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    /* ===== FIN: NUEVOS ESTILOS PARA LA ANIMACIÓN DE NOTIFICACIONES ===== */
+        /* --- Estilos del modal (sin cambios, solo reubicados para claridad) --- */
+        .service-type-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Cambiado de 'flex' a 'none' por defecto */
+            justify-content: center; align-items: center;
+            z-index: 3000; opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .service-type-modal-overlay.active {
+            display: flex; opacity: 1;
+        }
+        .service-type-modal {
+            background-color: var(--login-card-bg); padding: 30px 40px;
+            border-radius: 15px; text-align: center; width: 90%; max-width: 500px;
+            border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .service-type-modal-overlay.active .service-type-modal { transform: scale(1); }
+        .service-type-modal h2 { font-family: var(--heading-font); color: var(--login-primary-accent); margin-bottom: 15px; }
+        .service-type-modal p { color: var(--secondary-text-color); margin-bottom: 30px; }
+        .service-type-options { display: flex; flex-direction: column; gap: 15px; }
+        .service-type-btn {
+            background-color: var(--login-btn-bg); color: #fff; border: 2px solid var(--login-btn-bg);
+            padding: 15px 20px; border-radius: 8px; font-size: 1.1em; font-weight: 500;
+            cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .service-type-btn:hover {
+            background-color: transparent; color: var(--login-primary-accent);
+            transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
 
     </style>
 </head>
-<body class="barber-profile-page">
+<body class="booking-page">
 
-<div id="app-loader">
-        <div class="loader-content">
-            <img src="images/icons/icon-192x192.png" alt="Logo BarberLink" class="loader-logo">
-            <div class="loader-spinner"></div>
-            <p class="loader-text">Cargando tu panel...</p>
-        </div>
-    </div>
-
-<div class="alert-modal-overlay" id="appointment-alert-overlay">
-    <div class="alert-modal" id="appointment-alert-modal">
-        <button class="alert-modal-close" id="alert-modal-close-btn" aria-label="Cerrar modal">&times;</button>
-        <h3 id="alert-modal-title">Recordatorio de Cita</h3>
-        <p id="alert-modal-subtitle">Dentro de 30 minutos tienes una cita. Puedes editar el mensaje de recordatorio para tu cliente a continuación.</p>
-        
-        <textarea id="alert-modal-message" rows="4" aria-label="Mensaje de recordatorio"></textarea>
-        
-        <a href="#" id="alert-modal-whatsapp-btn" target="_blank" class="style-button whatsapp-button" role="button">
-            <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
-        </a>
-    </div>
-</div>
-
-    
-
-    <div class="alert-modal-overlay" id="confirmation-modal-overlay">
-        <div class="alert-modal" id="confirmation-modal">
-            <button class="alert-modal-close" id="confirmation-modal-close-btn" aria-label="Cerrar modal">&times;</button>
-            <h3>Confirmar Asistencia</h3>
-            <p id="confirmation-modal-text">¿El cliente se presentó a su cita?</p>
-            <div class="modal-button-group">
-    <button id="confirm-arrival-btn" class="style-button confirm-btn"><i class="fas fa-check"></i> Sí, se presentó</button>
-    <button id="confirm-noshow-btn" class="style-button noshow-btn"><i class="fas fa-times"></i> No se presentó</button>
-</div>
-        </div>
-    </div>
-    
-    <div class="alert-modal-overlay" id="payment-modal-overlay">
-    <div class="alert-modal" id="payment-modal">
-        <button class="alert-modal-close" id="payment-modal-close-btn" aria-label="Cerrar modal">&times;</button>
-        <h3>Registrar Pago</h3>
-        <p>Registra el pago para la cita de <strong id="payment-client-name"></strong>.</p>
-        <p>Monto de Referencia: <strong id="payment-amount"></strong>.</p>
-
-        <form id="payment-form" novalidate>
-            <input type="hidden" id="payment-cita-id" name="cita_id">
-
-            <div class="payment-options">
-                <p><strong>Método de Pago:</strong></p>
-                <div class="radio-group">
-                    <input type="radio" id="pay-efectivo" name="metodo_pago" value="efectivo" checked>
-                    <label for="pay-efectivo"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
-                </div>
-                <div class="radio-group">
-                    <input type="radio" id="pay-transferencia" name="metodo_pago" value="transferencia">
-                    <label for="pay-transferencia"><i class="fas fa-university"></i> Transferencia</label>
-                </div>
-                <div class="radio-group">
-                    <input type="radio" id="pay-pago-movil" name="metodo_pago" value="pago_movil">
-                    <label for="pay-pago-movil"><i class="fas fa-mobile-alt"></i> Pago Móvil</label>
-                </div>
-                <div class="radio-group">
-                    <input type="radio" id="pay-no-pagado" name="metodo_pago" value="no_pagado">
-                    <label for="pay-no-pagado"><i class="fas fa-exclamation-triangle"></i> El Cliente Debe</label>
-                </div>
+    <div class="booking-cover" id="booking-cover" style="background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url('https://d1yei2z3i6k35z.cloudfront.net/13589354/68791912aa42b_RESERVARAHORA1.png');">
+        <div class="booking-cover-content">
+            <div class="cover-profile-pic">
+                <img id="cover-barber-profile-img" src="https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg" alt="Foto del Barbero">
             </div>
-
-            <div id="payment-deadline-container" class="input-group" style="display: none;">
-                <i class="fas fa-calendar-day"></i>
-                <input type="date" id="payment-deadline-date" name="fecha_limite_pago">
-                <label for="payment-deadline-date" class="active">Fecha Límite de Pago</label>
+            <h1 id="cover-business-name">Barberia Elite</h1>
+            <p id="cover-barber-name">Cargando barbero...</p>
+            <div class="cover-stars">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
             </div>
-            
-            <div id="payment-status-message" class="status-message" style="margin-top: 15px;"></div>
-
-            <div id="cash-payment-options" class="modal-button-group" style="display: none; margin-top: 15px;">
-                <p><strong>¿En qué moneda se recibió el efectivo?</strong></p>
-                <button type="button" id="pay-cash-usd-btn" class="style-button confirm-btn">
-                    <i class="fas fa-dollar-sign"></i> Recibido en USD
-                </button>
-                <button type="button" id="pay-cash-ves-btn" class="style-button" style="background-color: var(--login-primary-accent);">
-                    <i class="fas fa-money-bill-wave"></i> Recibido en VES
-                </button>
-            </div>
-        
-            <button type="submit" id="save-payment-btn" class="style-button confirm-btn" style="width: 100%; margin-top: 20px; display: none;">
-                <i class="fas fa-save"></i> Registrar Pago y Finalizar Cita
+            <button id="show-booking-modal-btn">
+                <i class="fas fa-cut" style="margin-right: 10px;"></i>
+                RESERVAR AHORA
+                <i class="fas fa-cut" style="margin-left: 10px; transform: scaleX(-1);"></i>
             </button>
-
-            </form>
+        </div>
     </div>
-</div>
-    
-    <div id="cash-payment-options" class="modal-button-group" style="display: none; margin-top: 15px;">
-    <p><strong>¿En qué moneda se recibió el efectivo?</strong></p>
-    <button type="button" id="pay-cash-usd-btn" class="style-button confirm-btn">
-        <i class="fas fa-dollar-sign"></i> Recibido en USD
-    </button>
-    <button type="button" id="pay-cash-ves-btn" class="style-button" style="background-color: var(--login-primary-accent);">
-        <i class="fas fa-money-bill-wave"></i> Recibido en VES
-    </button>
-</div>
 
-<button type="submit" id="save-payment-btn" class="style-button confirm-btn" style="width: 100%; margin-top: 20px; display: none;">
-    <i class="fas fa-save"></i> Guardar y Finalizar Cita
-</button>
 
-    <div class="alert-modal-overlay" id="walk-in-modal-overlay">
-        <div class="alert-modal" id="walk-in-modal">
-            <button class="alert-modal-close" id="walk-in-modal-close-btn">&times;</button>
-            <h3>Registrar Visita Inmediata</h3>
-            <p id="walk-in-modal-subtitle">Registra un servicio para un cliente que ha llegado sin cita previa.</p>
-
-            <div id="walk-in-client-type-selection">
-                <p><strong>¿El cliente es nuevo o ya lo has atendido antes?</strong></p>
-                <div class="modal-button-group">
-    <button id="walk-in-frequent-client-btn" class="style-button confirm-btn"><i class="fas fa-user-check"></i> Cliente Frecuente</button>
-    <button id="walk-in-new-client-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-user-plus"></i> Cliente Nuevo</button>
-</div>
-
+    <div class="service-type-modal-overlay" id="service-type-overlay">
+        <div class="service-type-modal">
+            <h2>¿Dónde prefieres tu servicio?</h2>
+            <p>Elige cómo quieres que te atendamos para continuar.</p>
+            <div class="service-type-options">
+                <button class="service-type-btn" data-type="studio">
+                    <i class="fas fa-store"></i> En el Estudio
+                </button>
+                <button class="service-type-btn" data-type="domicilio">
+                    <i class="fas fa-motorcycle"></i> A Domicilio
+                </button>
             </div>
+        </div>
+    </div>
 
-            <form id="walk-in-form" style="display: none;" novalidate>
-                <div id="walk-in-frequent-client-container" class="input-group autocomplete-container" style="display: none;">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="walk-in-client-search" placeholder=" " autocomplete="off">
-                    <label for="walk-in-client-search">Buscar Cliente por Nombre</label>
-                    <div id="walk-in-client-results" class="autocomplete-results"></div>
-                </div>
+    <div class="container booking-container" id="booking-container" style="display:none;">
 
-                <div id="walk-in-client-details-container" style="display: none;">
-                    <div class="input-group">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="walk-in-client-name" placeholder=" " required>
-                        <label for="walk-in-client-name">Nombre del Cliente</label>
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-phone"></i>
-                        <input type="tel" id="walk-in-client-phone" placeholder=" " required>
-                        <label for="walk-in-client-phone">Teléfono del Cliente</label>
-                    </div>
-                </div>
+        <h1 id="barber-name-title">Reservar con [Barbero]</h1>
 
+        <div class="progress-bar-container">
+            <div class="progress-bar-step active" data-step="1" data-step-name="Servicio">1</div>
+            <div class="progress-bar-line"></div>
+            <div class="progress-bar-step" data-step="2" data-step-name="Fecha y Hora">2</div>
+            <div class="progress-bar-line"></div>
+            <div class="progress-bar-step" data-step="3" data-step-name="Tus Datos">3</div>
+            <div class="progress-bar-line"></div>
+            <div class="progress-bar-step" data-step="4" data-step-name="Confirmar">4</div>
+        </div>
+
+        <form id="barberBookingForm">
+            <div id="step-1" class="form-step active-step">
+                <h2>1. Elige tu Servicio</h2>
                 <div class="input-group">
-                    <i class="fas fa-cut"></i>
-                    <select id="walk-in-service-select" required></select>
+                    <select id="service-select" required>
+                        <option value="" disabled selected>Cargando servicios...</option>
+                    </select>
                 </div>
-                
-                <button type="submit" id="walk-in-submit-btn" class="style-button confirm-btn" style="width: 100%; margin-top: 10px;">
-                    <i class="fas fa-arrow-right"></i> Ir a Registrar Pago
-                </button>
-                <div id="walk-in-status" class="status-message" style="margin-top: 15px;"></div>
-            </form>
-        </div>
-    </div>
-    
-    
-    
-    <div class="alert-modal-overlay" id="password-confirm-modal-overlay">
-    <div class="alert-modal" id="password-confirm-modal">
-        <button class="alert-modal-close" id="password-confirm-close-btn">&times;</button>
-        <h3 id="password-confirm-title">Confirmar Acción</h3>
-        <p>Para continuar, por favor ingresa tu contraseña. Esta es una medida de seguridad.</p>
-
-        <div class="input-group" style="margin-top: 20px;">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="password-confirm-input" placeholder=" " required>
-            <label for="password-confirm-input">Contraseña de tu cuenta</label>
-        </div>
-
-        <div id="password-confirm-status" class="status-message" style="margin-top: 15px;"></div>
-
-        <div class="modal-button-group">
-            <button id="password-confirm-action-btn" class="style-button confirm-btn">
-                <i class="fas fa-check"></i> Confirmar y Borrar
-            </button>
-        </div>
-    </div>
-</div>
-    
-    
-
-    <div class="alert-modal-overlay" id="calendar-action-modal-overlay">
-        <div class="alert-modal" id="calendar-action-modal">
-            <button class="alert-modal-close" id="calendar-action-modal-close-btn">&times;</button>
-            <h3 id="calendar-action-modal-title">Acciones para el Día</h3>
-
-            <div id="modal-action-buttons-view">
-                <p>¿Qué deseas hacer para el <strong id="modal-selected-date-text"></strong>?</p>
-                <div class="modal-button-group">
-    <button id="modal-view-bookings-btn" class="style-button confirm-btn"><i class="fas fa-list-ul"></i> Ver Citas del Día</button>
-    <button id="modal-edit-availability-btn" class="style-button noshow-btn" style="background-color: var(--login-primary-accent);"><i class="fas fa-edit"></i> Editar Horarios</button>
-</div>
-            </div>
-
-            <div id="modal-content-view" style="display: none;">
-                <button id="modal-back-btn" class="style-button back-button"><i class="fas fa-arrow-left"></i> Volver</button>
-                
-                <div class="modal-content-viewer" data-viewer="bookings">
-                    <div id="bookings-for-selected-day">
-                        <h3>Reservas</h3>
-                        <div id="bookings-list"></div>
-                    </div>
-                </div>
-                
-                <div class="modal-content-viewer" data-viewer="availability">
-                    <div id="availability-day-editor">
-                        <h3>Editar Horarios</h3>
-                        <div id="selected-day-slots-container"></div>
-                        <button id="add-slot-to-selected-day-btn" class="profile-action-btn"><i class="fas fa-plus-circle"></i> Añadir Bloque Horario</button>
-                        <div class="modal-save-actions">
-                            <button id="save-day-availability-btn" class="style-button">
-                                <i class="fas fa-save"></i> Guardar Cambios para este Día
-                            </button>
-                            <div id="modal-save-status" class="status-message"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <header class="mobile-header">
-        <button class="mobile-menu-toggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
-        <div class="mobile-header-brand">Barber Panel</div>
-        <div class="notification-bell-container mobile-bell">
-            <i class="fas fa-bell" aria-label="Notificaciones"></i>
-            <span class="notification-count">0</span>
-            <div class="notification-panel">
-                <div class="notification-panel-header">Notificaciones</div>
-                <ul class="notification-list"></ul>
-            </div>
-        </div>
-    </header>
-    <div class="menu-overlay"></div>
-
-    <div class="dashboard-layout">
-        
-        <nav class="dashboard-menu" aria-label="Menú principal">
-            <div>
-                <div class="brand">Barber Panel</div>
-                <ul>
-                    <li><a href="#" class="menu-link active" data-target="dashboard"><i class="fas fa-tachometer-alt"></i> Panel de Control</a></li>
-                    <li><a href="#" class="menu-link" data-target="reservas"><i class="fas fa-calendar-check"></i> Gestión de Reservas</a></li>
-                    <li><a href="#" class="menu-link" data-target="clientes"><i class="fas fa-users"></i> Gestión de Clientes</a></li>
-                    <li><a href="#" class="menu-link" data-target="reportes"><i class="fas fa-chart-line"></i> Reportes</a></li>
-                    <li><a href="#" class="menu-link" data-target="configuracion"><i class="fas fa-cog"></i> Configuración</a></li>
-                </ul>
-            </div>
-            <a href="#" id="logout-profile-button" class="logout-link menu-link"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-        </nav>
-        
-        <div class="notification-bell-container desktop-bell">
-            <i class="fas fa-bell" id="notification-bell-icon" aria-label="Notificaciones"></i>
-            <span class="notification-count" id="notification-count" style="display: none;">0</span>
-            <div class="notification-panel" id="notification-panel">
-                <div class="notification-panel-header">Notificaciones</div>
-                <ul class="notification-list" id="notification-list">
-                    <li class="notification-item no-notifications">No tienes notificaciones nuevas.</li>
-                </ul>
-            </div>
-        </div>
-
-        <main class="dashboard-content">
-
-            <div id="section-loader-overlay">
-                <div class="loader-content">
-                    <div class="loader-spinner"></div>
-                    <p class="loader-text">Cargando sección...</p>
+                <div class="navigation-buttons">
+                    <button type="button" class="style-button" id="next-step-1">Siguiente <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
 
-            <section id="dashboard" class="content-section active">
-                <h2 class="profile-section-title">Panel de Control</h2>
-                <div id="dashboard-loading-status">Cargando estadísticas...</div>
-                <div class="stats-grid" id="dashboard-stats-grid" style="display: none;">
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
-                        <div class="stat-value" id="stat-active-bookings">0</div>
-                        <div class="stat-label">Reservas Activas</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="stat-value" id="stat-unique-clients">0</div>
-                        <div class="stat-label">Clientes Totales</div>
-                    </div>
-                 <div class="stat-card">
-    <div class="stat-icon"><i class="fas fa-wallet"></i></div>
-
-    <div class="stat-value-container">
-        <div class="stat-value" id="stat-monthly-income-usd" style="display: block;">USD 0.00</div>
-        <div class="stat-value" id="stat-monthly-income-ves" style="display: none;">VES 0.00</div>
-    </div>
-
-    <div class="stat-label">
-        Ingresos (Mes Actual)
-        <button id="toggle-income-currency-btn" class="currency-toggle-btn" title="Cambiar moneda">
-            <i class="fas fa-sync-alt"></i>
-        </button>
-    </div>
-</div>
-                    <div class="stat-card action-card" id="show-walk-in-modal-btn" role="button" tabindex="0">
-                        <div class="stat-icon"><i class="fas fa-walking"></i></div>
-                        <div class="stat-value" style="font-size: 1.8em; color: #fff;">Visita Inmediata</div>
-                        <div class="stat-label">Registrar cliente sin cita</div>
-                    </div>
+            <div id="step-2" class="form-step">
+                <h2>2. Elige Fecha y Hora</h2>
+                <div class="input-group">
+                    <input type="date" id="booking-date" required>
                 </div>
-            </section>
-            
-            <section id="reservas" class="content-section">
-                <h2 class="profile-section-title">Gestión de Reservas y Disponibilidad</h2>
-                <div class="calendar-container">
-                    <p class="availability-instructions">Selecciona un día para ver sus citas o editar tu disponibilidad.</p>
-                    <div class="calendar-widget">
-                        <div class="calendar-header">
-                            <button id="cal-prev-month-btn" class="nav-btn" aria-label="Mes anterior"><i class="fas fa-chevron-left"></i></button>
-                            <div class="month-year" id="cal-current-month-year">Cargando...</div>
-                            <button id="cal-next-month-btn" class="nav-btn" aria-label="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
-                        </div>
-                        <div class="weekdays">
-                            <div>LUN</div>
-                            <div>MAR</div>
-                            <div>MIÉ</div>
-                            <div>JUE</div>
-                            <div>VIE</div>
-                            <div>SÁB</div>
-                            <div>DOM</div>
-                        </div>
-                        <div class="days-grid" id="calendar-days">
-                            </div>
-                    </div>
+                <div class="input-group">
+                    <select id="time-select" required disabled>
+                        <option value="">Selecciona una fecha primero</option>
+                    </select>
                 </div>
-            </section>
+                <div class="navigation-buttons">
+                    <button type="button" class="style-button" id="prev-step-2"><i class="fas fa-arrow-left"></i> Anterior</button>
+                    <button type="button" class="style-button" id="next-step-2">Siguiente <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
 
-           <section id="clientes" class="content-section">
-    <h2 class="profile-section-title">Gestión de Clientes</h2>
-    <div class="add-client-card">
-        <h3>Añadir Cliente Manualmente</h3>
-        <form id="add-client-form">
-            <div class="input-group">
-                <i class="fas fa-user"></i>
-                <input type="text" id="add-client-nombre" name="nombre" placeholder=" " required><label for="add-client-nombre">Nombre</label>
+            <div id="step-3" class="form-step">
+                <h2>3. Tus Datos</h2>
+                <p class="step-instructions">Escribe tu nombre para buscarte en nuestros clientes o para registrarte si eres nuevo.</p>
+                <div class="autocomplete-container">
+                    <div class="input-group">
+                        <input type="text" id="cliente-search" name="cliente_search" placeholder=" " autocomplete="off">
+                        <label for="cliente-search">Nombre y Apellido</label>
+                    </div>
+                    <div id="cliente-results-list" class="autocomplete-results"></div>
+                </div>
+                <div class="input-group">
+                    <input type="tel" id="cliente_telefono" name="cliente_telefono" placeholder=" " required>
+                    <label for="cliente_telefono">Teléfono (ej: 04121234567)</label>
+                </div>
+                <div class="navigation-buttons">
+                    <button type="button" class="style-button" id="prev-step-3"><i class="fas fa-arrow-left"></i> Anterior</button>
+                    <button type="button" class="style-button" id="next-step-3">Siguiente <i class="fas fa-arrow-right"></i></button>
+                </div>
             </div>
-             <div class="input-group">
-                <i class="fas fa-user-tag"></i>
-                <input type="text" id="add-client-apellido" name="apellido" placeholder=" "><label for="add-client-apellido">Apellido</label>
+
+            <div id="step-4" class="form-step">
+                <h2>4. Confirma tu Cita</h2>
+                <div id="booking-summary">
+                    <p>Cargando resumen...</p>
+                </div>
+                <div class="navigation-buttons">
+                    <button type="button" class="style-button" id="prev-step-4"><i class="fas fa-arrow-left"></i> Anterior</button>
+                    <button type="submit" class="style-button">Confirmar Reserva</button>
+                </div>
             </div>
-            <div class="input-group">
-                <i class="fas fa-phone"></i>
-                <input type="tel" id="add-client-telefono" name="telefono" placeholder=" " required><label for="add-client-telefono">Teléfono</label>
-            </div>
-            <div class="input-group full-width">
-                <i class="fas fa-comments"></i>
-                <input type="text" id="add-client-temas" name="temas_conversacion" placeholder=" "><label for="add-client-temas">Temas de Conversación</label>
-            </div>
-            <button type="submit"><i class="fas fa-plus-circle"></i> Añadir Cliente</button>
         </form>
-    </div>
-    <div id="client-list-container">
+
+        <div id="booking-success-message" style="display: none; text-align: center; padding: 20px; background: var(--login-card-bg); border-radius: 8px; margin-top: 20px;">
+            <h2>¡Reserva Exitosa!</h2>
+            <p>Tu cita ha sido registrada. Recibirás una notificación por WhatsApp para confirmar.</p>
+            <p><strong>Por favor, haz clic en el botón de abajo para enviar el mensaje de confirmación al barbero.</strong></p>
+            <div id="whatsapp-link-container"></div>
         </div>
-</section>
-            
-            <section id="reportes" class="content-section">
-                <h2 class="profile-section-title">Reportes y Análisis</h2>
-                <div class="report-controls" role="group" aria-label="Selección de periodo de reporte">
-                    <button class="report-btn active" data-period="week">Semana</button>
-                    <button class="report-btn" data-period="month">Mes</button>
-                    <button class="report-btn" data-period="year">Año</button>
-                </div>
 
-                <div id="report-loading-status" style="display: none;">Cargando reporte...</div>
-                
-                <div id="report-stats-grid" class="report-stats-grid">
-                    <div class="stat-chart-card">
-                       <div class="stat-chart-header">
-   <div class="stat-chart-main-value">
-    <div id="income-stat-value" class="stat-value" style="display: block;">$0.00</div>
-    <div id="income-stat-value-ves" class="stat-value" style="display: none;">Bs 0.00</div>
-    <div class="stat-label">Ingresos</div>
-</div>
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <div id="income-percentage" class="stat-chart-percentage neutral">
-            </div>
-        <button id="toggle-report-currency-btn" class="currency-toggle-btn" title="Cambiar moneda">
-            <i class="fas fa-sync-alt"></i>
-        </button>
-    </div>
-</div>
-                        <div id="income-area-chart"></div>
-                    </div>
-                    <div class="stat-chart-card">
-                         <div class="stat-chart-header">
-                            <div class="stat-chart-main-value">
-                                <div id="appointments-stat-value" class="stat-value">0</div>
-                                <div class="stat-label">Citas Completadas</div>
-                            </div>
-                            <div id="appointments-percentage" class="stat-chart-percentage neutral">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 5px; transition: transform 0.4s ease;"><path d="M12 4L18 10M12 20V4M12 4L6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                <span>0%</span>
-                            </div>
-                        </div>
-                        <div id="appointments-area-chart"></div>
-                    </div>
-                    <div class="stat-chart-card">
-                         <div class="stat-chart-header">
-                            <div class="stat-chart-main-value">
-                                <div id="clients-stat-value" class="stat-value">0</div>
-                                <div class="stat-label">Nuevos Clientes</div>
-                            </div>
-                            <div id="clients-percentage" class="stat-chart-percentage neutral">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 5px; transition: transform 0.4s ease;"><path d="M12 4L18 10M12 20V4M12 4L6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                <span>0%</span>
-                            </div>
-                        </div>
-                        <div id="clients-area-chart"></div>
-                    </div>
-                </div>
-
-                <div class="transaction-list-container">
-                    <h3 class="transaction-list-title">Detalle de Ingresos del Periodo</h3>
-                    
-                    <div class="transaction-search-controls">
-                        <div class="search-input-wrapper">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="transaction-search-input" placeholder="Buscar por nombre de cliente...">
-                        </div>
-                        <button id="toggle-debt-btn" class="style-button debt-filter-btn">
-                            <i class="fas fa-file-invoice-dollar"></i> Mostrar Solo Deudas
-                        </button>
-                    </div>
-                    <div class="transaction-list-header">
-                        <span>Fecha</span>
-                        <span>Cliente</span>
-                        <span>Servicio</span>
-                        <span class="align-right">Monto</span>
-                        <span class="align-right">Acciones</span>
-                    </div>
-                    <div id="transaction-list">
-                        </div>
-                </div>
-            </section>
-            
-            <section id="configuracion" class="content-section">
-                <h2 class="profile-section-title">Configuración de Perfil y Servicios</h2>
-                <div class="profile-section-card">
-                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Datos Básicos</h3>
-                    <div id="profile-content"><p>Cargando perfil...</p></div>
-                </div>
-                
-                <div class="profile-section-card">
-    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Configuración de Moneda</h3>
-    <p>Establece un porcentaje adicional para sumarle a la tasa de cambio oficial del BCV al calcular los precios en Bolívares.</p>
-    <div class="input-group">
-        <i class="fas fa-percentage"></i>
-        <input type="number" id="tasa-markup" name="tasa-markup" placeholder=" " step="0.5" min="0" value="0">
-        <label for="tasa-markup">Porcentaje Adicional sobre la Tasa (%)</label>
-    </div>
-    <p class="availability-instructions">Ejemplo: Si la tasa BCV es 36.50 y pones 5%, el cálculo se hará con 38.33.</p>
-</div>
-                <div class="profile-section-card">
-                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Notificaciones Push</h3>
-                    <p>Activa las notificaciones para recibir alertas en tu dispositivo incluso con la app cerrada.</p>
-                    <button id="enable-push-notifications-btn" class="profile-action-btn" style="width:auto; padding: 10px 15px;">
-                        <i class="fas fa-bell"></i> Activar Notificaciones
-                    </button>
-                    <p id="push-status" style="margin-top: 10px;"></p>
-                </div>
-                <div class="profile-section-card">
-                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Mis Servicios y Precios</h3>
-                    <div id="services-section"><p>Cargando servicios...</p></div>
-                    <div class="service-item-add-custom">
-                        <h4>Añadir Otro Servicio</h4>
-                        <div class="input-group"><i class="fas fa-cut"></i><input type="text" id="other-service-name" placeholder=" "><label for="other-service-name">Nombre del servicio</label></div>
-                        <div class="input-group"><i class="fas fa-dollar-sign"></i><input type="number" id="other-service-price" placeholder=" " step="0.50" min="0"><label for="other-service-price">Precio</label></div>
-                        
-                        <div class="input-group">
-                            <i class="fas fa-clock"></i>
-                            <input type="number" id="other-service-duration" placeholder=" " step="5" min="5" value="30">
-                            <label for="other-service-duration">Duración (min)</label>
-                        </div>
-                        <button id="add-other-service-btn" class="profile-submit-btn" style="width: auto; padding: 10px 15px;">Añadir Servicio</button>
-                    </div>
-                </div>
-                <div class="profile-section-card">
-                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Tu Enlace de Reserva Único</h3>
-                    <p>Comparte este enlace con tus clientes para que puedan reservar una cita contigo:</p>
-                    <div id="booking-link-container"><p>Cargando enlace...</p></div>
-                </div>
-                <div class="profile-section-card danger-zone">
-    <h3 class="profile-section-title" style="font-size: 1.5em; border: none; color: var(--danger-color);">
-        <i class="fas fa-exclamation-triangle"></i> Zona de Peligro
-    </h3>
-    <p>Las acciones en esta sección son permanentes y no se pueden deshacer.</p>
-    <button id="delete-history-btn" class="profile-action-btn danger-btn">
-        <i class="fas fa-trash-alt"></i> Borrar Historial de Citas
-    </button>
-    <p class="availability-instructions">
-        Esto eliminará permanentemente todas las citas (completadas, pendientes, etc.) y las notificaciones asociadas. Tu perfil, clientes y configuración de servicios no se verán afectados.
-    </p>
-</div>
-                <button id="save-all-profile-btn" class="profile-submit-btn save-all-btn"><i class="fas fa-save"></i> Guardar Todos los Cambios</button>
-                <p id="save-status"></p>
-            </section>
-        </main>
-        
+        <p id="booking-status" class="status-message"></p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    
     <script src="js/supabaseClient.js"></script>
-    <script src="js/report-charts.js"></script>
-    <script src="js/paymentModal.js"></script> 
-    <script src="js/barberProfile.js"></script>
-    <script src="js/notificacion.js"></script>
-    <script src="js/clientes.js"></script>
-    </body>
+    <script src="js/reserva.js"></script>
+</body>
 </html>
