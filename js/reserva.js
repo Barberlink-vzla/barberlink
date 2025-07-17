@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             statusMessage.textContent = `Error al cargar servicios: ${servicesResponse.error.message}`;
             statusMessage.className = 'status-message error';
         } else {
-            populateServiceSelect(servicesResponse.data);
+            populateServiceCarousel(servicesResponse.data);
         }
 
         if (clientsResponse.error) {
@@ -189,23 +189,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const populateServiceSelect = (services) => {
-        if (!services || services.length === 0) {
-            serviceSelect.innerHTML = '<option>No hay servicios disponibles</option>';
-            return;
-        }
-        serviceSelect.innerHTML = '<option value="" disabled selected>Selecciona un servicio...</option>';
-        services.forEach(service => {
-            const option = document.createElement('option');
-            option.value = service.id;
-            const serviceName = service.nombre_personalizado || service.servicios_maestro?.nombre || 'Servicio sin nombre';
-            const servicePrice = service.precio || 0;
-            const serviceDuration = service.duracion_minutos || 30;
-            option.textContent = `${serviceName} - ${currencyManager.formatPrice(servicePrice)} (${serviceDuration} min)`;
-            option.dataset.serviceData = JSON.stringify(service);
-            serviceSelect.appendChild(option);
+   const populateServiceCarousel = (services) => {
+    const carousel = document.getElementById('service-carousel');
+    const hiddenInput = document.getElementById('selected-service-id');
+    if (!carousel || !hiddenInput) return;
+
+    if (!services || services.length === 0) {
+        carousel.innerHTML = '<p>No hay servicios disponibles.</p>';
+        return;
+    }
+
+    // Limpiamos el carrusel
+    carousel.innerHTML = '';
+    
+    // Poblamos con las nuevas tarjetas de servicio
+    services.forEach(service => {
+        const card = document.createElement('div');
+        card.className = 'service-card';
+        card.dataset.serviceId = service.id;
+        card.dataset.serviceData = JSON.stringify(service);
+
+        const serviceName = service.nombre_personalizado || service.servicios_maestro?.nombre || 'Servicio';
+        const imageUrl = service.imagen_url || 'https://placehold.co/300x240/1a1a1a/7e8a9b?text=Servicio';
+        
+        card.innerHTML = `
+            <img src="${imageUrl}" alt="${serviceName}" class="service-card-img">
+            <div class="service-card-body">
+                <p class="service-card-name">${serviceName}</p>
+                <p class="service-card-price">${currencyManager.formatPrice(service.precio || 0)}</p>
+            </div>
+        `;
+        
+        // Añadimos el listener a cada tarjeta
+        card.addEventListener('click', () => {
+            // Quitamos la selección de otras tarjetas
+            document.querySelectorAll('.service-card.selected').forEach(c => c.classList.remove('selected'));
+            // Marcamos la tarjeta actual como seleccionada
+            card.classList.add('selected');
+            
+            // Guardamos los datos del servicio seleccionado
+            hiddenInput.value = service.id;
+            selectedService = JSON.parse(card.dataset.serviceData);
+            
+            // Disparamos la carga de disponibilidad (igual que antes)
+            if (dateInput.value) {
+                fetchAvailability(dateInput.value);
+            }
         });
-    };
+
+        carousel.appendChild(card);
+    });
+};
     
     // El resto de tus funciones (fetchAvailability, populateTimeSelect, navigateToStep, etc.)
     // permanecen exactamente iguales, ya que su lógica no se ve afectada.
@@ -259,8 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const navigateToStep = (stepNumber) => {
         if (stepNumber > currentStep) {
-            if (currentStep === 1 && !serviceSelect.value) { alert("Por favor, selecciona un servicio."); return; }
-            if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { alert("Por favor, selecciona fecha y hora."); return; }
+            if (currentStep === 1 && !document.getElementById('selected-service-id').value) { alert("Por favor, selecciona un servicio del carrusel."); return; }            if (currentStep === 2 && (!dateInput.value || !timeSelect.value)) { alert("Por favor, selecciona fecha y hora."); return; }
             if (currentStep === 3 && (!clientSearchInput.value.trim() || !clientPhoneInput.value.trim())) { alert("Por favor, completa tu nombre y teléfono."); return; }
         }
         currentStep = stepNumber;
