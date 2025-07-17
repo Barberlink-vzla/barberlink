@@ -123,39 +123,38 @@ function setupRealtimeListener() {
     if (!currentUserId) return;
 
     const channelName = `realtime:notifications:${currentUserId}`;
-
-    // Si ya hay canal, lo cerramos antes de crear uno nuevo
     if (notificationChannel) {
         supabaseClient.removeChannel(notificationChannel);
     }
+    
+    console.log(`[Realtime] Intentando suscribirse al canal: ${channelName}`);
 
-    const retryRealtime = () => {
-        notificationChannel = supabaseClient
-            .channel(channelName)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notificaciones',
-                    filter: `barbero_id=eq.${currentUserId}`
-                },
-                (payload) => {
-                    console.log('[Realtime] Nueva notificación:', payload.new);
-                    handleNewNotification(payload.new);
-                }
-            )
-            .subscribe((status, error) => {
-                console.log(`[Realtime] Estado: ${status}`);
-                if (error) {
-                    console.warn('[Realtime] Error:', error.message);
-                    // Reintento después de 5 segundos
-                    setTimeout(retryRealtime, 5000);
-                }
-            });
-    };
-
-    retryRealtime();
+    notificationChannel = supabaseClient
+        .channel(channelName)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'notificaciones',
+                filter: `barbero_id=eq.${currentUserId}`
+            },
+            (payload) => {
+                console.log('[Realtime] ¡Nueva notificación recibida! 🎉', payload.new);
+                handleNewNotification(payload.new);
+            }
+        )
+        .subscribe((status, error) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('[Realtime] ¡Conexión exitosa al canal! ✅');
+            }
+            if (status === 'CHANNEL_ERROR') {
+                console.error('[Realtime] Error de canal. La causa más común es que el proyecto de Supabase está pausado. Revisa tu dashboard.', error);
+            }
+            if (status === 'TIMED_OUT') {
+                 console.warn('[Realtime] La conexión expiró (Timed Out). Reintentando...');
+            }
+        });
 }
     
     async function handleNewNotification(newNotificationData) {
