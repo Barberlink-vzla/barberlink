@@ -1753,71 +1753,99 @@ function renderBarberForm(barberData) {
     }
 }
 
+// REEMPLAZA ESTA FUNCIÓN en js/barberProfile.js
+
 function renderServices(barberServices) {
     if (!servicesSection) return;
-    let html = '<h3>Servicios Estándar</h3>';
-    if (!masterServices || masterServices.length === 0) {
-        html += '<p>No hay servicios estándar definidos.</p>';
-    } else {
-        masterServices.forEach(ms => {
-            const existingService = barberServices.find(bs => bs.servicio_id === ms.id);
-            const isChecked = !!existingService;
-            const price = existingService?.precio ?? '';
-            const duration = existingService?.duracion_minutos ?? 30;
 
-            html += `<div class="service-item">
-                        <input type="checkbox" id="service-${ms.id}" data-id="${ms.id}" ${isChecked ? 'checked' : ''}>
-                        <label for="service-${ms.id}">${ms.nombre}</label>
-                        <div class="service-inputs" style="display: flex; gap: 10px;">
-                            <input type="number" class="service-price-input" placeholder="Precio" id="price-for-service-${ms.id}" value="${price}" step="0.50" min="0" ${isChecked ? '' : 'disabled'} data-price-for="${ms.id}" style="width: 90px;">
-                            <input type="number" class="service-duration-input" placeholder="Min" id="duration-for-service-${ms.id}" value="${duration}" step="5" min="5" ${isChecked ? '' : 'disabled'} data-duration-for="${ms.id}" style="width: 80px;">
-                        </div>
-                     </div>`;
-        });
-    }
-    html += '<h3 style="margin-top:20px;">Mis Servicios Personalizados</h3>';
-    const customServices = barberServices.filter(bs => bs.nombre_personalizado);
-    if (customServices.length === 0) {
-        html += '<p>No has añadido servicios personalizados.</p>';
-    } else {
-        customServices.forEach(bs => {
-            html += `<div class="service-item" data-custom-id="${bs.id}">
-                        <span>${bs.nombre_personalizado} - $${bs.precio} (${bs.duracion_minutos || 30} min)</span>
-                        <button class="remove-custom-service" data-id="${bs.id}">X</button>
-                    </div>`;
-        });
-    }
-    servicesSection.innerHTML = html;
+    // Función auxiliar para generar el HTML de un servicio
+    const createServiceHTML = (service, isCustom) => {
+        const serviceId = isCustom ? `custom-${service.id}` : service.id;
+        const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
+        const imageUrl = service.imagen_url || 'https://placehold.co/100x100/2a2f3c/7e8a9b?text=Subir\\nFoto';
+        
+        // Atributos de datos para el manejo de la subida
+        const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
+
+        return `
+            <div class="service-item-with-image" ${dataAttrs}>
+                <div class="service-image-container">
+                    <img src="${imageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview">
+                    <label for="img-upload-${serviceId}" class="service-img-upload-label" title="Cambiar imagen">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                    <input type="file" id="img-upload-${serviceId}" class="service-img-upload-input" accept="image/*">
+                </div>
+                <div class="service-details">
+                    <span class="service-name">${serviceName}</span>
+                    <div class="service-inputs">
+                        <input type="number" class="service-price-input" placeholder="Precio ($)" value="${service.precio || ''}" step="0.50" min="0">
+                        <input type="number" class="service-duration-input" placeholder="Min" value="${service.duracion_minutos || 30}" step="5" min="5">
+                    </div>
+                </div>
+                ${isCustom ? `<button class="remove-custom-service" data-id="${service.id}"><i class="fas fa-times"></i></button>` : ''}
+            </div>
+        `;
+    };
     
-    servicesSection.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const serviceId = e.target.dataset.id;
-            const priceInput = servicesSection.querySelector(`input[data-price-for="${serviceId}"]`);
-            const durationInput = servicesSection.querySelector(`input[data-duration-for="${serviceId}"]`);
-            if (priceInput && durationInput) {
-                const isEnabled = e.target.checked;
-                priceInput.disabled = !isEnabled;
-                durationInput.disabled = !isEnabled;
-                if (!isEnabled) {
-                    priceInput.value = '';
-                    durationInput.value = '30';
-                }
+    // Filtramos los servicios estándar que el barbero ha seleccionado
+    const standardServices = masterServices.map(ms => {
+        const existingService = barberServices.find(bs => bs.servicio_id === ms.id) || { servicios_maestro: ms, precio: '', duracion_minutos: 30 };
+        return { ...existingService, id: ms.id }; // Aseguramos que tenga un id base
+    });
+
+    const customServices = barberServices.filter(bs => bs.nombre_personalizado);
+    
+    let html = '<h3>Servicios Estándar</h3><div class="services-grid">';
+    standardServices.forEach(s => {
+        html += createServiceHTML(s, false);
+    });
+    html += '</div>';
+
+    html += '<h3 style="margin-top:20px;">Mis Servicios Personalizados</h3><div class="services-grid">';
+    if (customServices.length > 0) {
+        customServices.forEach(bs => {
+            html += createServiceHTML(bs, true);
+        });
+    } else {
+        html += '<p>No has añadido servicios personalizados.</p>';
+    }
+    html += '</div>';
+    
+    servicesSection.innerHTML = html;
+
+    // Listeners para previsualizar la imagen al seleccionarla
+    servicesSection.querySelectorAll('.service-img-upload-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const serviceId = e.target.id.replace('img-upload-', '');
+            const imgPreview = document.getElementById(`img-preview-${serviceId}`);
+            if (file && imgPreview) {
+                const reader = new FileReader();
+                reader.onload = (event) => { imgPreview.src = event.target.result; };
+                reader.readAsDataURL(file);
             }
         });
     });
-
+    
+    // Listener para eliminar servicios personalizados (sin cambios)
     servicesSection.querySelectorAll('.remove-custom-service').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            const serviceId = e.target.dataset.id;
+            const serviceId = e.currentTarget.dataset.id;
             if (confirm('¿Seguro que quieres eliminar este servicio personalizado?')) {
                 if (saveStatus) saveStatus.textContent = 'Eliminando...';
                 const { error } = await supabaseClient.from('barbero_servicios').delete().eq('id', serviceId);
-                if (error) { alert('Error al eliminar: ' + error.message); if (saveStatus) saveStatus.textContent = 'Error.'; }
-                else {
+                if (error) { 
+                    alert('Error al eliminar: ' + error.message); 
+                    if (saveStatus) saveStatus.textContent = 'Error.'; 
+                } else {
                     if (saveStatus) saveStatus.textContent = 'Eliminado.';
                     const { data, error: errLoad } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId);
                     if (errLoad) console.error("Error recargando servicios:", errLoad);
-                    else renderServices(data || []);
+                    else {
+                        barberServicesData = data || []; // Actualiza la variable global
+                        renderServices(barberServicesData);
+                    }
                     setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 2000);
                 }
             }
@@ -2248,66 +2276,103 @@ async function saveBasicProfile() {
 }
 
 
+// REEMPLAZA ESTA FUNCIÓN en js/barberProfile.js
+
 async function saveServices() {
-    const servicesToUpsert = [];
-    const serviceIdsToKeep = [];
+    if (!currentUserId || !currentBarberProfileId) {
+        throw new Error("No se pudo identificar al barbero para guardar los servicios.");
+    }
 
-    const serviceCheckboxes = servicesSection.querySelectorAll('input[type="checkbox"][data-id]');
-    
-    for (const cb of serviceCheckboxes) {
-        const serviceId = cb.dataset.id;
-        if (cb.checked) {
-            const priceInput = servicesSection.querySelector(`input[data-price-for="${serviceId}"]`);
-            const durationInput = servicesSection.querySelector(`input[data-duration-for="${serviceId}"]`);
-            
-            const price = parseFloat(priceInput.value);
-            const duration = parseInt(durationInput.value, 10);
+    const serviceItems = servicesSection.querySelectorAll('.service-item-with-image');
+    let allUpserts = [];
 
-            if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
-                throw new Error(`Datos inválidos para el servicio "${cb.nextElementSibling.textContent}". Revisa precio y duración.`);
-            }
-            
-            servicesToUpsert.push({
-                barbero_id: currentUserId, 
-                servicio_id: serviceId,
-                precio: price,
-                duracion_minutos: duration
-            });
-            serviceIdsToKeep.push(serviceId);
+    // Esta función sube una imagen a Cloudinary
+    const uploadToCloudinary = async (file) => {
+        // 1. Pide una firma de subida a nuestra Edge Function
+        const { data: signatureData, error: signatureError } = await supabaseClient.functions.invoke('generate-cloudinary-signature', {
+            body: { folder: `barbershop/services/${currentBarberProfileId}` }
+        });
+
+        if (signatureError) {
+            throw new Error('Error al obtener la firma de Cloudinary: ' + signatureError.message);
         }
+
+        // 2. Prepara el formulario para enviar a Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signatureData.api_key);
+        formData.append('timestamp', signatureData.timestamp);
+        formData.append('signature', signatureData.signature);
+        formData.append('folder', `barbershop/services/${currentBarberProfileId}`);
+
+        // 3. Sube la imagen directamente a Cloudinary
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/image/upload`;
+        const uploadResponse = await fetch(cloudinaryUrl, { method: 'POST', body: formData });
+        
+        if (!uploadResponse.ok) {
+            throw new Error('La subida a Cloudinary falló.');
+        }
+
+        const uploadedImageData = await uploadResponse.json();
+        return uploadedImageData.secure_url; // Devuelve la URL segura de la imagen
+    };
+
+    // Recorre cada servicio mostrado en la UI
+    for (const item of serviceItems) {
+        const serviceIdRaw = item.dataset.serviceId;
+        const isCustom = item.dataset.isCustom === 'true';
+
+        const price = parseFloat(item.querySelector('.service-price-input').value);
+        const duration = parseInt(item.querySelector('.service-duration-input').value, 10);
+        const fileInput = item.querySelector('.service-img-upload-input');
+        const imgPreview = item.querySelector('.service-img-preview');
+
+        if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
+            alert(`Datos inválidos para el servicio "${item.querySelector('.service-name').textContent}". Revisa precio y duración.`);
+            continue; // Salta este servicio si los datos son inválidos
+        }
+        
+        let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
+
+        // Si se seleccionó un archivo nuevo, lo sube
+        if (fileInput.files[0]) {
+            try {
+                imageUrl = await uploadToCloudinary(fileInput.files[0]);
+            } catch (uploadError) {
+                console.error("Error subiendo imagen:", uploadError);
+                alert(`Hubo un error al subir la imagen para el servicio ${item.querySelector('.service-name').textContent}. El servicio se guardará sin la nueva imagen.`);
+            }
+        }
+        
+        let upsertData = {
+            barbero_id: currentBarberProfileId,
+            precio: price,
+            duracion_minutos: duration,
+            imagen_url: imageUrl
+        };
+
+        if (isCustom) {
+            // Es un servicio personalizado, usamos su ID único de la tabla
+            upsertData.id = parseInt(serviceIdRaw.replace('custom-', ''), 10);
+        } else {
+            // Es un servicio estándar, usamos el ID del servicio maestro
+            upsertData.servicio_id = parseInt(serviceIdRaw, 10);
+        }
+
+        allUpserts.push(upsertData);
     }
     
-    // ================== INICIO DE LA CORRECCIÓN ==================
-    // 1. Borrar servicios desmarcados (solo si hay algo que comparar)
-    // Esto evita el error cuando `serviceIdsToKeep` está vacío.
-    let deleteQuery = supabaseClient
-        .from('barbero_servicios')
-        .delete()
-        .eq('barbero_id', currentUserId)
-        .not('servicio_id', 'is', null);
-
-    // Solo añadimos el filtro `not.in` si hay IDs para mantener.
-    if (serviceIdsToKeep.length > 0) {
-        deleteQuery = deleteQuery.not('servicio_id', 'in', `(${serviceIdsToKeep.join(',')})`);
-    }
-
-    const { error: deleteError } = await deleteQuery;
-    // =================== FIN DE LA CORRECCIÓN ====================
-    
-    if (deleteError) {
-        throw new Error(`Error al actualizar la lista de servicios: ${deleteError.message}`);
-    }
-
-    // 2. Actualizar/insertar servicios marcados
-    if (servicesToUpsert.length > 0) {
+    if (allUpserts.length > 0) {
         const { error: upsertError } = await supabaseClient
             .from('barbero_servicios')
-            .upsert(servicesToUpsert, { onConflict: 'barbero_id, servicio_id' });
-        
+            .upsert(allUpserts); // `upsert` actualiza si existe, o inserta si es nuevo
+
         if (upsertError) {
             throw new Error(`Error al guardar los servicios: ${upsertError.message}`);
         }
     }
+
+    console.log('Servicios guardados con éxito.');
 }
 
 
