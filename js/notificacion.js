@@ -71,98 +71,93 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
   function renderNotifications() {
-  const unreadCount = allNotifications.filter(n => !n.leido).length;
-  notificationCounts.forEach(el => {
-    el.textContent = unreadCount;
-    el.style.display = unreadCount > 0 ? 'flex' : 'none';
-  });
+      const unreadCount = allNotifications.filter(n => !n.leido).length;
+      notificationCounts.forEach(el => {
+        el.textContent = unreadCount;
+        el.style.display = unreadCount > 0 ? 'flex' : 'none';
+      });
 
-  notificationLists.forEach(list => {
-    if (allNotifications.length === 0) {
-      list.innerHTML = '<li class="notification-item no-notifications">No tienes notificaciones.</li>';
-      return;
-    }
+      notificationLists.forEach(list => {
+        if (allNotifications.length === 0) {
+          list.innerHTML = '<li class="notification-item no-notifications">No tienes notificaciones.</li>';
+          return;
+        }
 
-    list.innerHTML = allNotifications.map((n, index) => {
-      const timeAgo = getTimeAgo(new Date(n.created_at));
-      const isUnread = !n.leido ? 'unread' : '';
-      const icon = getIconForType(n.tipo);
+        list.innerHTML = allNotifications.map((n, index) => {
+          const timeAgo = getTimeAgo(new Date(n.created_at));
+          const isUnread = !n.leido ? 'unread' : '';
+          const icon = getIconForType(n.tipo);
 
-      let message = n.mensaje || 'Notificación sin mensaje.';
-      if (n.cita && n.cita.tipo_servicio) {
-        const tipoServicioTexto = n.cita.tipo_servicio === 'domicilio' ? ' (A Domicilio)' : ' (En Estudio)';
-        message += tipoServicioTexto;
-      }
+          let message = n.mensaje || 'Notificación sin mensaje.';
+          if (n.cita && n.cita.tipo_servicio) {
+            const tipoServicioTexto = n.cita.tipo_servicio === 'domicilio' ? ' (A Domicilio)' : ' (En Estudio)';
+            message += tipoServicioTexto;
+          }
 
-      return `
-        <li class="notification-item ${isUnread}" data-id="${n.id}">
-          <div class="notification-content">
-            <a href="#" class="notification-link" data-index="${index}">
-              <i class="${icon}"></i>
-              <div>
-                <p>${message}</p>
-                <small>${timeAgo}</small>
+          // **MEJORA**: Se elimina el botón de basura (.delete-action) que ya no es necesario.
+          return `
+            <li class="notification-item ${isUnread}" data-id="${n.id}">
+              <div class="notification-content">
+                <a href="#" class="notification-link" data-index="${index}">
+                  <i class="${icon}"></i>
+                  <div>
+                    <p>${message}</p>
+                    <small>${timeAgo}</small>
+                  </div>
+                </a>
               </div>
-            </a>
-          </div>
-          <div class="delete-action" data-id="${n.id}">
-            <i class="fas fa-trash"></i>
-          </div>
-        </li>
-      `;
-    }).join('');
+            </li>
+          `;
+        }).join('');
 
-    // Agregar eventos de deslizar y borrar
-    setupSwipeToDelete();
-  });
-}
-    // --- Lógica Realtime ---
-    // En /js/notificacion.js
-
-function setupRealtimeListener() {
-    if (!currentUserId) return;
-
-    const channelName = `realtime:notifications:${currentUserId}`;
-    if (notificationChannel) {
-        supabaseClient.removeChannel(notificationChannel);
+        // **MODIFICADO**: Se llama a la nueva función de deslizamiento.
+        setupSwipeToDelete();
+      });
     }
-    
-    console.log(`[Realtime] Intentando suscribirse al canal: ${channelName}`);
 
-    notificationChannel = supabaseClient
-        .channel(channelName)
-        .on(
-            'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notificaciones',
-                filter: `barbero_id=eq.${currentUserId}`
-            },
-            (payload) => {
-                console.log('[Realtime] ¡Nueva notificación recibida! 🎉', payload.new);
-                handleNewNotification(payload.new);
-            }
-        )
-        .subscribe((status, error) => {
-            if (status === 'SUBSCRIBED') {
-                console.log('[Realtime] ¡Conexión exitosa al canal! ✅');
-            }
-            if (status === 'CHANNEL_ERROR') {
-                console.error('[Realtime] Error de canal. La causa más común es que el proyecto de Supabase está pausado. Revisa tu dashboard.', error);
-            }
-            if (status === 'TIMED_OUT') {
-                 console.warn('[Realtime] La conexión expiró (Timed Out). Reintentando...');
-            }
-        });
-}
+    // --- Lógica Realtime ---
+    function setupRealtimeListener() {
+        if (!currentUserId) return;
+
+        const channelName = `realtime:notifications:${currentUserId}`;
+        if (notificationChannel) {
+            supabaseClient.removeChannel(notificationChannel);
+        }
+        
+        console.log(`[Realtime] Intentando suscribirse al canal: ${channelName}`);
+
+        notificationChannel = supabaseClient
+            .channel(channelName)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notificaciones',
+                    filter: `barbero_id=eq.${currentUserId}`
+                },
+                (payload) => {
+                    console.log('[Realtime] ¡Nueva notificación recibida! 🎉', payload.new);
+                    handleNewNotification(payload.new);
+                }
+            )
+            .subscribe((status, error) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Realtime] ¡Conexión exitosa al canal! ✅');
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('[Realtime] Error de canal. La causa más común es que el proyecto de Supabase está pausado. Revisa tu dashboard.', error);
+                }
+                if (status === 'TIMED_OUT') {
+                     console.warn('[Realtime] La conexión expiró (Timed Out). Reintentando...');
+                }
+            });
+    }
     
     async function handleNewNotification(newNotificationData) {
-        // Evita duplicados: verifica si ya existe por ID
         if (allNotifications.some(n => n.id === newNotificationData.id)) {
-            return; // Ya existe, no la agregues de nuevo
+            return;
         }
-        // Para obtener los datos completos de la cita, hacemos una consulta rápida
         const { data: fullNotification, error } = await supabaseClient
             .from('notificaciones')
             .select('*, cita:citas(*, barbero_servicios(*, servicios_maestro(*)))')
@@ -170,9 +165,7 @@ function setupRealtimeListener() {
             .single();
 
         const notification = error ? newNotificationData : fullNotification;
-
-        allNotifications.unshift(notification); // Solo agrega una vez
-
+        allNotifications.unshift(notification);
         renderNotifications();
         showToastNotification(notification);
         document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
@@ -198,15 +191,11 @@ function setupRealtimeListener() {
         const toast = document.createElement('div');
         toast.className = 'toast-notification';
         const icon = getIconForType(notification.tipo);
-
-        // =========== INICIO DE LA MEJORA PARA EL TOAST ===========
         let message = notification.mensaje || 'Nueva notificación';
         if (notification.cita && notification.cita.tipo_servicio) {
             const tipoServicioTexto = notification.cita.tipo_servicio === 'domicilio' ? ' (A Domicilio)' : '';
             message += tipoServicioTexto;
         }
-        // ============ FIN DE LA MEJORA PARA EL TOAST ============
-
         toast.innerHTML = `<i class="${icon}"></i> <p>${message}</p>`;
         document.body.appendChild(toast);
         
@@ -286,152 +275,102 @@ function setupRealtimeListener() {
             }
         });
     }
-
+    
     // --- Iniciar ---
     initNotifications();
 });
 
 /**
- * Configura el deslizamiento y borrado de notificaciones
+ * **FUNCIÓN ACTUALIZADA Y MEJORADA**
+ * Configura la lógica de deslizamiento para eliminar notificaciones.
  */
 function setupSwipeToDelete() {
-  const notificationItems = document.querySelectorAll('.notification-item');
+    const notificationItems = document.querySelectorAll('.notification-list .notification-item');
 
-  notificationItems.forEach(item => {
-    let startX = 0;
-    let currentX = 0;
-    let isSwiping = false;
+    notificationItems.forEach(item => {
+        // Previene que se añadan múltiples listeners al mismo elemento
+        if (item.dataset.swipeInitialized) return;
+        item.dataset.swipeInitialized = 'true';
 
-    item.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
-      isSwiping = true;
+        let startX = 0;
+        let deltaX = 0;
+        let isSwiping = false;
+
+        item.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSwiping = true;
+            // Quita la transición durante el deslizamiento para un control directo
+            item.style.transition = 'none';
+        }, { passive: true });
+
+        item.addEventListener('touchmove', (e) => {
+            if (!isSwiping) return;
+            deltaX = e.touches[0].clientX - startX;
+
+            // Solo actúa si el deslizamiento es hacia la derecha (positivo)
+            if (deltaX > 0) {
+                item.style.transform = `translateX(${deltaX}px)`;
+            }
+        }, { passive: true });
+
+        item.addEventListener('touchend', () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            
+            // Umbral: El deslizamiento debe ser mayor al 40% del ancho del elemento
+            const swipeThreshold = item.offsetWidth * 0.4;
+
+            // Vuelve a aplicar la transición para una animación fluida
+            item.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
+
+            if (deltaX > swipeThreshold) {
+                // Éxito: El deslizamiento superó el umbral, se inicia la animación de borrado
+                item.classList.add('item-is-deleting');
+
+                // Escucha el final de la animación para borrar el elemento
+                item.addEventListener('transitionend', () => {
+                    const notificationId = item.dataset.id;
+                    if (notificationId) {
+                        deleteNotification(notificationId);
+                    }
+                }, { once: true }); // El listener se elimina solo después de ejecutarse
+            } else {
+                // Fallo: El deslizamiento fue muy corto, la notificación vuelve a su lugar
+                item.style.transform = 'translateX(0)';
+            }
+            
+            deltaX = 0; // Resetea la variable
+        });
     });
-
-    item.addEventListener('touchmove', (e) => {
-      if (!isSwiping) return;
-      currentX = e.touches[0].clientX;
-      const diff = currentX - startX;
-
-      if (diff < -50) {
-        item.classList.add('swiped');
-      } else {
-        item.classList.remove('swiped');
-      }
-    });
-
-    item.addEventListener('touchend', async () => {
-      if (item.classList.contains('swiped')) {
-        const notificationId = item.dataset.id;
-        await deleteNotification(notificationId);
-      }
-    });
-    
-    function setupSwipeToDelete() {
-  const items = document.querySelectorAll('.notification-item');
-  
-  items.forEach(item => {
-    let startX = 0;
-    let currentX = 0;
-
-    // Touch events para móvil
-    item.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
-    });
-
-    item.addEventListener('touchmove', (e) => {
-      currentX = e.touches[0].clientX;
-      const diff = startX - currentX;
-      
-      if (diff > 50) {
-        item.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
-      }
-    });
-
-    item.addEventListener('touchend', () => {
-      const diff = startX - currentX;
-      
-      if (diff > 80) {
-        const id = item.dataset.id;
-        item.style.transition = 'transform 0.3s, opacity 0.3s';
-        item.style.transform = 'translateX(-100%)';
-        item.style.opacity = '0';
-        
-        setTimeout(() => {
-          deleteNotification(id);
-        }, 300);
-      } else {
-        item.style.transform = 'translateX(0)';
-      }
-    });
-
-    // Mouse events para desktop
-    let isMouseDown = false;
-    
-    item.addEventListener('mousedown', (e) => {
-      isMouseDown = true;
-      startX = e.clientX;
-    });
-
-    item.addEventListener('mousemove', (e) => {
-      if (!isMouseDown) return;
-      currentX = e.clientX;
-      const diff = startX - currentX;
-      
-      if (diff > 0) {
-        item.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
-      }
-    });
-
-    item.addEventListener('mouseup', () => {
-      if (!isMouseDown) return;
-      isMouseDown = false;
-      
-      const diff = startX - currentX;
-      
-      if (diff > 80) {
-        const id = item.dataset.id;
-        deleteNotification(id);
-      } else {
-        item.style.transform = 'translateX(0)';
-      }
-    });
-
-    item.addEventListener('mouseleave', () => {
-      item.style.transform = 'translateX(0)';
-      isMouseDown = false;
-    });
-  });
 }
 
-    // Click en el botón de borrar
-    const deleteBtn = item.querySelector('.delete-action');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const notificationId = e.target.closest('.delete-action').dataset.id;
-        await deleteNotification(notificationId);
-      });
-    }
-  });
-}
 
 /**
- * Borra permanentemente una notificación de la base de datos
+ * Borra permanentemente una notificación de la base de datos y actualiza la UI.
  */
 async function deleteNotification(notificationId) {
-  if (!notificationId || !supabaseClient) return;
+  if (!notificationId || typeof supabaseClient === 'undefined') return;
 
+  // Optimización: Elimina el elemento del DOM inmediatamente para una respuesta visual rápida.
+  const itemToDelete = document.querySelector(`.notification-item[data-id='${notificationId}']`);
+  if (itemToDelete) {
+      itemToDelete.remove();
+  }
+
+  // Actualiza el array de estado local
+  allNotifications = allNotifications.filter(n => String(n.id) !== String(notificationId));
+  
+  // Vuelve a renderizar para actualizar contadores y mostrar el mensaje "No hay notificaciones" si es necesario
+  renderNotifications(); 
+
+  // Finalmente, elimina el registro de la base de datos en segundo plano
   const { error } = await supabaseClient
     .from('notificaciones')
     .delete()
     .eq('id', notificationId);
 
   if (error) {
-    console.error('Error al borrar:', error);
-    return;
+    console.error('Error al borrar la notificación en la base de datos:', error);
+    // Aquí podrías tener una lógica para restaurar la notificación si falla el borrado
   }
-
-  // Aquí está la corrección: se accede directamente a 'allNotifications'
-  allNotifications = allNotifications.filter(n => String(n.id) !== String(notificationId));
-  renderNotifications();
 }
