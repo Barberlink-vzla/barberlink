@@ -291,48 +291,60 @@ modal-save-status.error { color: var(--danger-color); }
     </div>
     
     <div class="alert-modal-overlay" id="payment-modal-overlay">
-        <div class="alert-modal" id="payment-modal">
-            <button class="alert-modal-close" id="payment-modal-close-btn" aria-label="Cerrar modal">&times;</button>
-            <h3>Registrar Pago</h3>
-            <p>Registra el pago para la cita de <strong id="payment-client-name"></strong> por un monto de <strong id="payment-amount"></strong>.</p>
+    <div class="alert-modal" id="payment-modal">
+        <button class="alert-modal-close" id="payment-modal-close-btn" aria-label="Cerrar modal">&times;</button>
+        <h3>Registrar Pago</h3>
+        <p>Registra el pago para la cita de <strong id="payment-client-name"></strong>.</p>
+        <p>Monto de Referencia: <strong id="payment-amount"></strong>.</p>
 
-            <form id="payment-form" novalidate>
-                <input type="hidden" id="payment-cita-id" name="cita_id">
+        <form id="payment-form" novalidate>
+            <input type="hidden" id="payment-cita-id" name="cita_id">
 
-                <div class="payment-options">
-                    <p><strong>Método de Pago:</strong></p>
-                    <div class="radio-group">
-                        <input type="radio" id="pay-efectivo" name="metodo_pago" value="efectivo" checked>
-                        <label for="pay-efectivo"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
-                    </div>
-                    <div class="radio-group">
-                        <input type="radio" id="pay-transferencia" name="metodo_pago" value="transferencia">
-                        <label for="pay-transferencia"><i class="fas fa-university"></i> Transferencia</label>
-                    </div>
-                    <div class="radio-group">
-                        <input type="radio" id="pay-pago-movil" name="metodo_pago" value="pago_movil">
-                        <label for="pay-pago-movil"><i class="fas fa-mobile-alt"></i> Pago Móvil</label>
-                    </div>
-                    <div class="radio-group">
-                        <input type="radio" id="pay-no-pagado" name="metodo_pago" value="no_pagado">
-                        <label for="pay-no-pagado"><i class="fas fa-exclamation-triangle"></i> El Cliente Debe</label>
-                    </div>
+            <div class="payment-options">
+                <p><strong>Método de Pago:</strong></p>
+                <div class="radio-group">
+                    <input type="radio" id="pay-efectivo" name="metodo_pago" value="efectivo" checked>
+                    <label for="pay-efectivo"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
                 </div>
-
-                <div id="payment-deadline-container" class="input-group" style="display: none;">
-                    <i class="fas fa-calendar-day"></i>
-                    <input type="date" id="payment-deadline-date" name="fecha_limite_pago">
-                    <label for="payment-deadline-date" class="active">Fecha Límite de Pago</label>
+                <div class="radio-group">
+                    <input type="radio" id="pay-transferencia" name="metodo_pago" value="transferencia">
+                    <label for="pay-transferencia"><i class="fas fa-university"></i> Transferencia</label>
                 </div>
-                
-                <div id="payment-status-message" class="status-message" style="margin-top: 15px;"></div>
+                <div class="radio-group">
+                    <input type="radio" id="pay-pago-movil" name="metodo_pago" value="pago_movil">
+                    <label for="pay-pago-movil"><i class="fas fa-mobile-alt"></i> Pago Móvil</label>
+                </div>
+                <div class="radio-group">
+                    <input type="radio" id="pay-no-pagado" name="metodo_pago" value="no_pagado">
+                    <label for="pay-no-pagado"><i class="fas fa-exclamation-triangle"></i> El Cliente Debe</label>
+                </div>
+            </div>
 
-                <button type="submit" id="save-payment-btn" class="style-button confirm-btn" style="width: 100%; margin-top: 20px;">
-                    <i class="fas fa-save"></i> Guardar y Finalizar Cita
+            <div id="payment-deadline-container" class="input-group" style="display: none;">
+                <i class="fas fa-calendar-day"></i>
+                <input type="date" id="payment-deadline-date" name="fecha_limite_pago">
+                <label for="payment-deadline-date" class="active">Fecha Límite de Pago</label>
+            </div>
+            
+            <div id="payment-status-message" class="status-message" style="margin-top: 15px;"></div>
+
+            <div id="cash-payment-options" class="modal-button-group" style="display: none; margin-top: 15px;">
+                <p><strong>¿En qué moneda se recibió el efectivo?</strong></p>
+                <button type="button" id="pay-cash-usd-btn" class="style-button confirm-btn">
+                    <i class="fas fa-dollar-sign"></i> Recibido en USD
                 </button>
+                <button type="button" id="pay-cash-ves-btn" class="style-button" style="background-color: var(--login-primary-accent);">
+                    <i class="fas fa-money-bill-wave"></i> Recibido en VES
+                </button>
+            </div>
+        
+            <button type="submit" id="save-payment-btn" class="style-button confirm-btn" style="width: 100%; margin-top: 20px; display: none;">
+                <i class="fas fa-save"></i> Registrar Pago y Finalizar Cita
+            </button>
+
             </form>
-        </div>
     </div>
+</div>
     
     <div id="cash-payment-options" class="modal-button-group" style="display: none; margin-top: 15px;">
     <p><strong>¿En qué moneda se recibió el efectivo?</strong></p>
