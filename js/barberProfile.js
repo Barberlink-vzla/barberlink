@@ -2380,6 +2380,8 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 
 // EN: js/barberProfile.js
 
+// EN: js/barberProfile.js
+
 async function saveServices() {
     // Asegura que tenemos el ID de usuario para crear la carpeta
     if (!currentUserId) {
