@@ -336,6 +336,92 @@ modal-save-status.error { color: var(--danger-color); }
     height: 25px;
     cursor: pointer;
 }
+
+/* Pega esto al final de la etiqueta <style> en barber_profile.html */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.service-item-with-image {
+    background: var(--container-bg);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    border: 1px solid var(--border-color-light);
+    position: relative;
+}
+.service-image-container {
+    flex-shrink: 0;
+    position: relative;
+    width: 80px;
+    height: 80px;
+    cursor: pointer;
+}
+.service-img-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+}
+.service-img-upload-label {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background-color: var(--login-primary-accent);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    border: 2px solid var(--login-card-bg);
+    transition: transform 0.2s;
+}
+.service-img-upload-label:hover {
+    transform: scale(1.1);
+}
+.service-img-upload-input {
+    display: none;
+}
+.service-details {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.service-details .service-name {
+    font-weight: 500;
+    color: var(--primary-text-color);
+}
+.service-details .service-inputs {
+    display: flex;
+    gap: 10px;
+}
+.service-details .service-inputs input {
+    width: 100%;
+    padding: 8px;
+    background-color: var(--login-card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    color: var(--primary-text-color);
+}
+.remove-custom-service {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
     </style>
 </head>
 <body class="barber-profile-page">
