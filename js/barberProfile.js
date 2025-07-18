@@ -550,7 +550,7 @@ async function handleWalkInSubmit(e) {
         const endTime = new Date(now.getTime() + duration * 60000).toTimeString().slice(0, 8);
 
         const newCita = {
-            barbero_id: currentUserId,
+           barbero_id: currentBarberProfileId,
             cliente_id: client.id,
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
@@ -2590,7 +2590,7 @@ async function saveAvailabilityForDay(dayIndex) {
                 throw new Error(`Horario inválido: la hora de inicio (${start}) debe ser anterior a la de fin (${end}).`);
             }
             slotsForDay.push({
-                barbero_id: currentUserId,
+                barbero_id: currentBarberProfileId,
                 dia_semana: dayIndex,
                 hora_inicio: start,
                 hora_fin: end
