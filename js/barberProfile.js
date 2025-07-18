@@ -2155,6 +2155,8 @@ function closeCalendarActionModal() {
     }
 }
 
+// En: js/barberProfile.js
+
 async function addOtherService() {
     const nameInput = document.getElementById('other-service-name');
     const priceInput = document.getElementById('other-service-price');
@@ -2171,9 +2173,9 @@ async function addOtherService() {
     
     if (saveStatus) saveStatus.textContent = 'Añadiendo...';
 
-    // ¡La corrección clave está aquí!
+    // **CORRECCIÓN CLAVE:** Usar 'currentBarberProfileId' que es el ID de la tabla de perfiles.
     const { error } = await supabaseClient.from('barbero_servicios').insert({
-        barbero_id: currentUserId, // <-- ¡CORREGIDO! Se usa el ID de autenticación.
+        barbero_id: currentBarberProfileId, // <-- ¡CORREGIDO!
         servicio_id: null,
         precio: price,
         nombre_personalizado: name,
@@ -2189,10 +2191,14 @@ async function addOtherService() {
         priceInput.value = '';
         durationInput.value = '30';
         
-        // Esta parte ya usaba el ID de perfil correcto (currentBarberProfileId) para cargar los servicios, lo cual está bien.
+        // Recargar los servicios para refrescar la UI
         const { data, error: errLoad } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId);
-        if (errLoad) console.error("Error recargando servicios:", errLoad);
-        else renderServices(data || []);
+        if (errLoad) {
+            console.error("Error recargando servicios:", errLoad);
+        } else {
+            barberServicesData = data || [];
+            renderServices(barberServicesData);
+        }
         setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 2000);
     }
 }
@@ -2276,99 +2282,165 @@ async function saveBasicProfile() {
 }
 
 
-// REEMPLAZA ESTA FUNCIÓN en js/barberProfile.js
+// Función para subir imagen de servicio a Cloudinary con carpeta por barbero
+async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
+    try {
+        // Primero obtenemos la firma desde tu Edge Function
+        const response = await supabaseClient.functions.invoke('generate-cloudinary-signature', {
+            body: { barberId, serviceId }
+        });
+
+        if (response.error) {
+            throw new Error(response.error.message);
+        }
+
+        const { signature, timestamp, api_key, cloud_name, folder } = response.data;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', api_key);
+        formData.append('timestamp', timestamp.toString());
+        formData.append('signature', signature);
+        formData.append('folder', folder);
+        formData.append('eager', 'w_400,h_400,c_fill,g_auto');
+
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (uploadData.secure_url) {
+            return uploadData.secure_url;
+        } else {
+            throw new Error(uploadData.error?.message || 'Error al subir imagen');
+        }
+
+    } catch (error) {
+        console.error('Error en uploadServiceImageToCloudinary:', error);
+        throw error;
+    }
+}
+
+// Función para subir imagen de servicio a Cloudinary con carpeta por barbero
+async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
+    try {
+        // Primero obtenemos la firma desde tu Edge Function
+        const response = await supabaseClient.functions.invoke('generate-cloudinary-signature', {
+            body: { barberId, serviceId }
+        });
+
+        if (response.error) {
+            throw new Error(response.error.message);
+        }
+
+        const { signature, timestamp, api_key, cloud_name, folder } = response.data;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', api_key);
+        formData.append('timestamp', timestamp.toString());
+        formData.append('signature', signature);
+        formData.append('folder', folder);
+        formData.append('eager', 'w_400,h_400,c_fill,g_auto');
+
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (uploadData.secure_url) {
+            return uploadData.secure_url;
+        } else {
+            throw new Error(uploadData.error?.message || 'Error al subir imagen');
+        }
+
+    } catch (error) {
+        console.error('Error en uploadServiceImageToCloudinary:', error);
+        throw error;
+    }
+}
+
+// En: js/barberProfile.js
 
 async function saveServices() {
-    if (!currentUserId || !currentBarberProfileId) {
+    if (!currentBarberProfileId) {
         throw new Error("No se pudo identificar al barbero para guardar los servicios.");
     }
 
     const serviceItems = servicesSection.querySelectorAll('.service-item-with-image');
-    let allUpserts = [];
+    const upserts = [];
 
-    // Esta función sube una imagen a Cloudinary
-    const uploadToCloudinary = async (file) => {
-        // 1. Pide una firma de subida a nuestra Edge Function
-        const { data: signatureData, error: signatureError } = await supabaseClient.functions.invoke('generate-cloudinary-signature', {
-            body: { folder: `barbershop/services/${currentBarberProfileId}` }
-        });
-
-        if (signatureError) {
-            throw new Error('Error al obtener la firma de Cloudinary: ' + signatureError.message);
-        }
-
-        // 2. Prepara el formulario para enviar a Cloudinary
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('api_key', signatureData.api_key);
-        formData.append('timestamp', signatureData.timestamp);
-        formData.append('signature', signatureData.signature);
-        formData.append('folder', `barbershop/services/${currentBarberProfileId}`);
-
-        // 3. Sube la imagen directamente a Cloudinary
-        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/image/upload`;
-        const uploadResponse = await fetch(cloudinaryUrl, { method: 'POST', body: formData });
-        
-        if (!uploadResponse.ok) {
-            throw new Error('La subida a Cloudinary falló.');
-        }
-
-        const uploadedImageData = await uploadResponse.json();
-        return uploadedImageData.secure_url; // Devuelve la URL segura de la imagen
-    };
-
-    // Recorre cada servicio mostrado en la UI
     for (const item of serviceItems) {
-        const serviceIdRaw = item.dataset.serviceId;
-        const isCustom = item.dataset.isCustom === 'true';
-
         const price = parseFloat(item.querySelector('.service-price-input').value);
         const duration = parseInt(item.querySelector('.service-duration-input').value, 10);
         const fileInput = item.querySelector('.service-img-upload-input');
         const imgPreview = item.querySelector('.service-img-preview');
-
-        if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
-            alert(`Datos inválidos para el servicio "${item.querySelector('.service-name').textContent}". Revisa precio y duración.`);
-            continue; // Salta este servicio si los datos son inválidos
-        }
         
-        let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
+        // Solo procesamos servicios que tengan precio y duración válidos
+        if (!isNaN(price) && price >= 0 && !isNaN(duration) && duration > 0) {
+            const serviceIdRaw = item.dataset.serviceId;
+            const isCustom = item.dataset.isCustom === 'true';
+            
+            let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
 
-        // Si se seleccionó un archivo nuevo, lo sube
-        if (fileInput.files[0]) {
-            try {
-                imageUrl = await uploadToCloudinary(fileInput.files[0]);
-            } catch (uploadError) {
-                console.error("Error subiendo imagen:", uploadError);
-                alert(`Hubo un error al subir la imagen para el servicio ${item.querySelector('.service-name').textContent}. El servicio se guardará sin la nueva imagen.`);
+
+if (fileInput.files[0]) {
+    try {
+        const compressedFile = await imageCompression(fileInput.files[0], { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
+        imageUrl = await uploadServiceImageToCloudinary(compressedFile, currentBarberProfileId, serviceId);
+    } catch (uploadError) {
+        console.error("Error subiendo imagen:", uploadError);
+        alert(`Hubo un error al subir la imagen para el servicio "${serviceName}". Se guardará sin imagen.`);
+    }
+}
+            
+            let serviceData = {
+                barbero_id: currentBarberProfileId,
+                precio: price,
+                duracion_minutos: duration,
+                imagen_url: imageUrl
+            };
+
+            // Diferenciamos entre servicios estándar (con servicio_id) y personalizados
+            if (isCustom) {
+                serviceData.id = parseInt(serviceIdRaw.replace('custom-', ''), 10);
+            } else {
+                serviceData.servicio_id = parseInt(serviceIdRaw, 10);
             }
-        }
-        
-        let upsertData = {
-            barbero_id: currentBarberProfileId,
-            precio: price,
-            duracion_minutos: duration,
-            imagen_url: imageUrl
-        };
 
-        if (isCustom) {
-            // Es un servicio personalizado, usamos su ID único de la tabla
-            upsertData.id = parseInt(serviceIdRaw.replace('custom-', ''), 10);
-        } else {
-            // Es un servicio estándar, usamos el ID del servicio maestro
-            upsertData.servicio_id = parseInt(serviceIdRaw, 10);
+            upserts.push(serviceData);
         }
-
-        allUpserts.push(upsertData);
     }
     
-    if (allUpserts.length > 0) {
-        const { error: upsertError } = await supabaseClient
-            .from('barbero_servicios')
-            .upsert(allUpserts); // `upsert` actualiza si existe, o inserta si es nuevo
+    if (upserts.length > 0) {
+        // **CORRECCIÓN CLAVE:** Especificamos 'onConflict' para servicios estándar
+        // y manejamos los personalizados (que no tienen 'servicio_id') por separado.
+        
+        const standardServices = upserts.filter(s => s.servicio_id != null);
+        const customServices = upserts.filter(s => s.servicio_id == null);
 
-        if (upsertError) {
-            throw new Error(`Error al guardar los servicios: ${upsertError.message}`);
+        let errors = [];
+
+        if(standardServices.length > 0) {
+            const { error } = await supabaseClient
+                .from('barbero_servicios')
+                .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' }); // ¡ESTA ES LA CLAVE!
+            if (error) errors.push(error);
+        }
+
+        if(customServices.length > 0) {
+            const { error } = await supabaseClient
+                .from('barbero_servicios')
+                .upsert(customServices); // Los personalizados se basan en su propio ID (PK)
+            if (error) errors.push(error);
+        }
+
+        if (errors.length > 0) {
+            throw new Error(`Error al guardar servicios: ${errors.map(e => e.message).join(', ')}`);
         }
     }
 
