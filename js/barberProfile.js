@@ -240,15 +240,17 @@ async function initProfileModule() {
 
 
 // --- LÓGICA DE CARGA DE DATOS ---
+// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA VERSIÓN
 async function fetchBarberClients() {
-    if (!currentUserId) return;
+    if (!currentBarberProfileId) return; // ✅ CORRECCIÓN: Depender del ID de Perfil
+
     const { data, error } = await supabaseClient
         .from('clientes')
         .select('id, nombre, apellido, telefono')
-        .eq('barbero_id', currentUserId);
+        .eq('barbero_id', currentBarberProfileId); // ✅ CORRECCIÓN: Usar el ID de Perfil
 
     if (error) {
-        console.error('Error fetching clients for walk-in:', error);
+        console.error('Error fetching clients:', error);
         barberClients = [];
         return;
     }
