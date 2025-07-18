@@ -1757,6 +1757,8 @@ function renderBarberForm(barberData) {
 
 // EN: js/barberProfile.js
 
+// REEMPLAZA esta función en js/barberProfile.js
+
 function renderServices(barberServices) {
     if (!servicesSection) return;
 
@@ -1764,9 +1766,16 @@ function renderServices(barberServices) {
     const createServiceHTML = (service, isCustom) => {
         const serviceId = isCustom ? `custom-${service.id}` : service.id;
         const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
-        const imageUrl = service.imagen_url || 'https://placehold.co/100x100/2a2f3c/7e8a9b?text=Subir\\nFoto';
+        const placeholderUrl = 'https://placehold.co/100x100/2a2f3c/7e8a9b?text=Subir\\nFoto';
         
-        // Atributos de datos para el manejo de la subida
+        // --- INICIO DE LA CORRECCIÓN CLAVE ---
+        // Añadimos un parámetro de tiempo a la URL para evitar problemas de caché del navegador.
+        // Esto fuerza al navegador a cargar siempre la versión más reciente de la imagen.
+        const imageUrl = service.imagen_url 
+            ? `${service.imagen_url}?t=${new Date().getTime()}` 
+            : placeholderUrl;
+        // --- FIN DE LA CORRECCIÓN CLAVE ---
+        
         const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
 
         return `
@@ -1790,10 +1799,10 @@ function renderServices(barberServices) {
         `;
     };
     
-    // Filtramos los servicios estándar que el barbero ha seleccionado
+    // El resto de la función permanece exactamente igual...
     const standardServices = masterServices.map(ms => {
         const existingService = barberServices.find(bs => bs.servicio_id === ms.id) || { servicios_maestro: ms, precio: '', duracion_minutos: 30 };
-        return { ...existingService, id: ms.id }; // Aseguramos que tenga un id base
+        return { ...existingService, id: ms.id };
     });
 
     const customServices = barberServices.filter(bs => bs.nombre_personalizado);
@@ -1816,7 +1825,7 @@ function renderServices(barberServices) {
     
     servicesSection.innerHTML = html;
 
-    // Listeners para previsualizar la imagen al seleccionarla
+    // Listeners (sin cambios)
     servicesSection.querySelectorAll('.service-img-upload-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -1830,7 +1839,6 @@ function renderServices(barberServices) {
         });
     });
     
-    // Listener para eliminar servicios personalizados (sin cambios)
     servicesSection.querySelectorAll('.remove-custom-service').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const serviceId = e.currentTarget.dataset.id;
@@ -1845,7 +1853,7 @@ function renderServices(barberServices) {
                     const { data, error: errLoad } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId);
                     if (errLoad) console.error("Error recargando servicios:", errLoad);
                     else {
-                        barberServicesData = data || []; // Actualiza la variable global
+                        barberServicesData = data || [];
                         renderServices(barberServicesData);
                     }
                     setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 2000);
@@ -2216,19 +2224,28 @@ async function logout() {
 
 // REEMPLAZA ESTA FUNCIÓN en barberProfile.js
 
+// REEMPLAZA esta función en barberProfile.js
+
 async function saveAllChanges() {
     if (saveStatus) saveStatus.textContent = "Guardando...";
     if (saveAllButton) saveAllButton.disabled = true;
 
     try {
-        // La función ahora devuelve el perfil actualizado.
         const updatedProfile = await saveBasicProfile();
-        await saveServices();
+        await saveServices(); // Sube la imagen y guarda los datos
         await saveAvailability();
-        await saveCurrencySettings(); // <-- AÑADE ESTA LLAMADA
+        await saveCurrencySettings();
 
+        // --- INICIO DE LA MEJORA DE EXPERIENCIA ---
+        // 1. Volvemos a pedir los datos de los servicios desde Supabase para obtener las nuevas URLs.
+        const { data: newServicesData, error } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId);
+        if (error) throw new Error("No se pudieron recargar los servicios después de guardar.");
+        
+        // 2. Actualizamos la variable global y volvemos a renderizar la sección de servicios.
+        barberServicesData = newServicesData || [];
+        renderServices(barberServicesData);
+        // --- FIN DE LA MEJORA DE EXPERIENCIA ---
 
-        // Volvemos a renderizar el formulario con la nueva información.
         if (updatedProfile) {
             renderBarberForm(updatedProfile);
         }
@@ -2236,7 +2253,6 @@ async function saveAllChanges() {
         if (saveStatus) saveStatus.textContent = "¡Todos los cambios guardados con éxito! ✅";
         
         if (activeEditingDayIndex !== -1) {
-             // Esta lógica es para la disponibilidad, la dejamos como está.
             displayAvailabilityForDay(activeEditingDayIndex);
         }
 
