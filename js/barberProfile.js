@@ -297,6 +297,11 @@ async function loadInitialData() {
             if (saveStatus) saveStatus.textContent = "Error: Perfil de barbero no encontrado.";
             return;
         }
+        
+           // --- PASO DE DEPURACIÓN ---
+    // Imprimimos el ID que vamos a usar para asegurarnos de que es el correcto.
+    console.log("Intentando usar el ID de Perfil:", currentBarberProfileId);
+    // --- FIN DE DEPURACIÓN ---
 
         currentBarberProfileId = barberProfile.id;
         await currencyManager.init(supabaseClient, barberProfile);
