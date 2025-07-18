@@ -173,6 +173,10 @@ async function initProfileModule() {
         return;
     }
     console.log("Módulo de perfil iniciado correctamente. ✅");
+
+    // ✅ AÑADIR: Deshabilitar botones de acción importantes al inicio
+    if (saveAllButton) saveAllButton.disabled = true;
+    if (addOtherServiceButton) addOtherServiceButton.disabled = true;
     
     setupEventListeners();
     setupDashboardNavigation();
@@ -180,39 +184,26 @@ async function initProfileModule() {
     setupAlertModalListeners();
     setupConfirmationModalListeners();
     setupPaymentModalListeners();
-    setupWalkInModalListeners(); // AÑADIDO: configurar listeners del nuevo modal
+    setupWalkInModalListeners(); 
     setupCalendarActionModal();
-        setupReminderModalListeners(); // <-- AÑADIR ESTA LÍNEA
-        setupAlertModalListeners(); // <-- AÑADIR ESTA LÍNEA
-        
-        setupPasswordConfirmModalListeners(); // <-- ¡AÑADE ESTA LÍNEA AQUÍ!
+    setupReminderModalListeners(); 
+    setupAlertModalListeners(); 
+    setupPasswordConfirmModalListeners();
 
-
-   
-startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
-
+    startAppointmentChecker();
 
     await loadInitialData();
     
-    
-     // --- LÓGICA DE CARGA MEJORADA ---
     const appLoader = document.getElementById('app-loader');
     
     if (appLoader) {
-        // 1. Oculta el loader
         appLoader.classList.add('hidden');
     }
     
-    // 2. Muestra el contenido principal del dashboard
     document.body.classList.add('loaded');
-    // --- FIN DE LA MEJORA ---
     
-     handlePushNotificationRedirect();
-       // ¡AQUÍ ES DONDE AÑADES LA LÍNEA!
+    handlePushNotificationRedirect();
     handleUrlParameters();
-    
-
- 
  
     supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
@@ -227,12 +218,9 @@ startAppointmentChecker();// <-- ¡ESTA ES LA CORRECCIÓN CLAVE!
     });
     document.addEventListener('navigateToDate', (e) => {
         if (e.detail && e.detail.dateString) {
-        // --- MEJORA ---
-        // Guardamos el ID de la cita que viene desde la notificación
-        highlightedCitaId = e.detail.citaId || null; 
-        
-        navigateToDateFromNotification(e.detail.dateString);
-    }
+            highlightedCitaId = e.detail.citaId || null; 
+            navigateToDateFromNotification(e.detail.dateString);
+        }
     });
      
     document.addEventListener('datosCambiadosPorReserva', () => {
@@ -268,6 +256,7 @@ async function fetchBarberClients() {
 }
 
 
+// ✅ CORRECCIÓN: Función de carga de datos modificada
 async function loadInitialData() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
@@ -280,7 +269,6 @@ async function loadInitialData() {
     registerServiceWorker();
     startConfirmationChecker();
     
-
     await fetchBarberClients();
 
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
@@ -297,26 +285,17 @@ async function loadInitialData() {
             if (saveStatus) saveStatus.textContent = "Error: Perfil de barbero no encontrado.";
             return;
         }
-        
-           // --- PASO DE DEPURACIÓN ---
-    // Imprimimos el ID que vamos a usar para asegurarnos de que es el correcto.
-    console.log("Intentando usar el ID de Perfil:", currentBarberProfileId);
-    // --- FIN DE DEPURACIÓN ---
 
         currentBarberProfileId = barberProfile.id;
         await currencyManager.init(supabaseClient, barberProfile);
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
-   // --- INICIO DE LA CORRECCIÓN ---
-        // Ahora usamos el ID del PERFIL para cargar los servicios y la disponibilidad,
-        // que es como se debería relacionar en la base de datos.
         const [masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
-            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId), // <-- ¡CORREGIDO!
-            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio') // <-- ¡CORREGIDO!
+            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId),
+            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio')
         ]);
-        // --- FIN DE LA CORRECCIÓN ---
 
         if (masterServicesRes.error) throw new Error(`Servicios Maestros: ${masterServicesRes.error.message}`);
         if (barberServicesRes.error) throw new Error(`Servicios Barbero: ${barberServicesRes.error.message}`);
@@ -337,11 +316,9 @@ async function loadInitialData() {
         });
 
         renderBarberForm(barberProfile); 
-        renderServices(barberServicesRes.data); // <-- Pasamos los datos correctos
-
+        renderServices(barberServicesRes.data);
         renderBookingLink(currentUserId); 
         
-         // ¡Movemos el bloque aquí, dentro del 'try' donde 'barberProfile' sí existe!
         const markupInput = document.getElementById('tasa-markup');
         if (markupInput && barberProfile.porcentaje_markup_tasa != null) {
             markupInput.value = barberProfile.porcentaje_markup_tasa;
@@ -355,8 +332,12 @@ async function loadInitialData() {
     } catch (error) {
         console.error('Error cargando datos iniciales:', error);
         if (saveStatus) saveStatus.textContent = `Error al cargar: ${error.message}`;
+    } finally {
+        // ✅ AÑADIR: Habilitar los botones aquí, en el bloque `finally`,
+        // para asegurar que se activen después de la carga inicial.
+        if (saveAllButton) saveAllButton.disabled = false;
+        if (addOtherServiceButton) addOtherServiceButton.disabled = false;
     }
-    
 }
 
 
@@ -2197,6 +2178,7 @@ async function addOtherService() {
 
     const { error } = await supabaseClient
         .from('barbero_servicios')
+        console.log("🔍 Insertando servicio con barbero_id:", currentBarberProfileId);
         .insert({
             barbero_id: currentBarberProfileId, // Se asegura de usar el ID del PERFIL, no el de AUTH
             servicio_id: null,
@@ -2545,13 +2527,17 @@ async function saveAvailability() {
                 if (slot.hora_inicio >= slot.hora_fin) {
                     validationErrorMsg = `Horario inválido para ${daysOfWeek[dayIndex]}: la hora de inicio debe ser anterior a la de fin.`;
                 }
-                slotsToInsert.push({ barbero_id: currentUserId, dia_semana: dayIndex, hora_inicio: slot.hora_inicio, hora_fin: slot.hora_fin });
+                // ✅ CORRECCIÓN: Usar el ID del perfil, no el de autenticación.
+                slotsToInsert.push({ barbero_id: currentBarberProfileId, dia_semana: dayIndex, hora_inicio: slot.hora_inicio, hora_fin: slot.hora_fin });
             }
         });
     });
     if (validationErrorMsg) throw new Error(validationErrorMsg);
-    const { error: deleteError } = await supabaseClient.from('disponibilidad').delete().eq('barbero_id', currentUserId);
+    
+    // ✅ CORRECCIÓN: Usar el ID del perfil para el borrado.
+    const { error: deleteError } = await supabaseClient.from('disponibilidad').delete().eq('barbero_id', currentBarberProfileId);
     if (deleteError) throw new Error(`Disponibilidad (borrado): ${deleteError.message}`);
+    
     if (slotsToInsert.length > 0) {
         const { error: insertError } = await supabaseClient.from('disponibilidad').insert(slotsToInsert);
         if (insertError) throw new Error(`Disponibilidad (insertado): ${insertError.message}`);
