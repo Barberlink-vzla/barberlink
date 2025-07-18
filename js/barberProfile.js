@@ -2367,29 +2367,45 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 // En: js/barberProfile.js
 
 // ✅ Función corregida para guardar servicios con imágenes por barbero
-// ✅ Función final corregida para guardar servicios con imágenes y UUIDs válidos
+// En: js/barberProfile.js
+
 async function saveServices() {
     if (!currentBarberProfileId) {
         throw new Error("No se pudo identificar al barbero para guardar los servicios.");
     }
 
     const serviceItems = document.querySelectorAll('.service-item-with-image');
-    const standardServices = [];
-    const customServices = [];
+    const servicesToUpsert = [];
+    const errors = [];
 
     for (const item of serviceItems) {
-        const price = parseFloat(item.querySelector('.service-price-input')?.value || 0);
-        const duration = parseInt(item.querySelector('.service-duration-input')?.value || 0, 10);
+        const priceInput = item.querySelector('.service-price-input');
+        const durationInput = item.querySelector('.service-duration-input');
         const fileInput = item.querySelector('.service-img-upload-input');
         const imgPreview = item.querySelector('.service-img-preview');
+        
+        // Solo procesamos servicios que tengan precio y duración definidos
+        if (!priceInput?.value || !durationInput?.value) {
+            continue;
+        }
 
-        if (isNaN(price) || price <= 0 || isNaN(duration) || duration <= 0) continue;
+        const price = parseFloat(priceInput.value);
+        const duration = parseInt(durationInput.value, 10);
+
+        if (isNaN(price) || price <= 0 || isNaN(duration) || duration <= 0) {
+            continue;
+        }
 
         const serviceIdRaw = item.dataset.serviceId;
         const isCustom = item.dataset.isCustom === 'true';
 
-        let imageUrl = imgPreview?.src?.startsWith('https') ? imgPreview.src : null;
-
+        let imageUrl = imgPreview?.src;
+        // Si la URL no es de Cloudinary o un placeholder, la reseteamos para forzar subida si hay archivo
+        if (imageUrl && !imageUrl.startsWith('https') && !imageUrl.startsWith('data:')) {
+            imageUrl = null;
+        }
+        
+        // Si el usuario seleccionó un archivo nuevo, lo subimos a Cloudinary
         if (fileInput?.files?.[0]) {
             try {
                 const compressedFile = await imageCompression(fileInput.files[0], {
@@ -2397,14 +2413,18 @@ async function saveServices() {
                     maxWidthOrHeight: 600
                 });
 
+                // ✅ Usamos el ID del perfil del barbero (que es un UUID)
                 imageUrl = await uploadServiceImageToCloudinary(
                     compressedFile,
                     currentBarberProfileId,
                     serviceIdRaw
                 );
             } catch (uploadError) {
-                console.error("Error subiendo imagen:", uploadError);
-                alert("Hubo un error al subir la imagen. Se guardará sin ella.");
+                console.error(`Error subiendo imagen para el servicio ${serviceIdRaw}:`, uploadError);
+                // No detenemos el proceso, simplemente guardamos sin la imagen nueva
+                errors.push(`Error al subir imagen para el servicio ${serviceIdRaw}: ${uploadError.message}`);
+                // Mantenemos la imagen anterior si existía
+                imageUrl = imgPreview?.src?.startsWith('https') ? imgPreview.src : null;
             }
         }
 
@@ -2412,49 +2432,57 @@ async function saveServices() {
             barbero_id: currentBarberProfileId,
             precio: price,
             duracion_minutos: duration,
-            imagen_url: imageUrl
+            imagen_url: imageUrl,
         };
 
+        // ========================================================
+        // ===== AQUÍ ESTÁ LA CORRECCIÓN CLAVE PARA SUPABASE ======
+        // ========================================================
         if (isCustom) {
-            // ✅ Servicio personalizado sin servicio_id
-            const customId = parseInt(serviceIdRaw.replace('custom-', ''), 10);
-            if (!isNaN(customId)) {
-                serviceData.id = customId;
-                customServices.push(serviceData);
-            }
+            // Un servicio personalizado TIENE su propio ID (uuid) en la tabla, pero servicio_id es NULL.
+            // El ID viene de `data-service-id` como "custom-uuid...".
+            serviceData.id = serviceIdRaw.replace('custom-', '');
+            serviceData.servicio_id = null; // explícitamente null
         } else {
-            // ✅ Servicio estándar con servicio_id numérico
-            const standardId = parseInt(serviceIdRaw, 10);
-            if (!isNaN(standardId)) {
-                serviceData.servicio_id = standardId;
-                standardServices.push(serviceData);
+            // Un servicio estándar NO tiene un ID propio en la tabla (se autogenera si es nuevo),
+            // pero SÍ tiene un `servicio_id` (uuid) que lo vincula a la tabla maestra.
+            serviceData.servicio_id = serviceIdRaw;
+        }
+
+        servicesToUpsert.push(serviceData);
+    }
+
+    if (servicesToUpsert.length > 0) {
+        const { error: upsertError } = await supabaseClient
+            .from('barbero_servicios')
+            .upsert(servicesToUpsert, {
+                // Para servicios estándar, el conflicto se resuelve por barbero y servicio maestro.
+                // Para servicios personalizados, se resuelve por su ID único.
+                onConflict: 'id'
+            });
+
+        if (upsertError) {
+             // Verificamos si el error es de conflicto con el constraint de standard.
+            if (upsertError.message.includes('barbero_servicios_barbero_id_servicio_id_key')) {
+                const standardServices = servicesToUpsert.filter(s => s.servicio_id !== null);
+                 const { error: standardError } = await supabaseClient
+                    .from('barbero_servicios')
+                    .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
+                if(standardError) errors.push(standardError);
+
+            } else {
+                errors.push(upsertError);
             }
         }
     }
 
-    const errors = [];
-
-    if (standardServices.length > 0) {
-        const { error } = await supabaseClient
-            .from('barbero_servicios')
-            .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
-        if (error) errors.push(error);
-    }
-
-    if (customServices.length > 0) {
-        const { error } = await supabaseClient
-            .from('barbero_servicios')
-            .upsert(customServices);
-        if (error) errors.push(error);
-    }
-
     if (errors.length > 0) {
-        throw new Error(`Error al guardar servicios: ${errors.map(e => e.message).join(', ')}`);
+        // Unimos todos los errores en un solo mensaje para el usuario.
+        throw new Error(`Ocurrieron errores al guardar: ${errors.map(e => e.message || e).join(', ')}`);
     }
 
     console.log('✅ Servicios guardados con éxito.');
 }
-
 
 
 async function saveAvailability() {
