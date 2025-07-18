@@ -2367,7 +2367,7 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 // En: js/barberProfile.js
 
 // ✅ Función corregida para guardar servicios con imágenes por barbero
-// ✅ Función corregida para guardar servicios con imágenes por barbero
+// ✅ Función final corregida para guardar servicios con imágenes y UUIDs válidos
 async function saveServices() {
     if (!currentBarberProfileId) {
         throw new Error("No se pudo identificar al barbero para guardar los servicios.");
@@ -2378,25 +2378,19 @@ async function saveServices() {
     const customServices = [];
 
     for (const item of serviceItems) {
-        const priceInput = item.querySelector('.service-price-input');
-        const durationInput = item.querySelector('.service-duration-input');
+        const price = parseFloat(item.querySelector('.service-price-input')?.value || 0);
+        const duration = parseInt(item.querySelector('.service-duration-input')?.value || 0, 10);
         const fileInput = item.querySelector('.service-img-upload-input');
         const imgPreview = item.querySelector('.service-img-preview');
 
-        const price = parseFloat(priceInput.value);
-        const duration = parseInt(durationInput.value, 10);
-
-        if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
-            continue; // Saltar si hay datos inválidos
-        }
+        if (isNaN(price) || price <= 0 || isNaN(duration) || duration <= 0) continue;
 
         const serviceIdRaw = item.dataset.serviceId;
         const isCustom = item.dataset.isCustom === 'true';
 
-        let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
+        let imageUrl = imgPreview?.src?.startsWith('https') ? imgPreview.src : null;
 
-        // Subir imagen solo si hay un archivo nuevo
-        if (fileInput.files[0]) {
+        if (fileInput?.files?.[0]) {
             try {
                 const compressedFile = await imageCompression(fileInput.files[0], {
                     maxSizeMB: 0.3,
@@ -2405,7 +2399,7 @@ async function saveServices() {
 
                 imageUrl = await uploadServiceImageToCloudinary(
                     compressedFile,
-                    currentBarberProfileId, // ✅ UUID válido
+                    currentBarberProfileId,
                     serviceIdRaw
                 );
             } catch (uploadError) {
@@ -2422,14 +2416,14 @@ async function saveServices() {
         };
 
         if (isCustom) {
-            // ✅ Servicio personalizado (sin servicio_id)
+            // ✅ Servicio personalizado sin servicio_id
             const customId = parseInt(serviceIdRaw.replace('custom-', ''), 10);
             if (!isNaN(customId)) {
                 serviceData.id = customId;
                 customServices.push(serviceData);
             }
         } else {
-            // ✅ Servicio estándar (con servicio_id)
+            // ✅ Servicio estándar con servicio_id numérico
             const standardId = parseInt(serviceIdRaw, 10);
             if (!isNaN(standardId)) {
                 serviceData.servicio_id = standardId;
@@ -2440,7 +2434,6 @@ async function saveServices() {
 
     const errors = [];
 
-    // Guardar servicios estándar
     if (standardServices.length > 0) {
         const { error } = await supabaseClient
             .from('barbero_servicios')
@@ -2448,7 +2441,6 @@ async function saveServices() {
         if (error) errors.push(error);
     }
 
-    // Guardar servicios personalizados
     if (customServices.length > 0) {
         const { error } = await supabaseClient
             .from('barbero_servicios')
