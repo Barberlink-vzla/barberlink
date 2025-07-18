@@ -2153,7 +2153,8 @@ function closeCalendarActionModal() {
     }
 }
 
-// En: js/barberProfile.js
+// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA VERSIÓN CORREGIDA
+
 async function addOtherService() {
     const nameInput = document.getElementById('other-service-name');
     const priceInput = document.getElementById('other-service-price');
@@ -2168,18 +2169,20 @@ async function addOtherService() {
         return;
     }
     
-    // Verifica que el ID del perfil del barbero exista antes de continuar.
     if (!currentBarberProfileId) {
         alert("Error crítico: No se ha podido identificar el perfil del barbero. Por favor, recarga la página.");
         return;
     }
 
     if (saveStatus) saveStatus.textContent = 'Añadiendo...';
-
+    
+    // ✅ CORRECCIÓN: El console.log se mueve fuera de la cadena de Supabase.
+    console.log("🔍 Insertando servicio con barbero_id:", currentBarberProfileId);
+    
     const { error } = await supabaseClient
         .from('barbero_servicios')
         .insert({
-             barbero_id: currentBarberProfileId, // Se asegura de usar el ID del PERFIL, no el de AUTH
+            barbero_id: currentBarberProfileId,
             servicio_id: null,
             precio: price,
             nombre_personalizado: name,
@@ -2196,7 +2199,6 @@ async function addOtherService() {
         priceInput.value = '';
         durationInput.value = '30';
         
-        // Vuelve a cargar los servicios desde la base de datos para refrescar la lista al instante.
         const { data, error: errLoad } = await supabaseClient
             .from('barbero_servicios')
             .select('*, servicios_maestro(*)')
@@ -2205,7 +2207,6 @@ async function addOtherService() {
         if (errLoad) {
             console.error("Error recargando servicios:", errLoad);
         } else {
-            // Actualiza la variable global y vuelve a renderizar la sección de servicios.
             barberServicesData = data || [];
             renderServices(barberServicesData);
         }
