@@ -2367,83 +2367,100 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 // En: js/barberProfile.js
 
 // ✅ Función corregida para guardar servicios con imágenes por barbero
+// ✅ Función corregida para guardar servicios con imágenes por barbero
 async function saveServices() {
     if (!currentBarberProfileId) {
         throw new Error("No se pudo identificar al barbero para guardar los servicios.");
     }
 
-    const serviceItems = servicesSection.querySelectorAll('.service-item-with-image');
-    const upserts = [];
+    const serviceItems = document.querySelectorAll('.service-item-with-image');
+    const standardServices = [];
+    const customServices = [];
 
     for (const item of serviceItems) {
-        const price = parseFloat(item.querySelector('.service-price-input').value);
-        const duration = parseInt(item.querySelector('.service-duration-input').value, 10);
+        const priceInput = item.querySelector('.service-price-input');
+        const durationInput = item.querySelector('.service-duration-input');
         const fileInput = item.querySelector('.service-img-upload-input');
         const imgPreview = item.querySelector('.service-img-preview');
 
-        // Obtener nombre del servicio para mensajes de error
-        const serviceName = item.querySelector('.service-name')?.textContent || 'Servicio sin nombre';
+        const price = parseFloat(priceInput.value);
+        const duration = parseInt(durationInput.value, 10);
 
-        // Solo procesamos servicios que tengan precio y duración válidos
-        if (!isNaN(price) && price >= 0 && !isNaN(duration) && duration > 0) {
-            const serviceIdRaw = item.dataset.serviceId;
-            const isCustom = item.dataset.isCustom === 'true';
+        if (isNaN(price) || price < 0 || isNaN(duration) || duration <= 0) {
+            continue; // Saltar si hay datos inválidos
+        }
 
-            let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
+        const serviceIdRaw = item.dataset.serviceId;
+        const isCustom = item.dataset.isCustom === 'true';
 
-            if (fileInput.files[0]) {
-                try {
-                    const compressedFile = await imageCompression(fileInput.files[0], { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
-                    imageUrl = await uploadServiceImageToCloudinary(compressedFile, currentBarberProfileId, serviceIdRaw);
-                } catch (uploadError) {
-                    console.error("Error subiendo imagen:", uploadError);
-                    alert(`Hubo un error al subir la imagen para el servicio "${serviceName}". Se guardará sin la nueva imagen.`);
-                }
+        let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
+
+        // Subir imagen solo si hay un archivo nuevo
+        if (fileInput.files[0]) {
+            try {
+                const compressedFile = await imageCompression(fileInput.files[0], {
+                    maxSizeMB: 0.3,
+                    maxWidthOrHeight: 600
+                });
+
+                imageUrl = await uploadServiceImageToCloudinary(
+                    compressedFile,
+                    currentBarberProfileId, // ✅ UUID válido
+                    serviceIdRaw
+                );
+            } catch (uploadError) {
+                console.error("Error subiendo imagen:", uploadError);
+                alert("Hubo un error al subir la imagen. Se guardará sin ella.");
             }
+        }
 
-            let serviceData = {
-                barbero_id: currentBarberProfileId,
-                precio: price,
-                duracion_minutos: duration,
-                imagen_url: imageUrl
-            };
+        const serviceData = {
+            barbero_id: currentBarberProfileId,
+            precio: price,
+            duracion_minutos: duration,
+            imagen_url: imageUrl
+        };
 
-            if (isCustom) {
-                serviceData.id = parseInt(serviceIdRaw.replace('custom-', ''), 10);
-            } else {
-                serviceData.servicio_id = parseInt(serviceIdRaw, 10);
+        if (isCustom) {
+            // ✅ Servicio personalizado (sin servicio_id)
+            const customId = parseInt(serviceIdRaw.replace('custom-', ''), 10);
+            if (!isNaN(customId)) {
+                serviceData.id = customId;
+                customServices.push(serviceData);
             }
-
-            upserts.push(serviceData);
+        } else {
+            // ✅ Servicio estándar (con servicio_id)
+            const standardId = parseInt(serviceIdRaw, 10);
+            if (!isNaN(standardId)) {
+                serviceData.servicio_id = standardId;
+                standardServices.push(serviceData);
+            }
         }
     }
 
-    if (upserts.length > 0) {
-        const standardServices = upserts.filter(s => s.servicio_id != null);
-        const customServices = upserts.filter(s => s.servicio_id == null);
+    const errors = [];
 
-        let errors = [];
-
-        if (standardServices.length > 0) {
-            const { error } = await supabaseClient
-                .from('barbero_servicios')
-                .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
-            if (error) errors.push(error);
-        }
-
-        if (customServices.length > 0) {
-            const { error } = await supabaseClient
-                .from('barbero_servicios')
-                .upsert(customServices);
-            if (error) errors.push(error);
-        }
-
-        if (errors.length > 0) {
-            throw new Error(`Error al guardar servicios: ${errors.map(e => e.message).join(', ')}`);
-        }
+    // Guardar servicios estándar
+    if (standardServices.length > 0) {
+        const { error } = await supabaseClient
+            .from('barbero_servicios')
+            .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
+        if (error) errors.push(error);
     }
 
-    console.log('Servicios guardados con éxito.');
+    // Guardar servicios personalizados
+    if (customServices.length > 0) {
+        const { error } = await supabaseClient
+            .from('barbero_servicios')
+            .upsert(customServices);
+        if (error) errors.push(error);
+    }
+
+    if (errors.length > 0) {
+        throw new Error(`Error al guardar servicios: ${errors.map(e => e.message).join(', ')}`);
+    }
+
+    console.log('✅ Servicios guardados con éxito.');
 }
 
 
