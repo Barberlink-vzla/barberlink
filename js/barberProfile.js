@@ -303,14 +303,15 @@ async function loadInitialData() {
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
-        // ================== INICIO DE LA CORRECCIÓN ==================
-        // Usamos currentUserId para cargar servicios y disponibilidad, ya que así se guardan.
+   // --- INICIO DE LA CORRECCIÓN ---
+        // Ahora usamos el ID del PERFIL para cargar los servicios y la disponibilidad,
+        // que es como se debería relacionar en la base de datos.
         const [masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
-            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId), // <-- ¡CORREGIDO!
-            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentUserId).order('dia_semana').order('hora_inicio') // <-- ¡CORREGIDO!
+            supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId), // <-- ¡CORREGIDO!
+            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio') // <-- ¡CORREGIDO!
         ]);
-        // =================== FIN DE LA CORRECCIÓN ====================
+        // --- FIN DE LA CORRECCIÓN ---
 
         if (masterServicesRes.error) throw new Error(`Servicios Maestros: ${masterServicesRes.error.message}`);
         if (barberServicesRes.error) throw new Error(`Servicios Barbero: ${barberServicesRes.error.message}`);
@@ -331,7 +332,8 @@ async function loadInitialData() {
         });
 
         renderBarberForm(barberProfile); 
-        renderServices(barberServicesRes.data);
+        renderServices(barberServicesRes.data); // <-- Pasamos los datos correctos
+
         renderBookingLink(currentUserId); 
         
          // ¡Movemos el bloque aquí, dentro del 'try' donde 'barberProfile' sí existe!
@@ -2460,7 +2462,7 @@ async function saveServices() {
         
         // Prepara los datos para guardar en la DB
         const serviceData = {
-            barbero_id: currentUserId,
+            barbero_id: currentBarberProfileId,
             precio: price,
             duracion_minutos: duration,
             // Nos aseguramos de guardar la URL solo si es una URL válida de Supabase/Cloudinary
