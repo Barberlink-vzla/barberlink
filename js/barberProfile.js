@@ -2178,9 +2178,8 @@ async function addOtherService() {
 
     const { error } = await supabaseClient
         .from('barbero_servicios')
-        console.log("🔍 Insertando servicio con barbero_id:", currentBarberProfileId);
         .insert({
-            barbero_id: currentBarberProfileId, // Se asegura de usar el ID del PERFIL, no el de AUTH
+             barbero_id: currentBarberProfileId, // Se asegura de usar el ID del PERFIL, no el de AUTH
             servicio_id: null,
             precio: price,
             nombre_personalizado: name,
