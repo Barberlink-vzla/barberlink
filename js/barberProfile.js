@@ -2368,6 +2368,7 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 
 // ✅ Función corregida para guardar servicios con imágenes por barbero
 // En: js/barberProfile.js
+// En: js/barberProfile.js
 
 async function saveServices() {
     if (!currentBarberProfileId) {
@@ -2378,11 +2379,10 @@ async function saveServices() {
     const servicesToUpsert = [];
     const errors = [];
 
+    // Usamos un bucle for...of para poder usar 'await' dentro de él.
     for (const item of serviceItems) {
         const priceInput = item.querySelector('.service-price-input');
         const durationInput = item.querySelector('.service-duration-input');
-        const fileInput = item.querySelector('.service-img-upload-input');
-        const imgPreview = item.querySelector('.service-img-preview');
         
         // Solo procesamos servicios que tengan precio y duración definidos
         if (!priceInput?.value || !durationInput?.value) {
@@ -2393,92 +2393,75 @@ async function saveServices() {
         const duration = parseInt(durationInput.value, 10);
 
         if (isNaN(price) || price <= 0 || isNaN(duration) || duration <= 0) {
-            continue;
+            continue; // Ignora servicios con datos inválidos
         }
 
         const serviceIdRaw = item.dataset.serviceId;
         const isCustom = item.dataset.isCustom === 'true';
+        const fileInput = item.querySelector('.service-img-upload-input');
+        const imgPreview = item.querySelector('.service-img-preview');
+        let imageUrl = imgPreview?.src; // Imagen actual
 
-        let imageUrl = imgPreview?.src;
-        // Si la URL no es de Cloudinary o un placeholder, la reseteamos para forzar subida si hay archivo
-        if (imageUrl && !imageUrl.startsWith('https') && !imageUrl.startsWith('data:')) {
-            imageUrl = null;
-        }
-        
-        // Si el usuario seleccionó un archivo nuevo, lo subimos a Cloudinary
+        // 1. Manejo de la subida de imagen (si se seleccionó un archivo nuevo)
         if (fileInput?.files?.[0]) {
             try {
-                const compressedFile = await imageCompression(fileInput.files[0], {
-                    maxSizeMB: 0.3,
-                    maxWidthOrHeight: 600
-                });
-
-                // ✅ Usamos el ID del perfil del barbero (que es un UUID)
+                const compressedFile = await imageCompression(fileInput.files[0], { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
+                
+                // Llamamos a la función (ahora corregida) para subir la imagen a Cloudinary
                 imageUrl = await uploadServiceImageToCloudinary(
                     compressedFile,
-                    currentBarberProfileId,
+                    currentBarberProfileId, // Usamos el ID de perfil del barbero para la carpeta
                     serviceIdRaw
                 );
             } catch (uploadError) {
                 console.error(`Error subiendo imagen para el servicio ${serviceIdRaw}:`, uploadError);
-                // No detenemos el proceso, simplemente guardamos sin la imagen nueva
-                errors.push(`Error al subir imagen para el servicio ${serviceIdRaw}: ${uploadError.message}`);
-                // Mantenemos la imagen anterior si existía
-                imageUrl = imgPreview?.src?.startsWith('https') ? imgPreview.src : null;
+                errors.push(`Error al subir imagen para el servicio ${serviceIdRaw}.`);
+                // Si la subida falla, continuamos sin actualizar la imagen
             }
         }
 
+        // 2. Construcción del objeto de datos para Supabase
         const serviceData = {
             barbero_id: currentBarberProfileId,
             precio: price,
             duracion_minutos: duration,
-            imagen_url: imageUrl,
+            imagen_url: imageUrl?.startsWith('https') ? imageUrl : null,
         };
 
-        // ========================================================
-        // ===== AQUÍ ESTÁ LA CORRECCIÓN CLAVE PARA SUPABASE ======
-        // ========================================================
         if (isCustom) {
-            // Un servicio personalizado TIENE su propio ID (uuid) en la tabla, pero servicio_id es NULL.
-            // El ID viene de `data-service-id` como "custom-uuid...".
+            // Los servicios personalizados se identifican por su propio ID único.
+            // La clave de conflicto (onConflict) será 'id'.
             serviceData.id = serviceIdRaw.replace('custom-', '');
-            serviceData.servicio_id = null; // explícitamente null
+            serviceData.nombre_personalizado = item.querySelector('.service-name').textContent;
+            serviceData.servicio_id = null; // Un servicio personalizado no está ligado a uno maestro.
         } else {
-            // Un servicio estándar NO tiene un ID propio en la tabla (se autogenera si es nuevo),
-            // pero SÍ tiene un `servicio_id` (uuid) que lo vincula a la tabla maestra.
+            // Los servicios estándar se identifican por la combinación de barbero y servicio maestro.
+            // La clave de conflicto (onConflict) será 'barbero_id, servicio_id'.
             serviceData.servicio_id = serviceIdRaw;
         }
 
         servicesToUpsert.push(serviceData);
     }
-
+    
+    // 3. Guardado en la base de datos
     if (servicesToUpsert.length > 0) {
-        const { error: upsertError } = await supabaseClient
-            .from('barbero_servicios')
-            .upsert(servicesToUpsert, {
-                // Para servicios estándar, el conflicto se resuelve por barbero y servicio maestro.
-                // Para servicios personalizados, se resuelve por su ID único.
-                onConflict: 'id'
-            });
+        // Separamos los servicios por tipo para usar la clave de conflicto correcta
+        const customServices = servicesToUpsert.filter(s => s.servicio_id === null);
+        const standardServices = servicesToUpsert.filter(s => s.servicio_id !== null);
 
-        if (upsertError) {
-             // Verificamos si el error es de conflicto con el constraint de standard.
-            if (upsertError.message.includes('barbero_servicios_barbero_id_servicio_id_key')) {
-                const standardServices = servicesToUpsert.filter(s => s.servicio_id !== null);
-                 const { error: standardError } = await supabaseClient
-                    .from('barbero_servicios')
-                    .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
-                if(standardError) errors.push(standardError);
-
-            } else {
-                errors.push(upsertError);
-            }
+        if (customServices.length > 0) {
+            const { error } = await supabaseClient.from('barbero_servicios').upsert(customServices, { onConflict: 'id' });
+            if (error) errors.push(`Error al guardar servicios personalizados: ${error.message}`);
+        }
+        if (standardServices.length > 0) {
+            const { error } = await supabaseClient.from('barbero_servicios').upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
+            if (error) errors.push(`Error al guardar servicios estándar: ${error.message}`);
         }
     }
 
+    // 4. Reporte final de errores (si los hubo)
     if (errors.length > 0) {
-        // Unimos todos los errores en un solo mensaje para el usuario.
-        throw new Error(`Ocurrieron errores al guardar: ${errors.map(e => e.message || e).join(', ')}`);
+        throw new Error(`Ocurrieron errores: ${errors.join(', ')}`);
     }
 
     console.log('✅ Servicios guardados con éxito.');
