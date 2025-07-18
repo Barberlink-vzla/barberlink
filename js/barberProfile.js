@@ -2366,6 +2366,7 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 
 // En: js/barberProfile.js
 
+// ✅ Función corregida para guardar servicios con imágenes por barbero
 async function saveServices() {
     if (!currentBarberProfileId) {
         throw new Error("No se pudo identificar al barbero para guardar los servicios.");
@@ -2379,25 +2380,27 @@ async function saveServices() {
         const duration = parseInt(item.querySelector('.service-duration-input').value, 10);
         const fileInput = item.querySelector('.service-img-upload-input');
         const imgPreview = item.querySelector('.service-img-preview');
-        
+
+        // Obtener nombre del servicio para mensajes de error
+        const serviceName = item.querySelector('.service-name')?.textContent || 'Servicio sin nombre';
+
         // Solo procesamos servicios que tengan precio y duración válidos
         if (!isNaN(price) && price >= 0 && !isNaN(duration) && duration > 0) {
             const serviceIdRaw = item.dataset.serviceId;
             const isCustom = item.dataset.isCustom === 'true';
-            
+
             let imageUrl = imgPreview.src.startsWith('https') ? imgPreview.src : null;
 
+            if (fileInput.files[0]) {
+                try {
+                    const compressedFile = await imageCompression(fileInput.files[0], { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
+                    imageUrl = await uploadServiceImageToCloudinary(compressedFile, currentBarberProfileId, serviceIdRaw);
+                } catch (uploadError) {
+                    console.error("Error subiendo imagen:", uploadError);
+                    alert(`Hubo un error al subir la imagen para el servicio "${serviceName}". Se guardará sin la nueva imagen.`);
+                }
+            }
 
-if (fileInput.files[0]) {
-    try {
-        const compressedFile = await imageCompression(fileInput.files[0], { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
-        imageUrl = await uploadServiceImageToCloudinary(compressedFile, currentBarberProfileId, serviceId);
-    } catch (uploadError) {
-        console.error("Error subiendo imagen:", uploadError);
-        alert(`Hubo un error al subir la imagen para el servicio "${serviceName}". Se guardará sin imagen.`);
-    }
-}
-            
             let serviceData = {
                 barbero_id: currentBarberProfileId,
                 precio: price,
@@ -2405,7 +2408,6 @@ if (fileInput.files[0]) {
                 imagen_url: imageUrl
             };
 
-            // Diferenciamos entre servicios estándar (con servicio_id) y personalizados
             if (isCustom) {
                 serviceData.id = parseInt(serviceIdRaw.replace('custom-', ''), 10);
             } else {
@@ -2415,27 +2417,24 @@ if (fileInput.files[0]) {
             upserts.push(serviceData);
         }
     }
-    
+
     if (upserts.length > 0) {
-        // **CORRECCIÓN CLAVE:** Especificamos 'onConflict' para servicios estándar
-        // y manejamos los personalizados (que no tienen 'servicio_id') por separado.
-        
         const standardServices = upserts.filter(s => s.servicio_id != null);
         const customServices = upserts.filter(s => s.servicio_id == null);
 
         let errors = [];
 
-        if(standardServices.length > 0) {
+        if (standardServices.length > 0) {
             const { error } = await supabaseClient
                 .from('barbero_servicios')
-                .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' }); // ¡ESTA ES LA CLAVE!
+                .upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
             if (error) errors.push(error);
         }
 
-        if(customServices.length > 0) {
+        if (customServices.length > 0) {
             const { error } = await supabaseClient
                 .from('barbero_servicios')
-                .upsert(customServices); // Los personalizados se basan en su propio ID (PK)
+                .upsert(customServices);
             if (error) errors.push(error);
         }
 
