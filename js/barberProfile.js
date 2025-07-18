@@ -2378,6 +2378,8 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 
 // EN: js/barberProfile.js
 
+// EN: js/barberProfile.js
+
 async function saveServices() {
     // Asegura que tenemos el ID de usuario para crear la carpeta
     if (!currentUserId) {
@@ -2426,12 +2428,15 @@ async function saveServices() {
 
                 if (uploadError) throw uploadError;
 
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Esta es la línea clave. Obtenemos la URL pública *correcta* desde Supabase.
                 imageUrl = supabaseClient.storage.from('service-photos').getPublicUrl(filePath).data.publicUrl;
+                // --- FIN DE LA CORRECCIÓN ---
 
             } catch (uploadError) {
                 console.error(`Error subiendo imagen para el servicio ${serviceIdRaw}:`, uploadError);
                 errors.push(`Error al subir imagen para el servicio ${item.querySelector('.service-name').textContent}.`);
-                continue;
+                continue; // Pasa al siguiente servicio si este falla
             }
         }
         
@@ -2440,14 +2445,17 @@ async function saveServices() {
             barbero_id: currentUserId,
             precio: price,
             duracion_minutos: duration,
-            imagen_url: imageUrl?.startsWith('https') ? imageUrl : null,
+            // Nos aseguramos de guardar la URL solo si es una URL válida de Supabase/Cloudinary
+            imagen_url: imageUrl?.startsWith('http') ? imageUrl : null, 
         };
 
         if (isCustom) {
+            // Para servicios personalizados, necesitamos el ID de la fila
             serviceData.id = serviceIdRaw.replace('custom-', '');
             serviceData.nombre_personalizado = item.querySelector('.service-name').textContent;
-            serviceData.servicio_id = null;
+            serviceData.servicio_id = null; // No tiene ID de servicio maestro
         } else {
+            // Para servicios estándar, usamos el ID del servicio maestro
             serviceData.servicio_id = serviceIdRaw;
         }
         
@@ -2461,19 +2469,23 @@ async function saveServices() {
     if (servicesToUpsert.length > 0) {
         if (saveStatus) saveStatus.textContent = 'Guardando información...';
         
+        // Separamos los servicios para hacer un 'upsert' con la clave correcta para cada tipo
         const customServices = servicesToUpsert.filter(s => s.nombre_personalizado);
         const standardServices = servicesToUpsert.filter(s => !s.nombre_personalizado);
 
+        // Guardamos los personalizados usando su 'id' único
         if (customServices.length > 0) {
             const { error } = await supabaseClient.from('barbero_servicios').upsert(customServices, { onConflict: 'id' });
             if (error) errors.push(`Error al guardar servicios personalizados: ${error.message}`);
         }
+        // Guardamos los estándar usando la combinación 'barbero_id' y 'servicio_id'
         if (standardServices.length > 0) {
             const { error } = await supabaseClient.from('barbero_servicios').upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
             if (error) errors.push(`Error al guardar servicios estándar: ${error.message}`);
         }
     }
 
+    // Si hubo algún error en el proceso de guardado en la DB, lo lanzamos
     if (errors.length > 0) {
         throw new Error(`Ocurrieron errores al guardar en la base de datos: ${errors.join(', ')}`);
     }
