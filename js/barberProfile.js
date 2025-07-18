@@ -1755,6 +1755,8 @@ function renderBarberForm(barberData) {
 
 // REEMPLAZA ESTA FUNCIÓN en js/barberProfile.js
 
+// EN: js/barberProfile.js
+
 function renderServices(barberServices) {
     if (!servicesSection) return;
 
@@ -2374,6 +2376,8 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 
 // En: js/barberProfile.js
 
+// EN: js/barberProfile.js
+
 async function saveServices() {
     // Asegura que tenemos el ID de usuario para crear la carpeta
     if (!currentUserId) {
@@ -2411,17 +2415,13 @@ async function saveServices() {
                 const file = fileInput.files[0];
                 const compressedFile = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
 
-                // =====================================================================
-                // AQUÍ ESTÁ LA CORRECCIÓN CLAVE Y DEFINITIVA
-                // Creamos una ruta simple: ID_DEL_BARBERO/nombre_unico_de_la_imagen.jpg
-                // SIN la subcarpeta "/services".
+                // Se crea una ruta única: ID_DEL_BARBERO/ID_DEL_SERVICIO_timestamp.jpg
                 const filePath = `${currentUserId}/${serviceIdRaw}_${Date.now()}_${compressedFile.name}`;
-                // =====================================================================
 
                 if (saveStatus) saveStatus.textContent = 'Subiendo imagen...';
                 
                 const { error: uploadError } = await supabaseClient.storage
-                    .from('service-photos')
+                    .from('service-photos') // Nombre del bucket
                     .upload(filePath, compressedFile, { upsert: true });
 
                 if (uploadError) throw uploadError;
@@ -2435,7 +2435,7 @@ async function saveServices() {
             }
         }
         
-        // El resto de la lógica para preparar los datos a guardar en la DB...
+        // Prepara los datos para guardar en la DB
         const serviceData = {
             barbero_id: currentUserId,
             precio: price,
@@ -2478,7 +2478,6 @@ async function saveServices() {
         throw new Error(`Ocurrieron errores al guardar en la base de datos: ${errors.join(', ')}`);
     }
 }
-
 
 async function saveAvailability() {
     
