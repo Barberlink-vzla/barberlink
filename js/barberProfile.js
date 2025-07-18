@@ -2513,6 +2513,11 @@ async function saveServices() {
         }
         // Guardamos los estándar usando la combinación 'barbero_id' y 'servicio_id'
         if (standardServices.length > 0) {
+        
+        // --- INICIO DE LA LÍNEA DE DEPURACIÓN ---
+            // Esta línea imprimirá en la consola la lista de servicios que se intentan guardar.
+            console.log("Datos a enviar (Servicios Estándar):", JSON.stringify(standardServices, null, 2));
+            // --- FIN DE LA LÍNEA DE DEPURACIÓN ---
             const { error } = await supabaseClient.from('barbero_servicios').upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
             if (error) errors.push(`Error al guardar servicios estándar: ${error.message}`);
         }
