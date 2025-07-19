@@ -656,6 +656,14 @@ input:checked + .slider:before {
     box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
 }
 /* --- FIN: Estilos para las etiquetas de Precio y Duración --- */
+
+/* Pega esto al final de tu <style> */
+.services-container-wrapper {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+}
         
     </style>
 </head>
@@ -1128,21 +1136,33 @@ input:checked + .slider:before {
                     <p id="push-status" style="margin-top: 10px;"></p>
                 </div>
                 <div class="profile-section-card">
-                    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Mis Servicios y Precios</h3>
-                    <div id="services-section"><p>Cargando servicios...</p></div>
-                    <div class="service-item-add-custom">
-                        <h4>Añadir Otro Servicio</h4>
-                        <div class="input-group"><i class="fas fa-cut"></i><input type="text" id="other-service-name" placeholder=" "><label for="other-service-name">Nombre del servicio</label></div>
-                        <div class="input-group"><i class="fas fa-dollar-sign"></i><input type="number" id="other-service-price" placeholder=" " step="0.50" min="0"><label for="other-service-price">Precio</label></div>
-                        
-                        <div class="input-group">
-                            <i class="fas fa-clock"></i>
-                            <input type="number" id="other-service-duration" placeholder=" " step="5" min="5" value="30">
-                            <label for="other-service-duration">Duración (min)</label>
-                        </div>
-                        <button id="add-other-service-btn" class="profile-submit-btn" style="width: auto; padding: 10px 15px;">Añadir Servicio</button>
-                    </div>
-                </div>
+    <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Mis Servicios y Precios</h3>
+
+    <div class="services-container-wrapper">
+        <h3>Servicios Estándar</h3>
+        <div id="standard-services-grid" class="services-grid">
+            <p>Cargando servicios estándar...</p>
+        </div>
+
+        <h3 style="margin-top: 20px;">Mis Servicios Personalizados</h3>
+        <div id="custom-services-grid" class="services-grid">
+            <p>No has añadido servicios personalizados.</p>
+        </div>
+    </div>
+    
+    <div class="service-item-add-custom">
+        <h4>Añadir Otro Servicio</h4>
+        <div class="input-group"><i class="fas fa-cut"></i><input type="text" id="other-service-name" placeholder=" "><label for="other-service-name">Nombre del servicio</label></div>
+        <div class="input-group"><i class="fas fa-dollar-sign"></i><input type="number" id="other-service-price" placeholder=" " step="0.50" min="0"><label for="other-service-price">Precio</label></div>
+        
+        <div class="input-group">
+            <i class="fas fa-clock"></i>
+            <input type="number" id="other-service-duration" placeholder=" " step="5" min="5" value="30">
+            <label for="other-service-duration">Duración (min)</label>
+        </div>
+        <button id="add-other-service-btn" class="profile-submit-btn" style="width: auto; padding: 10px 15px;">Añadir Servicio</button>
+    </div>
+</div>
                 <div class="profile-section-card">
                     <h3 class="profile-section-title" style="font-size: 1.5em; border: none;">Tu Enlace de Reserva Único</h3>
                     <p>Comparte este enlace con tus clientes para que puedan reservar una cita contigo:</p>
