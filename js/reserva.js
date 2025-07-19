@@ -162,11 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const serviceTableName = 'barbero_servicios';
         console.log(`Cargando servicios desde la tabla correcta: ${serviceTableName}`);
 
-        const [servicesResponse, clientsResponse] = await Promise.all([
+const [servicesResponse, clientsResponse] = await Promise.all([
             supabaseClient
                 .from(serviceTableName)
-                .select('*, servicios_maestro(id, nombre)')
-                .eq('barbero_id', barberId),
+                .select('*, servicios_maestro(id, nombre), barberos!inner(user_id)') // !inner asegura que solo traiga servicios de barberos existentes
+                .eq('activo', true) // <-- 1. MUESTRA SOLO SERVICIOS ACTIVOS
+                .eq('barberos.user_id', barberId), // <-- 2. BUSCA USANDO EL ID CORRECTO
             supabaseClient
                 .from('clientes')
                 .select('id, nombre, telefono')
