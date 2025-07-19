@@ -1826,18 +1826,33 @@ function renderServices(barberServices) {
     }
     
     // Volver a añadir los listeners a los nuevos elementos
-    document.querySelectorAll('.service-img-upload-input').forEach(input => {
-        input.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            const serviceId = e.target.id.replace('img-upload-', '');
-            const imgPreview = document.getElementById(`img-preview-${serviceId}`);
-            if (file && imgPreview) {
-                const reader = new FileReader();
-                reader.onload = (event) => { imgPreview.src = event.target.result; };
-                reader.readAsDataURL(file);
-            }
+   // DENTRO DE la función renderServices en barberProfile.js
+
+// ESTE ES EL CÓDIGO NUEVO Y MEJORADO:
+document.querySelectorAll('.service-img-upload-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const serviceId = e.target.id.replace('img-upload-', '');
+        const imgPreview = document.getElementById(`img-preview-${serviceId}`);
+
+        // 1. Abrimos nuestro modal de recorte con el archivo seleccionado
+        ImageCropper.open(file, (croppedBlob) => {
+            // 2. Esta función se ejecuta CUANDO el barbero hace clic en "Recortar y Guardar"
+
+            // Creamos una URL local para mostrar la vista previa inmediata
+            imgPreview.src = URL.createObjectURL(croppedBlob);
+
+            // 3. (¡CLAVE!) Adjuntamos el blob recortado directamente al elemento
+            // de la imagen para poder encontrarlo y subirlo después al guardar todo.
+            imgPreview.blob_to_upload = croppedBlob;
+
+            // Reseteamos el valor del input para poder seleccionar la misma imagen otra vez si es necesario
+            e.target.value = ''; 
         });
     });
+});
     
     document.querySelectorAll('.remove-custom-service').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -2438,17 +2453,29 @@ async function saveServices() {
             continue; // Ignora servicios con datos inválidos
         }
 
-        const serviceIdRaw = item.dataset.serviceId;
-        const isCustom = item.dataset.isCustom === 'true';
-        const fileInput = item.querySelector('.service-img-upload-input');
-        const imgPreview = item.querySelector('.service-img-preview');
-        let imageUrl = imgPreview?.src; 
+ 
 
-        if (fileInput?.files?.[0]) {
-            try {
-                if (saveStatus) saveStatus.textContent = 'Comprimiendo imagen...';
-                const file = fileInput.files[0];
-                const compressedFile = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 600 });
+// ESTE ES EL CÓDIGO NUEVO
+const serviceIdRaw = item.dataset.serviceId;
+const isCustom = item.dataset.isCustom === 'true';
+const imgPreview = item.querySelector('.service-img-preview');
+let imageUrl = imgPreview?.src;
+
+// Verificamos si hay un blob recortado adjunto a nuestra imagen de vista previa
+const blobToUpload = imgPreview.blob_to_upload;
+
+if (blobToUpload) {
+    try {
+        if (saveStatus) saveStatus.textContent = 'Comprimiendo imagen...';
+
+        // Usamos el blob recortado directamente con image-compression
+        const compressedFile = await imageCompression(blobToUpload, {
+            maxSizeMB: 0.3,
+            maxWidthOrHeight: 600,
+            // Le damos un nombre de archivo genérico ya que el blob no tiene uno
+            initialQuality: 0.9,
+            fileType: 'image/jpeg'
+        });
 
                 // Se crea una ruta única: ID_DEL_BARBERO/ID_DEL_SERVICIO_timestamp.jpg
                 const filePath = `${currentUserId}/${serviceIdRaw}_${Date.now()}_${compressedFile.name}`;
