@@ -157,38 +157,62 @@ document.addEventListener('DOMContentLoaded', () => {
         barberNameTitle.textContent = `Reservar con ${data.nombre}`;
     };
     
-    const fetchServicesForBarber = async () => {
-        if (!barberId || !selectedServiceType) return;
-        const serviceTableName = 'barbero_servicios';
-        console.log(`Cargando servicios desde la tabla correcta: ${serviceTableName}`);
+    // EN: js/reserva.js
+// REEMPLAZA TODA LA FUNCIÓN fetchServicesForBarber
 
-const [servicesResponse, clientsResponse] = await Promise.all([
-            supabaseClient
-                .from(serviceTableName)
-                .select('*, servicios_maestro(id, nombre), barberos!inner(user_id)') // !inner asegura que solo traiga servicios de barberos existentes
-                .eq('activo', true) // <-- 1. MUESTRA SOLO SERVICIOS ACTIVOS
-                .eq('barberos.user_id', barberId), // <-- 2. BUSCA USANDO EL ID CORRECTO
-            supabaseClient
-                .from('clientes')
-                .select('id, nombre, telefono')
-                .eq('barbero_id', barberId)
-        ]);
+// EN: js/reserva.js
+// REEMPLAZA LA FUNCIÓN fetchServicesForBarber CON ESTA VERSIÓN
 
-        if (servicesResponse.error) {
-            console.error(`Error cargando servicios:`, servicesResponse.error);
-            serviceSelect.innerHTML = '<option>Error al cargar servicios</option>';
-            statusMessage.textContent = `Error al cargar servicios: ${servicesResponse.error.message}`;
-            statusMessage.className = 'status-message error';
-        } else {
-            populateServiceCarousel(servicesResponse.data);
+const fetchServicesForBarber = async () => {
+    if (!barberId || !selectedServiceType) return;
+    
+    // El nombre de la tabla de servicios
+    const serviceTableName = 'barbero_servicios';
+    console.log(`Cargando servicios desde la tabla: ${serviceTableName}`);
+    
+    const carousel = document.getElementById('service-carousel');
+    if (carousel) {
+        carousel.innerHTML = '<p>Cargando servicios...</p>';
+    }
+
+    // Hacemos ambas peticiones en paralelo para mejorar la velocidad
+    const [servicesResponse, clientsResponse] = await Promise.all([
+        supabaseClient
+            .from(serviceTableName)
+            // AQUÍ LA CORRECCIÓN:
+            // 1. Seleccionamos los datos del servicio y de la tabla 'servicios_maestro'.
+            // 2. Usamos !inner para asegurar que solo traiga servicios de un barbero que exista.
+            // 3. Filtramos por la columna 'user_id' de la tabla relacionada 'barberos'.
+            .select('*, servicios_maestro(id, nombre), barberos!inner(user_id)')
+            .eq('activo', true)
+            .eq('barberos.user_id', barberId), // La sintaxis correcta para filtrar en la tabla unida
+
+        supabaseClient
+            .from('clientes')
+            .select('id, nombre, telefono')
+            .eq('barbero_id', barberId) // Asumiendo que 'clientes' se relaciona con el user_id
+    ]);
+
+    // El resto de la función maneja los errores y puebla el carrusel
+    if (servicesResponse.error) {
+        console.error(`Error cargando servicios:`, servicesResponse.error);
+        if (carousel) {
+            carousel.innerHTML = `<p class="error-msg">Error al cargar los servicios. La relación en la base de datos parece correcta, pero algo falló.</p>`;
         }
+        statusMessage.textContent = `Error al cargar servicios.`;
+        statusMessage.className = 'status-message error';
+    } else {
+        populateServiceCarousel(servicesResponse.data);
+    }
 
-        if (clientsResponse.error) {
-            console.error('Error fetching clients:', clientsResponse.error);
-        } else {
-            barberClients = clientsResponse.data || [];
-        }
-    };
+    if (clientsResponse.error) {
+        console.error('Error fetching clients:', clientsResponse.error);
+    } else {
+        barberClients = clientsResponse.data || [];
+    }
+};
+
+
 
    const populateServiceCarousel = (services) => {
     const carousel = document.getElementById('service-carousel');
