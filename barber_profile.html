@@ -664,6 +664,12 @@ input:checked + .slider:before {
     padding: 20px;
     margin-top: 15px;
 }
+        @media (max-width: 480px) {
+    .services-grid {
+        /* En pantallas pequeñas, forzamos a que haya una sola columna */
+        grid-template-columns: 1fr;
+    }
+}
         
     </style>
 </head>
