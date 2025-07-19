@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const serviceTypeButtons = document.querySelectorAll('.service-type-btn');
 
     // Campos del formulario
-    const serviceSelect = document.getElementById('service-select');
+    
     const dateInput = document.getElementById('booking-date');
     const timeSelect = document.getElementById('time-select');
     const clientSearchInput = document.getElementById('cliente-search');
@@ -514,14 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAvailability(dateInput.value);
     });
 
-    serviceSelect.addEventListener('change', (e) => {
-        const selectedOption = e.target.options[e.target.selectedIndex];
-        if (!selectedOption.dataset.serviceData) return;
-        selectedService = JSON.parse(selectedOption.dataset.serviceData);
-        if (dateInput.value) {
-            fetchAvailability(dateInput.value);
-        }
-    });
+  
 
     clientSearchInput.addEventListener('input', () => {
         selectedClient = null;
