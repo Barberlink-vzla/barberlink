@@ -1,55 +1,64 @@
 // js/imageCropper.js
 
 const ImageCropper = (() => {
-    // Referencias a los elementos del DOM del modal
-    const modalOverlay = document.getElementById('cropper-modal-overlay');
-    const cropperContainer = document.getElementById('cropper-container');
-    const saveBtn = document.getElementById('cropper-save-btn');
-    const cancelBtn = document.getElementById('cropper-cancel-btn');
-
+    // 1. Declaramos las variables aquí, pero SIN asignarles valor.
+    //    Las dejaremos vacías hasta que el DOM esté listo.
+    let modalOverlay, cropperContainer, saveBtn, cancelBtn;
+    
     let croppieInstance = null;
     let successCallback = null;
 
+    // 2. Ahora, la ASIGNACIÓN y la inicialización ocurren DENTRO de este bloque.
+    //    Este evento solo se dispara cuando todo el HTML ha sido cargado.
+    document.addEventListener('DOMContentLoaded', () => {
+        // Asignamos los elementos del DOM aquí
+        modalOverlay = document.getElementById('cropper-modal-overlay');
+        cropperContainer = document.getElementById('cropper-container');
+        saveBtn = document.getElementById('cropper-save-btn');
+        cancelBtn = document.getElementById('cropper-cancel-btn');
+
+        // Solo después de encontrar los elementos, llamamos a las funciones
+        _init();
+        setupEventListeners();
+    });
+
     /**
      * Inicializa Croppie dentro del contenedor del modal.
+     * Esta función ahora es llamada de forma segura desde 'DOMContentLoaded'.
      */
     function _init() {
         if (!cropperContainer) {
+            // Este error ya no debería aparecer, pero lo dejamos como medida de seguridad.
             console.error("Cropper Error: El contenedor #cropper-container no fue encontrado.");
             return;
         }
 
         croppieInstance = new Croppie(cropperContainer, {
-            // El viewport es el área de recorte visible
-            viewport: { width: 250, height: 250, type: 'square' }, // 1:1 Aspect Ratio
-            // El boundary es el contenedor completo de la imagen
+            viewport: { width: 250, height: 250, type: 'square' },
             boundary: { width: '100%', height: 300 },
-            // Muestra un helper visual para el zoom
             showZoomer: true,
-            // Permite cambiar la orientación en móviles
             enableOrientation: true
         });
-        console.log("ImageCropper inicializado. ✂️");
+        console.log("ImageCropper inicializado correctamente. ✂️");
     }
 
     /**
      * Abre el modal y carga una imagen desde un objeto File.
-     * @param {File} file - El archivo de imagen seleccionado por el usuario.
-     * @param {Function} callback - La función a ejecutar con el blob recortado.
+     * (Esta función no necesita cambios)
      */
     function open(file, callback) {
-        if (!croppieInstance) _init();
+        if (!croppieInstance) {
+             console.error("Croppie no está inicializado. No se puede abrir.");
+             return;
+        }
         if (!file || !modalOverlay) return;
 
-        successCallback = callback; // Guardamos la función a llamar al guardar
+        successCallback = callback;
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            croppieInstance.bind({
-                url: e.target.result
-            }).then(() => {
-                console.log('Croppie bind complete');
-            });
+            croppieInstance.bind({ url: e.target.result })
+                           .then(() => console.log('Croppie bind complete'));
         };
         reader.readAsDataURL(file);
 
@@ -58,34 +67,30 @@ const ImageCropper = (() => {
 
     /**
      * Cierra el modal y limpia el estado.
+     * (Esta función no necesita cambios)
      */
     function close() {
         if (modalOverlay) modalOverlay.classList.remove('active');
-        successCallback = null; // Limpiamos el callback
+        successCallback = null;
     }
 
     /**
      * Procesa la imagen, la recorta y ejecuta el callback de éxito.
+     * (Esta función no necesita cambios)
      */
     async function _cropAndSave() {
         if (!croppieInstance || !successCallback) return;
 
         try {
-            // Obtenemos la imagen recortada como un Blob (ideal para subir)
             const croppedBlob = await croppieInstance.result({
                 type: 'blob',
-                size: { width: 500, height: 500 }, // Tamaño final de la imagen
+                size: { width: 500, height: 500 },
                 format: 'jpeg',
-                quality: 0.9, // Buena calidad, buen tamaño de archivo
+                quality: 0.9,
                 circle: false
             });
-
-            // Ejecutamos la función que nos pasaron, enviándole el blob
             successCallback(croppedBlob);
-
-            // Cerramos el modal
             close();
-
         } catch (error) {
             console.error("Error al recortar la imagen:", error);
             alert("Hubo un problema al procesar la imagen.");
@@ -94,22 +99,17 @@ const ImageCropper = (() => {
 
     /**
      * Configura los listeners para los botones del modal.
+     * (Esta función no necesita cambios)
      */
     function setupEventListeners() {
         if (saveBtn) saveBtn.addEventListener('click', _cropAndSave);
         if (cancelBtn) cancelBtn.addEventListener('click', close);
-        if(modalOverlay) {
+        if (modalOverlay) {
             modalOverlay.addEventListener('click', (e) => {
                 if (e.target === modalOverlay) close();
             });
         }
     }
-
-    // Auto-inicializar al cargar el script
-    document.addEventListener('DOMContentLoaded', () => {
-        _init();
-        setupEventListeners();
-    });
 
     // Exponemos públicamente solo la función `open`
     return {
