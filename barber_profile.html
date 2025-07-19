@@ -424,8 +424,16 @@ modal-save-status.error { color: var(--danger-color); }
 }
 
 /* ==================================================================== */
-/* === INICIO: ESTILOS RESPONSIVE CON IMAGEN DE SERVICIO CIRCULAR === */
+/* === INICIO: ESTILOS FINALES PARA SERVICIOS (CIRCULAR Y CON TOGGLE) === */
 /* ==================================================================== */
+
+/* Contenedor principal que agrupa todo */
+.profile-section-card .services-container-wrapper {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+}
 
 .services-grid {
     display: grid;
@@ -440,44 +448,52 @@ modal-save-status.error { color: var(--danger-color); }
     padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Centramos todo el contenido de la tarjeta */
+    align-items: center;
     gap: 16px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     overflow: hidden;
-    text-align: center; /* Centramos el texto para que coincida */
+    text-align: center;
+    position: relative; /* Para el botón de eliminar */
 }
+
+/* --- CLAVE PARA EL FILTRO DE SERVICIO INACTIVO --- */
+.service-item-with-image.inactive {
+    opacity: 0.6;
+    background: linear-gradient(rgba(42, 47, 60, 0.8), rgba(42, 47, 60, 0.8)), var(--login-card-bg);
+}
+.service-item-with-image.inactive .service-img-preview {
+    filter: grayscale(80%);
+}
+
 
 .service-item-with-image:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Contenedor de la imagen (AHORA CIRCULAR) */
+/* Contenedor de la imagen (AHORA SÍ, 100% CIRCULAR) */
 .service-image-container {
     position: relative;
-    /* Un tamaño fijo para el círculo, se ve mejor */
     width: 150px; 
     height: 150px;
-    border-radius: 50%; /* La clave para hacerlo circular */
-    overflow: hidden;
+    border-radius: 50%;
+    overflow: hidden;  /* <-- ESTA ES LA LÍNEA CLAVE PARA RECORTAR LAS ESQUINAS */
     background-color: var(--container-bg);
-    border: 3px solid var(--login-primary-accent); /* Borde dorado para resaltar */
-    flex-shrink: 0; /* Evita que el círculo se encoja */
+    border: 3px solid var(--login-primary-accent);
+    flex-shrink: 0;
 }
 
-/* La imagen del servicio */
 .service-img-preview {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Asegura que la imagen llene el círculo sin deformarse */
-    object-position: center; /* Mantiene al modelo centrado */
+    object-fit: cover;
+    object-position: center;
 }
 
-/* Botón para subir/cambiar la imagen */
 .service-img-upload-label {
     position: absolute;
-    bottom: 5px; /* Ajustado para el círculo */
-    right: 5px;  /* Ajustado para el círculo */
+    bottom: 5px;
+    right: 5px;
     background-color: var(--login-primary-accent);
     color: var(--login-card-bg);
     width: 38px;
@@ -489,21 +505,13 @@ modal-save-status.error { color: var(--danger-color); }
     border: 2px solid var(--login-card-bg);
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     transition: transform 0.2s ease;
+    z-index: 2; /* Para estar sobre la imagen */
 }
 
-.service-img-upload-label:hover {
-    transform: scale(1.15) rotate(10deg);
-}
+.service-img-upload-label:hover { transform: scale(1.15) rotate(10deg); }
+.service-img-upload-label .fas.fa-camera { font-size: 16px; }
+.service-img-upload-input { display: none; }
 
-.service-img-upload-label .fas.fa-camera {
-    font-size: 16px;
-}
-
-.service-img-upload-input {
-    display: none;
-}
-
-/* Contenedor para los detalles del servicio */
 .service-details {
     display: flex;
     flex-direction: column;
@@ -511,15 +519,13 @@ modal-save-status.error { color: var(--danger-color); }
     width: 100%;
 }
 
-/* Nombre del servicio */
 .service-details .service-name {
-    font-size: 1.2em; /* Un poco más grande para destacar */
+    font-size: 1.2em;
     font-weight: 500;
     color: var(--primary-text-color);
     line-height: 1.3;
 }
 
-/* Contenedor para los inputs de precio y duración */
 .service-details .service-inputs {
     display: flex;
     gap: 12px;
@@ -537,7 +543,6 @@ modal-save-status.error { color: var(--danger-color); }
     text-align: center;
 }
 
-/* Botón para eliminar servicios personalizados */
 .remove-custom-service {
     position: absolute;
     top: 15px;
@@ -552,13 +557,75 @@ modal-save-status.error { color: var(--danger-color); }
     display: grid;
     place-items: center;
     transition: background-color 0.2s;
+    z-index: 3;
 }
-.remove-custom-service:hover {
-    background-color: var(--danger-color);
+.remove-custom-service:hover { background-color: var(--danger-color); }
+
+
+/* --- CSS PARA EL INTERRUPTOR (TOGGLE SWITCH) --- */
+.service-activation-toggle {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--secondary-text-color);
+    font-size: 0.9em;
 }
-/* ================================================================== */
-/* === FIN: ESTILOS RESPONSIVE CON IMAGEN DE SERVICIO CIRCULAR === */
-/* ================================================================== */
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--success-color); /* Color verde para activo */
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+/* ================================================================ */
+/* === FIN: ESTILOS FINALES PARA SERVICIOS (CIRCULAR Y CON TOGGLE) === */
+/* ================================================================ */
         
     </style>
 </head>
