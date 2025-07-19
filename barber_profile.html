@@ -422,6 +422,152 @@ modal-save-status.error { color: var(--danger-color); }
     height: 25px;
     cursor: pointer;
 }
+
+        /* =============================================================== */
+/* ===== INICIO: ESTILOS RESPONSIVE PARA TARJETAS DE SERVICIO ===== */
+/* =============================================================== */
+
+/* Contenedor principal de los servicios */
+.services-grid {
+    display: grid;
+    /* Usamos auto-fit para que las columnas se ajusten automáticamente. 
+       minmax(280px, 1fr) crea columnas flexibles que no serán más pequeñas de 280px. */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px; /* Espacio consistente entre tarjetas */
+}
+
+/* Estilo base de cada tarjeta de servicio */
+.service-item-with-image {
+    background: var(--login-card-bg); /* Fondo oscuro consistente */
+    border-radius: 12px; /* Bordes más redondeados para un look moderno */
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    display: flex;
+    flex-direction: column; /* Apila los elementos verticalmente */
+    gap: 16px; /* Espacio entre la imagen y los detalles */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden; /* Asegura que todo se mantenga dentro de los bordes redondeados */
+}
+
+.service-item-with-image:hover {
+    transform: translateY(-5px); /* Efecto sutil al pasar el cursor */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Contenedor de la imagen */
+.service-image-container {
+    position: relative;
+    width: 100%;
+    /* Relación de aspecto 16:9 para las imágenes, se ve más profesional */
+    padding-top: 56.25%; 
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--container-bg); /* Color de fondo mientras carga la imagen */
+}
+
+/* La imagen del servicio */
+.service-img-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* La imagen cubre todo el espacio sin deformarse */
+    border: none; /* Quitamos el borde, el contenedor ya lo maneja */
+}
+
+/* Botón para subir/cambiar la imagen */
+.service-img-upload-label {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: var(--login-primary-accent); /* Acento dorado */
+    color: var(--login-card-bg); /* Texto oscuro para contraste */
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    border: 2px solid var(--login-card-bg);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease;
+}
+
+.service-img-upload-label:hover {
+    transform: scale(1.15) rotate(10deg);
+}
+
+.service-img-upload-label .fas.fa-camera {
+    font-size: 16px;
+}
+
+.service-img-upload-input {
+    display: none; /* El input de archivo sigue oculto */
+}
+
+/* Contenedor para los detalles del servicio */
+.service-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+/* Nombre del servicio */
+.service-details .service-name {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--primary-text-color);
+    line-height: 1.3;
+}
+
+/* Contenedor para los inputs de precio y duración */
+.service-details .service-inputs {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Estilo unificado para los inputs */
+.service-details .service-inputs input {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--container-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: 6px;
+    color: var(--primary-text-color);
+    font-size: 1em;
+    text-align: center;
+}
+
+/* Pseudo-elementos para añadir íconos a los inputs */
+.service-price-input::before { content: '$'; margin-right: 5px; }
+.service-duration-input::after { content: 'min'; margin-left: 5px; }
+
+/* Botón para eliminar servicios personalizados */
+.remove-custom-service {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background-color 0.2s;
+}
+.remove-custom-service:hover {
+    background-color: var(--danger-color);
+}
+/* =============================================================== */
+/* ====== FIN: ESTILOS RESPONSIVE PARA TARJETAS DE SERVICIO ====== */
+/* =============================================================== */
+        
     </style>
 </head>
 <body class="barber-profile-page">
