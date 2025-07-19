@@ -1768,6 +1768,9 @@ function renderServices(barberServices) {
         
         const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
 
+        // =================================================================
+        // ===== INICIO DE LA MEJORA DE HTML PARA PRECIO Y DURACIÓN =====
+        // =================================================================
         return `
             <div class="service-item-with-image" ${dataAttrs}>
                 <div class="service-image-container">
@@ -1780,13 +1783,25 @@ function renderServices(barberServices) {
                 <div class="service-details">
                     <span class="service-name">${serviceName}</span>
                     <div class="service-inputs">
-                        <input type="number" class="service-price-input" placeholder="Precio ($)" value="${service.precio || ''}" step="0.50" min="0">
-                        <input type="number" class="service-duration-input" placeholder="Min" value="${service.duracion_minutos || 30}" step="5" min="5">
+
+                        <div class="input-with-label">
+                            <label>Precio ($)</label>
+                            <input type="number" class="service-price-input" placeholder="Ej: 10.50" value="${service.precio || ''}" step="0.50" min="0">
+                        </div>
+                        
+                        <div class="input-with-label">
+                            <label>Duración (Min)</label>
+                            <input type="number" class="service-duration-input" placeholder="Ej: 30" value="${service.duracion_minutos || 30}" step="5" min="5">
+                        </div>
+
                     </div>
                 </div>
                 ${isCustom ? `<button class="remove-custom-service" data-id="${service.id}"><i class="fas fa-times"></i></button>` : ''}
             </div>
         `;
+        // ===============================================================
+        // ===== FIN DE LA MEJORA DE HTML ==============================
+        // ===============================================================
     };
     
     // El resto de la función permanece exactamente igual...
