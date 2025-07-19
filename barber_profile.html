@@ -254,7 +254,8 @@ modal-save-status.error { color: var(--danger-color); }
 /* Pega esto al final de la etiqueta <style> en barber_profile.html */
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* CORRECCIÓN: Reducimos el ancho mínimo para dar más flexibilidad en pantallas pequeñas */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
 }
 .service-item-with-image {
@@ -626,6 +627,35 @@ input:checked + .slider:before {
 /* ================================================================ */
 /* === FIN: ESTILOS FINALES PARA SERVICIOS (CIRCULAR Y CON TOGGLE) === */
 /* ================================================================ */
+/* --- INICIO: Estilos para las etiquetas de Precio y Duración --- */
+.service-details .service-inputs {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end; /* Alinea los elementos en la parte inferior */
+    justify-content: center;
+    width: 100%;
+}
+
+.input-with-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Espacio entre la etiqueta y el input */
+    flex-grow: 1; /* Permite que ambos campos ocupen el espacio disponible */
+}
+
+.input-with-label label {
+    font-size: 0.85em;
+    color: var(--secondary-text-color);
+    font-weight: 400;
+    text-align: left; /* Alinea el texto de la etiqueta a la izquierda */
+    margin-left: 5px;
+}
+
+.service-details .service-inputs input {
+    width: 100%; /* El input ocupa todo el ancho de su contenedor */
+    box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+}
+/* --- FIN: Estilos para las etiquetas de Precio y Duración --- */
         
     </style>
 </head>
