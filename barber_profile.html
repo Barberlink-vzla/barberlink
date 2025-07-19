@@ -423,68 +423,65 @@ modal-save-status.error { color: var(--danger-color); }
     cursor: pointer;
 }
 
-        /* =============================================================== */
-/* ===== INICIO: ESTILOS RESPONSIVE PARA TARJETAS DE SERVICIO ===== */
-/* =============================================================== */
+/* ==================================================================== */
+/* === INICIO: ESTILOS RESPONSIVE CON IMAGEN DE SERVICIO CIRCULAR === */
+/* ==================================================================== */
 
-/* Contenedor principal de los servicios */
 .services-grid {
     display: grid;
-    /* Usamos auto-fit para que las columnas se ajusten automáticamente. 
-       minmax(280px, 1fr) crea columnas flexibles que no serán más pequeñas de 280px. */
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px; /* Espacio consistente entre tarjetas */
+    gap: 20px;
 }
 
-/* Estilo base de cada tarjeta de servicio */
 .service-item-with-image {
-    background: var(--login-card-bg); /* Fondo oscuro consistente */
-    border-radius: 12px; /* Bordes más redondeados para un look moderno */
+    background: var(--login-card-bg);
+    border-radius: 12px;
     border: 1px solid var(--border-color);
-    padding: 16px;
+    padding: 20px;
     display: flex;
-    flex-direction: column; /* Apila los elementos verticalmente */
-    gap: 16px; /* Espacio entre la imagen y los detalles */
+    flex-direction: column;
+    align-items: center; /* Centramos todo el contenido de la tarjeta */
+    gap: 16px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    overflow: hidden; /* Asegura que todo se mantenga dentro de los bordes redondeados */
+    overflow: hidden;
+    text-align: center; /* Centramos el texto para que coincida */
 }
 
 .service-item-with-image:hover {
-    transform: translateY(-5px); /* Efecto sutil al pasar el cursor */
+    transform: translateY(-5px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Contenedor de la imagen */
+/* Contenedor de la imagen (AHORA CIRCULAR) */
 .service-image-container {
     position: relative;
-    width: 100%;
-    /* Relación de aspecto 16:9 para las imágenes, se ve más profesional */
-    padding-top: 56.25%; 
-    border-radius: 8px;
+    /* Un tamaño fijo para el círculo, se ve mejor */
+    width: 150px; 
+    height: 150px;
+    border-radius: 50%; /* La clave para hacerlo circular */
     overflow: hidden;
-    background-color: var(--container-bg); /* Color de fondo mientras carga la imagen */
+    background-color: var(--container-bg);
+    border: 3px solid var(--login-primary-accent); /* Borde dorado para resaltar */
+    flex-shrink: 0; /* Evita que el círculo se encoja */
 }
 
 /* La imagen del servicio */
 .service-img-preview {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* La imagen cubre todo el espacio sin deformarse */
-    border: none; /* Quitamos el borde, el contenedor ya lo maneja */
+    object-fit: cover; /* Asegura que la imagen llene el círculo sin deformarse */
+    object-position: center; /* Mantiene al modelo centrado */
 }
 
 /* Botón para subir/cambiar la imagen */
 .service-img-upload-label {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background-color: var(--login-primary-accent); /* Acento dorado */
-    color: var(--login-card-bg); /* Texto oscuro para contraste */
-    width: 36px;
-    height: 36px;
+    bottom: 5px; /* Ajustado para el círculo */
+    right: 5px;  /* Ajustado para el círculo */
+    background-color: var(--login-primary-accent);
+    color: var(--login-card-bg);
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: grid;
     place-items: center;
@@ -503,7 +500,7 @@ modal-save-status.error { color: var(--danger-color); }
 }
 
 .service-img-upload-input {
-    display: none; /* El input de archivo sigue oculto */
+    display: none;
 }
 
 /* Contenedor para los detalles del servicio */
@@ -516,7 +513,7 @@ modal-save-status.error { color: var(--danger-color); }
 
 /* Nombre del servicio */
 .service-details .service-name {
-    font-size: 1.1em;
+    font-size: 1.2em; /* Un poco más grande para destacar */
     font-weight: 500;
     color: var(--primary-text-color);
     line-height: 1.3;
@@ -529,7 +526,6 @@ modal-save-status.error { color: var(--danger-color); }
     align-items: center;
 }
 
-/* Estilo unificado para los inputs */
 .service-details .service-inputs input {
     width: 100%;
     padding: 10px;
@@ -541,15 +537,11 @@ modal-save-status.error { color: var(--danger-color); }
     text-align: center;
 }
 
-/* Pseudo-elementos para añadir íconos a los inputs */
-.service-price-input::before { content: '$'; margin-right: 5px; }
-.service-duration-input::after { content: 'min'; margin-left: 5px; }
-
 /* Botón para eliminar servicios personalizados */
 .remove-custom-service {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
     background: rgba(0,0,0,0.6);
     color: white;
     border: none;
@@ -564,9 +556,9 @@ modal-save-status.error { color: var(--danger-color); }
 .remove-custom-service:hover {
     background-color: var(--danger-color);
 }
-/* =============================================================== */
-/* ====== FIN: ESTILOS RESPONSIVE PARA TARJETAS DE SERVICIO ====== */
-/* =============================================================== */
+/* ================================================================== */
+/* === FIN: ESTILOS RESPONSIVE CON IMAGEN DE SERVICIO CIRCULAR === */
+/* ================================================================== */
         
     </style>
 </head>
