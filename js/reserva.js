@@ -184,7 +184,7 @@ const fetchServicesForBarber = async () => {
             // 2. Usamos !inner para asegurar que solo traiga servicios de un barbero que exista.
             // 3. Filtramos por la columna 'user_id' de la tabla relacionada 'barberos'.
             .select('*, servicios_maestro(id, nombre), barberos!inner(user_id)')
-            .eq('activo', true)
+            .eq('is_active', true) 
             .eq('barberos.user_id', barberId), // La sintaxis correcta para filtrar en la tabla unida
 
         supabaseClient
