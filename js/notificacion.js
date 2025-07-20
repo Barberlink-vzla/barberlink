@@ -348,22 +348,24 @@ function setupSwipeToDelete() {
 /**
  * Borra permanentemente una notificación de la base de datos y actualiza la UI.
  */
+// js/notificacion.js
+
+/**
+ * Borra permanentemente una notificación de la base de datos y actualiza la UI.
+ * Esta función es llamada por el evento 'transitionend' después de la animación de borrado.
+ */
 async function deleteNotification(notificationId) {
   if (!notificationId || typeof supabaseClient === 'undefined') return;
 
-  // Optimización: Elimina el elemento del DOM inmediatamente para una respuesta visual rápida.
-  const itemToDelete = document.querySelector(`.notification-item[data-id='${notificationId}']`);
-  if (itemToDelete) {
-      itemToDelete.remove();
-  }
-
-  // Actualiza el array de estado local
+  // 1. Actualiza el array de estado local eliminando la notificación.
   allNotifications = allNotifications.filter(n => String(n.id) !== String(notificationId));
   
-  // Vuelve a renderizar para actualizar contadores y mostrar el mensaje "No hay notificaciones" si es necesario
+  // 2. Vuelve a renderizar la lista para actualizar los contadores y
+  //    mostrar el mensaje "No hay notificaciones" si es necesario.
+  //    La notificación borrada ya no será visible porque no está en el array.
   renderNotifications(); 
 
-  // Finalmente, elimina el registro de la base de datos en segundo plano
+  // 3. Finalmente, elimina el registro de la base de datos en segundo plano.
   const { error } = await supabaseClient
     .from('notificaciones')
     .delete()
@@ -371,6 +373,7 @@ async function deleteNotification(notificationId) {
 
   if (error) {
     console.error('Error al borrar la notificación en la base de datos:', error);
-    // Aquí podrías tener una lógica para restaurar la notificación si falla el borrado
+    // En caso de error, podrías tener una lógica para recargar las notificaciones
+    // desde la base de datos para asegurar la consistencia.
   }
 }
