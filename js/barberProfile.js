@@ -258,21 +258,20 @@ async function fetchBarberClients() {
 }
 
 
-// ✅ CORRECCIÓN: Función de carga de datos modificada
+// REEMPLAZA tu función loadInitialData completa con esta versión en js/barberProfile.js
+
 async function loadInitialData() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
         window.location.href = 'login_register.html';
         return;
     }
-    currentUserId = user.id; 
+    currentUserId = user.id;
 
     setupPushNotificationButton();
     registerServiceWorker();
     startConfirmationChecker();
     
-    await fetchBarberClients();
-
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
         const { data: barberProfile, error: barberError } = await 
@@ -283,7 +282,7 @@ async function loadInitialData() {
             .single();
 
         if (barberError || !barberProfile) {
-            console.error('Error crítico: No se encontró el perfil de barbero para el usuario autenticado.', barberError);
+            console.error('Error crítico: No se encontró el perfil de barbero.', barberError);
             if (saveStatus) saveStatus.textContent = "Error: Perfil de barbero no encontrado.";
             return;
         }
@@ -293,18 +292,26 @@ async function loadInitialData() {
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
-        const [masterServicesRes, barberServicesRes, availabilityRes] = await Promise.all([
+        const [masterServicesRes, barberServicesRes, availabilityRes, clientsRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
             supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId),
-            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio')
+            
+            // ====================== INICIO DE LA CORRECCIÓN CLAVE ======================
+            // Usamos 'currentUserId' para que la carga coincida con el guardado.
+            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentUserId).order('dia_semana').order('hora_inicio'),
+            // ======================= FIN DE LA CORRECCIÓN CLAVE ========================
+
+            supabaseClient.from('clientes').select('id, nombre, apellido, telefono').eq('barbero_id', currentBarberProfileId)
         ]);
 
         if (masterServicesRes.error) throw new Error(`Servicios Maestros: ${masterServicesRes.error.message}`);
         if (barberServicesRes.error) throw new Error(`Servicios Barbero: ${barberServicesRes.error.message}`);
         if (availabilityRes.error) throw new Error(`Disponibilidad: ${availabilityRes.error.message}`);
+        if (clientsRes.error) throw new Error(`Clientes: ${clientsRes.error.message}`);
 
         masterServices = masterServicesRes.data || [];
         barberServicesData = barberServicesRes.data || [];
+        barberClients = clientsRes.data || [];
 
         weeklyAvailabilityData = [[], [], [], [], [], [], []];
         (availabilityRes.data || []).forEach(slot => {
@@ -318,7 +325,7 @@ async function loadInitialData() {
         });
 
         renderBarberForm(barberProfile); 
-        renderServices(barberServicesRes.data);
+        renderServices(barberServicesData);
         renderBookingLink(currentUserId); 
         
         const markupInput = document.getElementById('tasa-markup');
@@ -335,8 +342,6 @@ async function loadInitialData() {
         console.error('Error cargando datos iniciales:', error);
         if (saveStatus) saveStatus.textContent = `Error al cargar: ${error.message}`;
     } finally {
-        // ✅ AÑADIR: Habilitar los botones aquí, en el bloque `finally`,
-        // para asegurar que se activen después de la carga inicial.
         if (saveAllButton) saveAllButton.disabled = false;
         if (addOtherServiceButton) addOtherServiceButton.disabled = false;
     }
