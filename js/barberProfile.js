@@ -1763,7 +1763,7 @@ function renderServices(barberServices) {
 
     // Función auxiliar para generar el HTML de una sola tarjeta (sin cambios)
      const createServiceHTML = (service, isCustom) => {
-        const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id); // <-- LÍNEA CORREGIDA
+         const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id);
         const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
         const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
         
