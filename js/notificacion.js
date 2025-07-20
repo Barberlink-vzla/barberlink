@@ -359,4 +359,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Iniciar ---
     initNotifications();
-});
+
