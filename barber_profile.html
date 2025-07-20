@@ -58,42 +58,116 @@
         color: var(--success-color);
     }
 
-    .transaction-item.is-debt {
-        background-color: rgba(255, 82, 82, 0.1);
-        border-left: 2px solid var(--danger-color);
-    }
-    .transaction-item.is-debt .amount-value {
-        color: var(--danger-color);
-        font-weight: bold;
-    }
-    .transaction-item.is-debt .service-name::before {
-        content: "\f071"; /* Icono de alerta de FontAwesome */
-        font-family: "Font Awesome 6 Free";
-        font-weight: 900;
-        color: var(--danger-color);
-        margin-right: 8px;
-    }
-    
-    .transaction-list-header {
-        display: grid;
-        grid-template-columns: 1fr 2fr 2fr 1fr 1.2fr;
-        gap: 15px;
-        padding: 10px 15px;
-        font-weight: bold;
-        color: var(--secondary-text-color);
-        border-bottom: 1px solid var(--border-color);
-        font-size: 0.9em;
-    }
-    .transaction-item {
-        display: grid;
-        grid-template-columns: 1fr 2fr 2fr 1fr 1.2fr;
-        gap: 15px;
-        align-items: center;
-        padding: 12px 15px;
-        border-bottom: 1px solid var(--border-color-light);
-        transition: background-color 0.2s ease;
-    }
-    
+    /* REEMPLAZA los estilos antiguos de .transaction-list-header y .transaction-item con ESTO */
+
+/* Ya no necesitamos el encabezado de la tabla */
+.transaction-list-header {
+    display: none;
+}
+
+.transaction-list-container {
+    margin-top: 30px;
+}
+
+#transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Espacio entre cada elemento de la lista */
+}
+
+.transaction-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background-color: var(--login-card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color-light);
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.transaction-item:hover {
+    transform: scale(1.02);
+    background-color: var(--container-bg);
+}
+
+.transaction-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: var(--container-bg);
+    border: 2px solid var(--border-color);
+}
+
+.transaction-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Estilo para el avatar de iniciales si no hay foto */
+.initials-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #fff;
+    font-size: 1.1em;
+}
+
+.transaction-details {
+    flex-grow: 1; /* Ocupa el espacio disponible, empujando el resto a la derecha */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.transaction-details .client-name {
+    font-weight: 500;
+    font-size: 1em;
+    color: var(--primary-text-color);
+}
+
+.transaction-details .service-name {
+    font-size: 0.9em;
+    color: var(--secondary-text-color);
+}
+
+.transaction-info {
+    text-align: right;
+}
+
+.transaction-amount .amount-value {
+    font-weight: bold;
+    font-size: 1.1em;
+    display: block;
+}
+
+.amount-value.success {
+    color: var(--success-color);
+}
+
+.amount-value.debt {
+    color: var(--danger-color);
+}
+
+.transaction-status {
+    font-size: 0.85em;
+    color: var(--secondary-text-color);
+    margin-top: 4px;
+}
+
+.transaction-item.is-debt {
+    border-left: 4px solid var(--danger-color);
+}
+
+.transaction-action .cancel-debt-btn {
+    margin-top: 4px; /* Pequeño espacio sobre el botón */
+}
     .cancel-debt-btn {
         background-color: var(--success-color);
         color: #fff;
@@ -1207,13 +1281,7 @@ input:checked + .slider:before {
                             <i class="fas fa-file-invoice-dollar"></i> Mostrar Solo Deudas
                         </button>
                     </div>
-                    <div class="transaction-list-header">
-                        <span>Fecha</span>
-                        <span>Cliente</span>
-                        <span>Servicio</span>
-                        <span class="align-right">Monto</span>
-                        <span class="align-right">Acciones</span>
-                    </div>
+                    
                     <div id="transaction-list">
                         </div>
                 </div>
