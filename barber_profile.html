@@ -735,6 +735,44 @@ input:checked + .slider:before {
  #change-image-button:hover, #delete-image-button:hover {
   background-color: #0056b3;
  }
+ 
+ /* Pega esto al final de tu <style> */
+.danger-zone-details {
+    margin-top: 15px;
+    font-size: 0.9em;
+    background-color: rgba(40, 40, 40, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.danger-zone-details p {
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.danger-zone-details ul {
+    list-style-type: none;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.danger-zone-details ul li {
+    position: relative;
+    padding-left: 10px;
+    margin-bottom: 5px;
+    color: var(--secondary-text-color);
+}
+
+.danger-zone-details ul li::before {
+    content: '•';
+    position: absolute;
+    left: -5px;
+    color: var(--login-primary-accent);
+    font-weight: bold;
+}
         
     </style>
 </head>
@@ -1243,13 +1281,29 @@ input:checked + .slider:before {
     <h3 class="profile-section-title" style="font-size: 1.5em; border: none; color: var(--danger-color);">
         <i class="fas fa-exclamation-triangle"></i> Zona de Peligro
     </h3>
-    <p>Las acciones en esta sección son permanentes y no se pueden deshacer.</p>
+    <p>La acción en esta sección es permanente y no se puede deshacer.</p>
+    
     <button id="delete-history-btn" class="profile-action-btn danger-btn">
         <i class="fas fa-trash-alt"></i> Borrar Historial de Citas
     </button>
-    <p class="availability-instructions">
-        Esto eliminará permanentemente todas las citas (completadas, pendientes, etc.) y las notificaciones asociadas. Tu perfil, clientes y configuración de servicios no se verán afectados.
-    </p>
+    
+    <div class="danger-zone-details">
+        <div>
+            <p><strong><i class="fas fa-trash-alt" style="color: var(--danger-color);"></i> Se eliminará permanentemente:</strong></p>
+            <ul>
+                <li>Todo el historial de citas (completadas, pendientes, etc.).</li>
+                <li>Todas las notificaciones asociadas a esas citas.</li>
+            </ul>
+        </div>
+        <div>
+            <p><strong><i class="fas fa-shield-alt" style="color: var(--success-color);"></i> No se verá afectado:</strong></p>
+            <ul>
+                <li>Tu perfil y datos de acceso.</li>
+                <li>La lista de tus clientes.</li>
+                <li>Tu configuración de servicios y precios.</li>
+            </ul>
+        </div>
+    </div>
 </div>
                 <button id="save-all-profile-btn" class="profile-submit-btn save-all-btn"><i class="fas fa-save"></i> Guardar Todos los Cambios</button>
                 <p id="save-status"></p>
