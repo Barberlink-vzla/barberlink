@@ -2341,3 +2341,38 @@ body.loaded .dashboard-layout {
 
 .notification-item .notification-content {
   transition: transform 0.3s ease-out;
+  
+  
+  /* =================================================================== */
+/* === INICIO: ESTILOS PARA ELIMINAR NOTIFICACIONES CON DESLIZAMIENTO === */
+/* =================================================================== */
+
+/*
+  Esta es la clase que se añade con JavaScript cuando el deslizamiento
+  es suficiente para borrar la notificación.
+*/
+.notification-item.item-is-deleting {
+  /* Mueve el elemento 100% de su ancho hacia la derecha, sacándolo de la vista */
+  transform: translateX(100%);
+  /* Hace que el elemento se desvanezca */
+  opacity: 0;
+  /* Define una altura de 0 para que el espacio que ocupa colapse */
+  height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  /* Añade un borde de 0 para evitar que se vea durante la animación de colapso */
+  border-width: 0 !important;
+  
+  /* Es crucial definir la duración de la transición para que el evento 'transitionend' se dispare */
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out, height 0.4s ease-out, padding 0.4s ease-out, margin 0.4s ease-out;
+}
+
+/*
+  Asegura que el contenido interno de la notificación también se oculte
+  suavemente para evitar desbordamientos visuales durante la animación.
+*/
+.notification-item.item-is-deleting .notification-content {
+    display: none;
+}
+  
