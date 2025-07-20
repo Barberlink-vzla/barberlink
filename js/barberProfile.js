@@ -1285,7 +1285,7 @@ async function loadReportData(period = 'week') {
         ] = await Promise.all([
             // Consulta para transacciones/ingresos del periodo actual
             supabaseClient.from('citas')
-                .select('*, barbero_servicios(*, servicios_maestro(*))') // Trae todo para la lista
+                .select('*, barbero_servicios(*, servicios_maestro(*)), clientes(foto_url)')  // Trae todo para la lista
                 .eq('barbero_id', currentUserId)
                 .gte('fecha_cita', current.start)
                 .lte('fecha_cita', current.end)
@@ -1500,42 +1500,82 @@ function renderReportCharts(data) {
     });
 }
 
+// REEMPLAZA tu función renderTransactionList completa con esta versión
 function renderTransactionList(appointmentsToRender) {
     const listEl = document.getElementById('transaction-list');
     if (!listEl) return;
 
     if (!appointmentsToRender || appointmentsToRender.length === 0) {
-        listEl.innerHTML = '<p class="no-transactions" style="text-align: center; padding: 20px; color: var(--secondary-text-color);">No se encontraron transacciones con los filtros actuales.</p>';
+        listEl.innerHTML = '<p class="no-transactions">No se encontraron transacciones con los filtros actuales.</p>';
         return;
     }
 
+    // Ordenamos por fecha y hora, de más reciente a más antiguo
     appointmentsToRender.sort((a, b) => new Date(b.fecha_cita + 'T' + b.hora_inicio_cita) - new Date(a.fecha_cita + 'T' + a.hora_inicio_cita));
 
     const getServiceName = (booking) => {
         const serviceInfo = booking.barbero_servicios;
-        return serviceInfo?.nombre_personalizado || serviceInfo?.servicios_maestro?.nombre || 'Servicio no especificado';
+        return serviceInfo?.nombre_personalizado || serviceInfo?.servicios_maestro?.nombre || 'Servicio';
+    };
+
+    // Función para crear un avatar con las iniciales si no hay foto
+    const createInitialsAvatar = (name) => {
+        const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        // Genera un color de fondo basado en el nombre para que sea consistente
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return `<div class="initials-avatar" style="background-color: ${color};">${initials}</div>`;
     };
 
     listEl.innerHTML = appointmentsToRender.map(item => {
-        const isDebt = item.estado_pago === 'pendiente' || (item.estado === 'pendiente' && item.estado_pago !== 'pagado');
+        const clientPhotoUrl = item.clientes?.foto_url;
+        const clientName = item.cliente_nombre || 'N/A';
+        const serviceName = getServiceName(item);
+        
+        const photoHtml = clientPhotoUrl 
+            ? `<img src="${clientPhotoUrl}" alt="Foto de ${clientName}">`
+            : createInitialsAvatar(clientName);
+            
+        const isDebt = item.estado_pago === 'pendiente';
         
         const amountDisplay = isDebt 
-               ? `- ${currencyManager.formatPrice(item.monto || 0)}`  
-               :`+ ${currencyManager.formatPrice(item.monto || 0)}`;
+            ? `<span class="amount-value debt">${currencyManager.formatPrice(item.monto || 0).split(' ')[1]}</span>`
+            : `<span class="amount-value success">+ ${currencyManager.formatPrice(item.monto || 0).split(' ')[1]}</span>`;
 
+        const transactionDate = new Date(item.fecha_cita + 'T00:00:00').toLocaleDateString('es-ES', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        });
+
+        // El botón para pagar deudas se mantiene, pero ahora se integra en el nuevo diseño.
+        const actionHtml = isDebt
+            ? `<div class="transaction-action"><button class="cancel-debt-btn" data-cita='${JSON.stringify(item)}'>Registrar Pago</button></div>`
+            : `<div class="transaction-status">${item.estado_pago === 'pagado' ? 'Pagado' : '--'}</div>`;
+        
+        // La clase 'is-debt' sigue siendo útil para aplicar estilos especiales
         const itemClass = isDebt ? 'transaction-item is-debt' : 'transaction-item';
-
-        const actionHtml = isDebt 
-            ? `<div class="align-right"><button class="cancel-debt-btn" data-cita='${JSON.stringify(item)}'>Registrar Pago</button></div>`
-            : `<div class="align-right">${item.estado_pago === 'pagado' ? 'Pagado' : '--'}</div>`;
 
         return `
             <div class="${itemClass}">
-                <span>${new Date(item.fecha_cita + 'T00:00:00').toLocaleDateString('es-ES')}</span>
-                <span>${item.cliente_nombre || 'N/A'}</span>
-                <span class="service-name">${getServiceName(item)}</span>
-                <span class="align-right amount-value">${amountDisplay}</span>
-                ${actionHtml} 
+                <div class="transaction-icon">
+                    ${photoHtml}
+                </div>
+                <div class="transaction-details">
+                    <span class="client-name">${clientName}</span>
+                    <span class="service-name">${serviceName}</span>
+                </div>
+                <div class="transaction-info">
+                    <div class="transaction-amount">
+                         ${amountDisplay}
+                    </div>
+                    ${actionHtml}
+                </div>
             </div>
         `;
     }).join('');
