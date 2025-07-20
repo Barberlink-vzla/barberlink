@@ -280,100 +280,83 @@ document.addEventListener('DOMContentLoaded', () => {
     initNotifications();
 });
 
-/**
- * **FUNCIÓN ACTUALIZADA Y MEJORADA**
- * Configura la lógica de deslizamiento para eliminar notificaciones.
- */
-function setupSwipeToDelete() {
-    const notificationItems = document.querySelectorAll('.notification-list .notification-item');
+ function setupSwipeToDelete() {
+        const notificationItems = document.querySelectorAll('.notification-list .notification-item');
 
-    notificationItems.forEach(item => {
-        // Previene que se añadan múltiples listeners al mismo elemento
-        if (item.dataset.swipeInitialized) return;
-        item.dataset.swipeInitialized = 'true';
+        notificationItems.forEach(item => {
+            if (item.dataset.swipeInitialized) return;
+            item.dataset.swipeInitialized = 'true';
 
-        let startX = 0;
-        let deltaX = 0;
-        let isSwiping = false;
+            let startX = 0;
+            let deltaX = 0;
+            let isSwiping = false;
 
-        item.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isSwiping = true;
-            // Quita la transición durante el deslizamiento para un control directo
-            item.style.transition = 'none';
-        }, { passive: true });
+            item.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                isSwiping = true;
+                item.style.transition = 'none';
+            }, { passive: true });
 
-        item.addEventListener('touchmove', (e) => {
-            if (!isSwiping) return;
-            deltaX = e.touches[0].clientX - startX;
+            item.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                deltaX = e.touches[0].clientX - startX;
 
-            // Solo actúa si el deslizamiento es hacia la derecha (positivo)
-            if (deltaX > 0) {
-                item.style.transform = `translateX(${deltaX}px)`;
-            }
-        }, { passive: true });
+                if (deltaX > 0) {
+                    item.style.transform = `translateX(${deltaX}px)`;
+                }
+            }, { passive: true });
 
-        item.addEventListener('touchend', () => {
-            if (!isSwiping) return;
-            isSwiping = false;
-            
-            // Umbral: El deslizamiento debe ser mayor al 40% del ancho del elemento
-            const swipeThreshold = item.offsetWidth * 0.4;
+            item.addEventListener('touchend', () => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                
+                const swipeThreshold = item.offsetWidth * 0.4;
+                item.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
 
-            // Vuelve a aplicar la transición para una animación fluida
-            item.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
+                if (deltaX > swipeThreshold) {
+                    item.classList.add('item-is-deleting');
 
-            if (deltaX > swipeThreshold) {
-                // Éxito: El deslizamiento superó el umbral, se inicia la animación de borrado
-                item.classList.add('item-is-deleting');
-
-                // Escucha el final de la animación para borrar el elemento
-                item.addEventListener('transitionend', () => {
-                    const notificationId = item.dataset.id;
-                    if (notificationId) {
-                        deleteNotification(notificationId);
-                    }
-                }, { once: true }); // El listener se elimina solo después de ejecutarse
-            } else {
-                // Fallo: El deslizamiento fue muy corto, la notificación vuelve a su lugar
-                item.style.transform = 'translateX(0)';
-            }
-            
-            deltaX = 0; // Resetea la variable
+                    item.addEventListener('transitionend', () => {
+                        const notificationId = item.dataset.id;
+                        if (notificationId) {
+                            deleteNotification(notificationId);
+                        }
+                    }, { once: true });
+                } else {
+                    item.style.transform = 'translateX(0)';
+                }
+                
+                deltaX = 0;
+            });
         });
-    });
-}
+    }
 
 
-/**
- * Borra permanentemente una notificación de la base de datos y actualiza la UI.
- */
-// js/notificacion.js
+    /**
+     * Borra permanentemente una notificación de la base de datos y actualiza la UI.
+     */
+    async function deleteNotification(notificationId) {
+      if (!notificationId || typeof supabaseClient === 'undefined') return;
 
-/**
- * Borra permanentemente una notificación de la base de datos y actualiza la UI.
- * Esta función es llamada por el evento 'transitionend' después de la animación de borrado.
- */
-async function deleteNotification(notificationId) {
-  if (!notificationId || typeof supabaseClient === 'undefined') return;
+      const itemToDelete = document.querySelector(`.notification-item[data-id='${notificationId}']`);
+      if (itemToDelete) {
+          itemToDelete.remove();
+      }
 
-  // 1. Actualiza el array de estado local eliminando la notificación.
-  allNotifications = allNotifications.filter(n => String(n.id) !== String(notificationId));
-  
-  // 2. Vuelve a renderizar la lista para actualizar los contadores y
-  //    mostrar el mensaje "No hay notificaciones" si es necesario.
-  //    La notificación borrada ya no será visible porque no está en el array.
-  renderNotifications(); 
+      allNotifications = allNotifications.filter(n => String(n.id) !== String(notificationId));
+      
+      renderNotifications(); 
 
-  // 3. Finalmente, elimina el registro de la base de datos en segundo plano.
-  const { error } = await supabaseClient
-    .from('notificaciones')
-    .delete()
-    .eq('id', notificationId);
+      const { error } = await supabaseClient
+        .from('notificaciones')
+        .delete()
+        .eq('id', notificationId);
 
-  if (error) {
-    console.error('Error al borrar la notificación en la base de datos:', error);
-    // En caso de error, podrías tener una lógica para recargar las notificaciones
-    // desde la base de datos para asegurar la consistencia.
-  }
-}
+      if (error) {
+        console.error('Error al borrar la notificación en la base de datos:', error);
+      }
+    }
+    
+    // --- Iniciar ---
+    initNotifications();
+});
