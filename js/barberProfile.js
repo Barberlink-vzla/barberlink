@@ -1274,33 +1274,32 @@ async function loadReportData(period = 'week') {
     try {
         const { current, previous } = getPeriodDates(period);
 
-        // Se mantienen las consultas como las tenías
+        // Hacemos todas las consultas en paralelo para máxima eficiencia
         const [
             currentTransactionsRes, 
-            previousTransactionsRes, // Esta consulta ya la tenías bien para los ingresos
+            previousTransactionsRes,
             currentAppointmentsRes, 
             previousAppointmentsRes,
             currentClientsRes, 
             previousClientsRes
         ] = await Promise.all([
-            // Consulta para transacciones/ingresos del periodo actual
+            // Transacciones del periodo actual (con todos los datos para la lista)
             supabaseClient.from('citas')
-                    .select('*, barbero_servicios(*, servicios_maestro(*)), clientes(foto_perfil_url)') // <-- ¡CORREGIDO!
-
+                .select('*, barbero_servicios(*, servicios_maestro(*)), clientes(foto_perfil_url)')
                 .eq('barbero_id', currentUserId)
                 .gte('fecha_cita', current.start)
                 .lte('fecha_cita', current.end)
                 .eq('estado', 'completada'),
             
-            // Consulta para transacciones/ingresos del periodo anterior
+            // Transacciones del periodo anterior (solo montos para comparar)
             supabaseClient.from('citas')
-                .select('monto_recibido_usd, monto_recibido_ves') // Solo los montos
+                .select('monto_recibido_usd, monto_recibido_ves')
                 .eq('barbero_id', currentUserId)
                 .gte('fecha_cita', previous.start)
                 .lte('fecha_cita', previous.end)
                 .eq('estado', 'completada'),
             
-            // Consultas para citas y clientes (estas se mantienen)
+            // Consultas para citas y clientes (sin cambios)
             supabaseClient.from('citas').select('fecha_cita', { count: 'exact' }).eq('barbero_id', currentUserId).gte('fecha_cita', current.start).lte('fecha_cita', current.end).in('estado', ['completada', 'en proceso', 'confirmada']),
             supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', previous.start).lte('fecha_cita', previous.end).in('estado', ['completada', 'en proceso', 'confirmada']),
             supabaseClient.from('clientes').select('created_at', { count: 'exact' }).eq('barbero_id', currentUserId).gte('created_at', current.start + 'T00:00:00').lte('created_at', current.end + 'T23:59:59'),
@@ -1311,9 +1310,8 @@ async function loadReportData(period = 'week') {
         if (errors.length > 0) throw new Error(errors.map(e => e.message).join(', '));
         
         // --- INICIO DE LA CORRECCIÓN LÓGICA ---
-        // Se declara una sola vez y se usa para todos los cálculos.
         
-        // 1. Cálculo de ingresos con ambas monedas
+        // 1. Función para sumar los ingresos de forma separada y directa
         const calculateTotalIncome = (transactions) => {
             let usd = 0;
             let ves = 0;
@@ -1327,20 +1325,18 @@ async function loadReportData(period = 'week') {
         const currentIncome = calculateTotalIncome(currentTransactionsRes.data);
         const previousIncome = calculateTotalIncome(previousTransactionsRes.data);
 
-        // 2. Cálculo del porcentaje de ingresos unificando a USD (solo para comparación)
+        // 2. Para el CÁLCULO DE PORCENTAJE, sí necesitamos unificar a una moneda (USD)
         const currentTotalEquivalentUSD = currentIncome.usd + (currentIncome.ves / (currencyManager.finalRate || 1));
         const previousTotalEquivalentUSD = previousIncome.usd + (previousIncome.ves / (currencyManager.finalRate || 1));
 
-        let incomePercentage = 0; // <-- ÚNICA DECLARACIÓN DE LA VARIABLE
+        let incomePercentage = 0;
         if (previousTotalEquivalentUSD > 0) {
             incomePercentage = ((currentTotalEquivalentUSD - previousTotalEquivalentUSD) / previousTotalEquivalentUSD) * 100;
         } else if (currentTotalEquivalentUSD > 0) {
-            incomePercentage = 100;
+            incomePercentage = 100; // Crecimiento infinito si el anterior fue 0
         }
         
-        // --- SE ELIMINAN LAS DECLARACIONES REDUNDANTES DE AQUÍ ---
-
-        // 3. Cálculo de citas y clientes (sin cambios)
+        // --- Cálculo de citas y clientes (sin cambios) ---
         const appointmentsTotal = currentAppointmentsRes.count || 0;
         let appointmentsPercentage = 0;
         if (previousAppointmentsRes.count > 0) {
@@ -1357,12 +1353,12 @@ async function loadReportData(period = 'week') {
             clientsPercentage = 100;
         }
         
-        // 4. Se construye el objeto final de datos para los reportes
+        // 3. Se construye el objeto final con los datos CLAROS y SEPARADOS
         const reportData = {
             period,
             income: { 
-                totalUSD: currentIncome.usd, 
-                totalVES: currentIncome.ves,
+                totalUSD: currentIncome.usd, // Suma directa de USD
+                totalVES: currentIncome.ves, // Suma directa de VES
                 percentage: incomePercentage, 
                 data: currentTransactionsRes.data || []
             },
@@ -1440,19 +1436,21 @@ function groupDataForChart(data, period, dateField, mode = 'count', sumFieldOrFn
 }
 
 
+// EN: js/barberProfile.js
+
 function renderReportCharts(data) {
     if (typeof ReportCharts === 'undefined') {
         console.error("Módulo ReportCharts no encontrado.");
         return;
     }
 
-    // El gráfico de ingresos se renderiza con los datos unificados en USD para mostrar la tendencia
+    // El gráfico de ingresos se renderiza con los datos unificados en USD para mostrar la TENDENCIA VISUAL
     const incomeChartData = groupDataForChart(
         data.income.data, 
         data.period, 
         'fecha_cita', 
         'sum', 
-        // Función personalizada para sumar el equivalente en USD
+        // Función personalizada para sumar el equivalente en USD para el gráfico
         (item) => (item.monto_recibido_usd || 0) + ((item.monto_recibido_ves || 0) / (currencyManager.finalRate || 1))
     );
 
@@ -1463,19 +1461,21 @@ function renderReportCharts(data) {
         themeColor: 'var(--success-color)',
     });
 
-    // PERO: Actualizamos el texto de las tarjetas con los valores REALES y separados
+    // ¡CLAVE! Actualizamos el texto de las tarjetas con los valores REALES y separados
     const incomeStatUsd = document.getElementById('income-stat-value');
     const incomeStatVes = document.getElementById('income-stat-value-ves');
 
     if(incomeStatUsd) incomeStatUsd.textContent = `USD ${data.income.totalUSD.toFixed(2)}`;
     if(incomeStatVes) incomeStatVes.textContent = `VES ${data.income.totalVES.toFixed(2)}`;
 
+    // El porcentaje sí se calcula con el valor unificado, lo cual es correcto para la comparación
     ReportCharts.updateChartInfo({
         percentage: data.income.percentage,
         percentageElId: 'income-percentage',
     });
 
 
+    // Los otros gráficos no necesitan cambios
     const appointmentsChartData = groupDataForChart(data.appointments.data, data.period, 'fecha_cita', 'count');
     ReportCharts.renderChart({
         chartId: 'appointments-area-chart',
@@ -1533,7 +1533,7 @@ function renderTransactionList(appointmentsToRender) {
     };
 
     listEl.innerHTML = appointmentsToRender.map(item => {
-        const clientPhotoUrl = item.clientes?.foto_perfil_url; // Ya corregido
+        const clientPhotoUrl = item.clientes?.foto_perfil_url;
         const clientName = item.cliente_nombre || 'N/A';
         const serviceName = getServiceName(item);
         
@@ -1543,9 +1543,7 @@ function renderTransactionList(appointmentsToRender) {
             
         const isDebt = item.estado_pago === 'pendiente';
         
-        // =================================================================
-        // ===== INICIO DE LA MEJORA: LÓGICA DE MONEDA EXPLÍCITA =====
-        // =================================================================
+        // --- INICIO DE LA MEJORA: LÓGICA DE MONEDA EXPLÍCITA ---
         let amountDisplay = '';
 
         if (isDebt) {
@@ -1559,14 +1557,12 @@ function renderTransactionList(appointmentsToRender) {
             } else if (item.monto_recibido_ves && item.monto_recibido_ves > 0) {
                 amountDisplay = `<span class="amount-value success">+ VES ${item.monto_recibido_ves.toFixed(2)}</span>`;
             } else {
-                // Fallback si no se encuentra un monto específico (aunque no debería pasar en citas completadas).
+                // Fallback si no se encuentra un monto específico.
                 const fallbackAmount = item.monto || 0;
                 amountDisplay = `<span class="amount-value success">+ ${currencyManager.primaryCurrency} ${fallbackAmount.toFixed(2)}</span>`;
             }
         }
-        // =================================================================
-        // ===== FIN DE LA MEJORA: LÓGICA DE MONEDA EXPLÍCITA =====
-        // =================================================================
+        // --- FIN DE LA MEJORA ---
 
         const actionHtml = isDebt
             ? `<div class="transaction-action"><button class="cancel-debt-btn" data-cita='${JSON.stringify(item)}'>Registrar Pago</button></div>`
