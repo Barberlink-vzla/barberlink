@@ -1193,6 +1193,20 @@ input:checked + .slider:before {
         
     </div>
 
+    <div class="modal-overlay" id="cropper-modal-overlay">
+    <div class="alert-modal" id="cropper-modal">
+        <h3>Ajustar Imagen del Servicio</h3>
+        <p>Arrastra y haz zoom para encuadrar la foto perfectamente.</p>
+        
+        <div id="cropper-container"></div>
+        
+        <div class="modal-button-group" style="margin-top: 20px;">
+            <button id="cropper-save-btn" class="style-button confirm-btn"><i class="fas fa-cut"></i> Recortar y Guardar</button>
+            <button id="cropper-cancel-btn" class="style-button noshow-btn">Cancelar</button>
+        </div>
+    </div>
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
