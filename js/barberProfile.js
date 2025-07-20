@@ -1511,7 +1511,6 @@ function renderTransactionList(appointmentsToRender) {
         return;
     }
 
-    // Ordenamos por fecha y hora, de más reciente a más antiguo
     appointmentsToRender.sort((a, b) => new Date(b.fecha_cita + 'T' + b.hora_inicio_cita) - new Date(a.fecha_cita + 'T' + a.hora_inicio_cita));
 
     const getServiceName = (booking) => {
@@ -1519,10 +1518,8 @@ function renderTransactionList(appointmentsToRender) {
         return serviceInfo?.nombre_personalizado || serviceInfo?.servicios_maestro?.nombre || 'Servicio';
     };
 
-    // Función para crear un avatar con las iniciales si no hay foto
     const createInitialsAvatar = (name) => {
         const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        // Genera un color de fondo basado en el nombre para que sea consistente
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -1536,7 +1533,7 @@ function renderTransactionList(appointmentsToRender) {
     };
 
     listEl.innerHTML = appointmentsToRender.map(item => {
-        const clientPhotoUrl = item.clientes?.foto_url;
+        const clientPhotoUrl = item.clientes?.foto_perfil_url; // Ya corregido
         const clientName = item.cliente_nombre || 'N/A';
         const serviceName = getServiceName(item);
         
@@ -1546,20 +1543,35 @@ function renderTransactionList(appointmentsToRender) {
             
         const isDebt = item.estado_pago === 'pendiente';
         
-        const amountDisplay = isDebt 
-            ? `<span class="amount-value debt">${currencyManager.formatPrice(item.monto || 0).split(' ')[1]}</span>`
-            : `<span class="amount-value success">+ ${currencyManager.formatPrice(item.monto || 0).split(' ')[1]}</span>`;
+        // =================================================================
+        // ===== INICIO DE LA MEJORA: LÓGICA DE MONEDA EXPLÍCITA =====
+        // =================================================================
+        let amountDisplay = '';
 
-        const transactionDate = new Date(item.fecha_cita + 'T00:00:00').toLocaleDateString('es-ES', {
-            day: 'numeric', month: 'short', year: 'numeric'
-        });
+        if (isDebt) {
+            // Para las deudas, mostramos el monto de referencia en la moneda principal (USD).
+            const debtAmount = item.monto || 0;
+            amountDisplay = `<span class="amount-value debt">${currencyManager.primaryCurrency} ${debtAmount.toFixed(2)}</span>`;
+        } else {
+            // Para transacciones pagadas, verificamos en qué moneda se registró.
+            if (item.monto_recibido_usd && item.monto_recibido_usd > 0) {
+                amountDisplay = `<span class="amount-value success">+ USD ${item.monto_recibido_usd.toFixed(2)}</span>`;
+            } else if (item.monto_recibido_ves && item.monto_recibido_ves > 0) {
+                amountDisplay = `<span class="amount-value success">+ VES ${item.monto_recibido_ves.toFixed(2)}</span>`;
+            } else {
+                // Fallback si no se encuentra un monto específico (aunque no debería pasar en citas completadas).
+                const fallbackAmount = item.monto || 0;
+                amountDisplay = `<span class="amount-value success">+ ${currencyManager.primaryCurrency} ${fallbackAmount.toFixed(2)}</span>`;
+            }
+        }
+        // =================================================================
+        // ===== FIN DE LA MEJORA: LÓGICA DE MONEDA EXPLÍCITA =====
+        // =================================================================
 
-        // El botón para pagar deudas se mantiene, pero ahora se integra en el nuevo diseño.
         const actionHtml = isDebt
             ? `<div class="transaction-action"><button class="cancel-debt-btn" data-cita='${JSON.stringify(item)}'>Registrar Pago</button></div>`
             : `<div class="transaction-status">${item.estado_pago === 'pagado' ? 'Pagado' : '--'}</div>`;
         
-        // La clase 'is-debt' sigue siendo útil para aplicar estilos especiales
         const itemClass = isDebt ? 'transaction-item is-debt' : 'transaction-item';
 
         return `
