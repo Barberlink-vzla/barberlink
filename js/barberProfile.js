@@ -2584,11 +2584,8 @@ async function saveAvailability() {
     }
 }
 
-/**
- * Guarda la disponibilidad para un solo día específico.
- * Esta función es llamada desde el modal de edición del calendario.
- * @param {number} dayIndex - El índice del día de la semana (0=Domingo, 6=Sábado).
- */
+// REEMPLAZA TODA TU FUNCIÓN saveAvailabilityForDay CON ESTA VERSIÓN
+
 async function saveAvailabilityForDay(dayIndex) {
     const statusEl = document.getElementById('modal-save-status');
     const saveBtn = document.getElementById('save-day-availability-btn');
@@ -2616,7 +2613,10 @@ async function saveAvailabilityForDay(dayIndex) {
                 throw new Error(`Horario inválido: la hora de inicio (${start}) debe ser anterior a la de fin (${end}).`);
             }
             slotsForDay.push({
-                barbero_id: currentBarberProfileId,
+                // =============================================================
+                // AQUÍ ESTÁ LA CORRECCIÓN. DEBE SER EL ID DE AUTENTICACIÓN.
+                barbero_id: currentUserId,
+                // =============================================================
                 dia_semana: dayIndex,
                 hora_inicio: start,
                 hora_fin: end
@@ -2627,7 +2627,7 @@ async function saveAvailabilityForDay(dayIndex) {
         const { error: deleteError } = await supabaseClient
             .from('disponibilidad')
             .delete()
-            .eq('barbero_id', currentUserId)
+            .eq('barbero_id', currentUserId) // Aquí ya estaba bien
             .eq('dia_semana', dayIndex);
 
         if (deleteError) {
@@ -2638,7 +2638,7 @@ async function saveAvailabilityForDay(dayIndex) {
         if (slotsForDay.length > 0) {
             const { error: insertError } = await supabaseClient
                 .from('disponibilidad')
-                .insert(slotsForDay);
+                .insert(slotsForDay); // Ahora el 'insert' tiene los datos correctos
 
             if (insertError) {
                 throw new Error(`Error al guardar los nuevos horarios: ${insertError.message}`);
@@ -2647,6 +2647,7 @@ async function saveAvailabilityForDay(dayIndex) {
 
         // 4. Actualizar la variable global en memoria para consistencia
         weeklyAvailabilityData[dayIndex] = slotsForDay.map(s => ({
+            id: null,
             hora_inicio: s.hora_inicio,
             hora_fin: s.hora_fin
         }));
