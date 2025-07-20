@@ -533,7 +533,7 @@ async function handleWalkInSubmit(e) {
         const endTime = new Date(now.getTime() + duration * 60000).toTimeString().slice(0, 8);
 
         const newCita = {
-           barbero_id: currentUserId
+           barbero_id: currentUserId,
             cliente_id: client.id,
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
@@ -3446,6 +3446,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }
  });
 });
-
-
-
