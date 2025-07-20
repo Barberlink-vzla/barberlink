@@ -679,6 +679,62 @@ input:checked + .slider:before {
     margin: 20px auto; /* Añade un poco de espacio y lo centra */
 }
 /* --- FIN: CORRECCIÓN --- */
+
+ /* Estilos básicos para el modal */
+ .modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+ }
+
+ .modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+  border-radius: 5px;
+  position: relative;
+ }
+
+ .close-button {
+  color: #aaa;
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 28px;
+  font-weight: bold;
+ }
+
+ .close-button:hover,
+ .close-button:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+ }
+
+ #change-image-button, #delete-image-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+ }
+
+ #change-image-button:hover, #delete-image-button:hover {
+  background-color: #0056b3;
+ }
         
     </style>
 </head>
@@ -1215,6 +1271,16 @@ input:checked + .slider:before {
         </div>
     </div>
 </div>
+
+<div id="image-management-modal" class="modal">
+ <div class="modal-content">
+  <span class="close-button">&times;</span>
+  <h3>Gestionar Imagen</h3>
+  <button id="change-image-button">Cambiar Foto</button>
+  <button id="delete-image-button">Eliminar Foto</button>
+ </div>
+</div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
