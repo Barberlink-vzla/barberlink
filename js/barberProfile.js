@@ -1285,7 +1285,8 @@ async function loadReportData(period = 'week') {
         ] = await Promise.all([
             // Consulta para transacciones/ingresos del periodo actual
             supabaseClient.from('citas')
-                .select('*, barbero_servicios(*, servicios_maestro(*)), clientes(foto_url)')  // Trae todo para la lista
+                    .select('*, barbero_servicios(*, servicios_maestro(*)), clientes(foto_perfil_url)') // <-- ¡CORREGIDO!
+
                 .eq('barbero_id', currentUserId)
                 .gte('fecha_cita', current.start)
                 .lte('fecha_cita', current.end)
