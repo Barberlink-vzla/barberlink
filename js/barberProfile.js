@@ -1772,20 +1772,21 @@ function renderServices(barberServices) {
         const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
         const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
         
-        const imageUrl = service.imagen_url 
-            ? `${service.imagen_url}?t=${new Date().getTime()}` 
-            : placeholderUrl;
-        
-        const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
+       const imageUrl = service.imagen_url
+    ? `${service.imagen_url}?t=${new Date().getTime()}`
+    : placeholderUrl;
 
-        return `
-            <div class="service-item-with-image" ${dataAttrs}>
-                <div class="service-image-container">
-                    <img src="${imageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview" data-service-db-id="${service.id}">
-                    <label for="img-upload-${serviceId}" class="service-img-upload-label" title="Cambiar imagen">
-                        <i class="fas fa-camera"></i>
-                    </label>
-                    <input type="file" id="img-upload-${serviceId}" class="service-img-upload-input" accept="image/*">
+const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
+
+return `
+    <div class="service-item-with-image" ${dataAttrs}>
+        <div class="service-image-container">
+            <img src="${imageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview" data-service-db-id="${service.id}">
+            {/* Se ha eliminado el atributo 'for' de esta etiqueta label */}
+            <label class="service-img-upload-label" title="Cambiar imagen">
+                <i class="fas fa-camera"></i>
+            </label>
+            <input type="file" id="img-upload-${serviceId}" class="service-img-upload-input" accept="image/*" style="display: none;">
                 </div>
                 <div class="service-details">
                     <span class="service-name">${serviceName}</span>
@@ -3312,143 +3313,114 @@ function handleUrlActions() {
 // Llama a la función cuando el DOM esté completamente cargado.
 document.addEventListener('DOMContentLoaded', handleUrlActions);
 
+// Archivo: barberProfile.js
+
+// REEMPLAZA el bloque addEventListener que tienes al final por este:
 document.addEventListener('DOMContentLoaded', () => {
- const imageManagementModal = document.getElementById('image-management-modal');
- const changeImageButton = document.getElementById('change-image-button');
- const deleteImageButton = document.getElementById('delete-image-button');
- const closeButton = imageManagementModal.querySelector('.close-button');
- let currentServiceId = null;
- let currentImageInput = null;
- let currentImagePreview = null;
+    const imageManagementModal = document.getElementById('image-management-modal');
+    const changeImageButton = document.getElementById('change-image-button');
+    const deleteImageButton = document.getElementById('delete-image-button');
+    const closeButton = imageManagementModal.querySelector('.close-button');
 
- // Abrir el modal al hacer clic en el icono de la cámara
- document.addEventListener('click', (event) => {
-  if (event.target.classList.contains('fa-camera')) {
-   const uploadLabel = event.target.parentNode;
-   const serviceItem = uploadLabel.closest('.service-item-with-image');
-   currentImageInput = serviceItem.querySelector('.service-img-upload-input');
-   currentImagePreview = serviceItem.querySelector('.service-img-preview');
-   currentServiceId = currentImagePreview.dataset.serviceDbId;
-   imageManagementModal.style.display = 'block';
-  }
- });
+    let currentServiceDbId = null;
+    let currentImageInput = null;
+    let currentImagePreview = null;
 
- // Cerrar el modal al hacer clic en la 'X'
- closeButton.addEventListener('click', () => {
-  imageManagementModal.style.display = 'none';
-  currentServiceId = null;
-  currentImageInput = null;
-  currentImagePreview = null;
- });
+    // 1. Abrir el modal al hacer clic en el icono de la cámara
+    document.body.addEventListener('click', (event) => {
+        const cameraIcon = event.target.closest('.service-img-upload-label');
+        if (cameraIcon) {
+            const serviceItem = cameraIcon.closest('.service-item-with-image');
+            currentImageInput = serviceItem.querySelector('.service-img-upload-input');
+            currentImagePreview = serviceItem.querySelector('.service-img-preview');
+            currentServiceDbId = currentImagePreview.dataset.serviceDbId; // Usamos el ID de la base de datos
 
- // Cerrar el modal al hacer clic fuera del contenido
- window.addEventListener('click', (event) => {
-  if (event.target === imageManagementModal) {
-   imageManagementModal.style.display = 'none';
-   currentServiceId = null;
-   currentImageInput = null;
-   currentImagePreview = null;
-  }
- });
+            // Verificación para asegurar que tenemos todo lo necesario
+            if (currentImageInput && currentImagePreview && currentServiceDbId) {
+                imageManagementModal.style.display = 'block';
+            } else {
+                console.error("No se pudo obtener la información completa del servicio para gestionar la imagen.");
+            }
+        }
+    });
 
- // Acción para cambiar la foto
- changeImageButton.addEventListener('click', () => {
-  imageManagementModal.style.display = 'none';
-  if (currentImageInput) {
-   currentImageInput.click(); // Simula el clic en el input de tipo file
-  }
- });
+    // 2. Función genérica para cerrar el modal y limpiar las variables
+    const closeModal = () => {
+        imageManagementModal.style.display = 'none';
+        currentServiceDbId = null;
+        currentImageInput = null;
+        currentImagePreview = null;
+    };
 
- // Acción para eliminar la foto
- deleteImageButton.addEventListener('click', async () => {
-  if (currentServiceId) {
-   if (confirm('¿Estás seguro de que quieres eliminar la foto de este servicio?')) {
-    try {
-     const { error } = await supabase
-      .storage
-      .from('service-photos')
-      .remove([`${supabase.auth.currentUser.id}/${currentImagePreview.src.split('/').pop().split('?')[0]}`]); // Intenta eliminar el archivo basado en el nombre
+    // 3. Listeners para cerrar el modal
+    closeButton.addEventListener('click', closeModal);
+    window.addEventListener('click', (event) => {
+        if (event.target === imageManagementModal) {
+            closeModal();
+        }
+    });
 
-     if (!error) {
-      // Actualizar la interfaz de usuario para mostrar la imagen por defecto
-      currentImagePreview.src = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
-      // Actualizar la base de datos para quitar la URL de la imagen del servicio
-      const { error: dbError } = await supabase
-       .from('barbero_servicios')
-       .update({ imagen_url: null })
-       .eq('id', currentServiceId); // Asumiendo que tienes un ID único para cada configuración de servicio del barbero
+    // 4. Acción para el botón "Cambiar Foto"
+    changeImageButton.addEventListener('click', () => {
+        closeModal();
+        if (currentImageInput) {
+            currentImageInput.click(); // Simula el clic en el input de tipo file
+        }
+    });
 
-      if (dbError) {
-       console.error('Error al eliminar la URL de la imagen de la base de datos:', dbError);
-       alert('Error al eliminar la imagen de la base de datos.');
-      } else {
-       alert('Imagen eliminada correctamente.');
-      }
-     } else {
-      console.error('Error al eliminar la imagen del storage:', error);
-      alert('Error al eliminar la imagen del storage.');
-     }
-    } catch (error) {
-     console.error('Error inesperado al eliminar la imagen:', error);
-     alert('Ocurrió un error al intentar eliminar la imagen.');
-    } finally {
-     imageManagementModal.style.display = 'none';
-     currentServiceId = null;
-     currentImageInput = null;
-     currentImagePreview = null;
-    }
-   }
-  }
- });
+    // 5. Acción para el botón "Eliminar Foto" (¡CORREGIDA!)
+    deleteImageButton.addEventListener('click', async () => {
+        if (!currentServiceDbId || !currentImagePreview) return;
 
- // Escuchar el cambio en el input de archivo (para la opción "Cambiar Foto")
- document.addEventListener('change', async (event) => {
-  if (event.target.classList.contains('service-img-upload-input')) {
-   const file = event.target.files?.[0];
-   if (file && currentImagePreview && currentServiceId) {
-    const maxSizeMB = 5;
-    if (file.size > maxSizeMB * 1024 * 1024) {
-     alert(`La imagen debe ser menor a ${maxSizeMB}MB.`);
-     event.target.value = ''; // Limpiar el input
-     return;
-    }
+        if (confirm('¿Estás seguro de que quieres eliminar la foto de este servicio?')) {
+            try {
+                const imageUrl = currentImagePreview.src;
+                const defaultPlaceholder = 'https://placehold.co';
 
-    const timestamp = Date.now();
-    const filePath = `${supabase.auth.currentUser.id}/${timestamp}_${file.name}`;
+                // Solo intentamos borrar si la imagen no es el placeholder por defecto
+                if (imageUrl && !imageUrl.includes(defaultPlaceholder)) {
+                    // FIX: Usamos supabaseClient y una forma robusta de obtener la ruta del archivo
+                    const bucketName = 'service-photos';
+                    const urlParts = imageUrl.split('/');
+                    const filePath = urlParts.slice(urlParts.indexOf(bucketName) + 1).join('/').split('?')[0];
+                    
+                    if (filePath) {
+                        console.log(`Intentando eliminar archivo: ${filePath}`);
+                        // FIX: Usamos la variable correcta 'supabaseClient'
+                        const { error: storageError } = await supabaseClient.storage.from(bucketName).remove([filePath]);
+                        if (storageError) {
+                            console.warn("Advertencia al eliminar la imagen del storage:", storageError.message);
+                            // No lanzamos un error fatal, podría ser que el archivo ya no exista.
+                        }
+                    }
+                }
 
-    try {
-     const { data, error } = await supabase
-      .storage
-      .from('service-photos')
-      .upload(filePath, file, {
-       cacheControl: '3600',
-       upsert: false
-      });
+                // Actualizar la base de datos para quitar la URL de la imagen del servicio
+                // FIX: Usamos la variable correcta 'supabaseClient'
+                const { error: dbError } = await supabaseClient
+                    .from('barbero_servicios')
+                    .update({ imagen_url: null })
+                    .eq('id', currentServiceDbId);
 
-     if (error) {
-      console.error('Error al subir la imagen:', error);
-      alert('No se pudo subir la imagen. Inténtalo de nuevo.');
-     } else {
-      const imageUrl = `${supabase.storageUrl}/object/public/service-photos/${data.path}?t=${timestamp}`;
-      currentImagePreview.src = imageUrl;
-      // Actualizar la base de datos con la nueva URL
-      const { error: dbError } = await supabase
-       .from('barbero_servicios')
-       .update({ imagen_url: imageUrl })
-       .eq('id', currentServiceId); // Asegúrate de que 'id' es la columna correcta para identificar el servicio del barbero
+                if (dbError) {
+                    throw new Error('Error al eliminar la referencia de la imagen en la base de datos.');
+                }
+                
+                // Actualizar la interfaz de usuario para mostrar la imagen por defecto
+                currentImagePreview.src = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
+                alert('Imagen eliminada correctamente.');
 
-      if (dbError) {
-       console.error('Error al guardar la URL de la imagen en la base de datos:', dbError);
-       alert('Error al guardar la URL de la imagen.');
-      }
-     }
-    } catch (error) {
-     console.error('Error inesperado al subir la imagen:', error);
-     alert('Ocurrió un error al intentar subir la imagen.');
-    } finally {
-     event.target.value = ''; // Limpiar el input después de la carga
-    }
-   }
-  }
- });
+            } catch (error) {
+                console.error('Error inesperado al eliminar la imagen:', error);
+                alert(`Ocurrió un error al intentar eliminar la imagen: ${error.message}`);
+            } finally {
+                closeModal(); // Cierra el modal en cualquier caso
+            }
+        }
+    });
+
+    // NOTA: El listener para cuando un archivo es seleccionado ('change' en .service-img-upload-input)
+    // debe permanecer donde está (dentro de la función `renderServices`) ya que depende de ImageCropper
+    // y la lógica de guardado general. El flujo ahora será:
+    // Clic en Cámara -> Modal -> Clic "Cambiar Foto" -> Se activa el input -> Se abre el cropper.
 });
