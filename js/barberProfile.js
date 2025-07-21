@@ -573,7 +573,7 @@ console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
         // La llamada RPC ya está correcta, pero la verificación anterior añade una capa de seguridad.
         const { data: client, error: clientError } = await supabaseClient
             .rpc('crear_cliente_desde_panel', {
-                p_barbero_id: currentBarberProfileId,
+                p_barbero_id: currentUserId,
                 p_nombre: nombre,
                 p_apellido: apellido,
                 p_telefono: clientPhone
@@ -594,7 +594,7 @@ console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
         const endTime = new Date(now.getTime() + duration * 60000).toTimeString().slice(0, 8);
 
         const newCita = {
-            barbero_id: currentBarberProfileId,
+            barbero_id: currentUserId,
             cliente_id: client.id,
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
