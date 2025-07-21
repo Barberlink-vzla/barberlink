@@ -550,7 +550,7 @@ async function handleWalkInSubmit(e) {
         // En lugar de hacer un .upsert() que viola RLS, llamamos a nuestra nueva función RPC.
         const { data: client, error: clientError } = await supabaseClient
             .rpc('crear_cliente_desde_panel', {
-                p_barbero_id: currentBarberProfileId,
+                p_barbero_id: currentUserId,
                 p_nombre: nombre,
                 p_apellido: apellido,
                 p_telefono: clientPhone
