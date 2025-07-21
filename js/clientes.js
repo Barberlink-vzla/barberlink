@@ -6,13 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientListContainer = document.getElementById('client-list-container');
     const addClientForm = document.getElementById('add-client-form');
     
-    function initClientModule() {
+    // EN: clientes.js
+
+function initClientModule() {
     if (typeof supabaseClient === 'undefined') {
         console.error("Clients Error: supabaseClient no está definido.");
         if(document.getElementById('client-list-container')) document.getElementById('client-list-container').innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
         return;
     }
     console.log("Módulo de clientes iniciado correctamente. ✅");
+
+    // ✅ ¡AQUÍ ESTÁ LA CORRECCIÓN!
+    // Activamos los listeners para los botones de las tarjetas (editar, borrar, etc.)
+    setupEventListeners();
 
     let barberAuthId = null; // Variable local para guardar el ID de autenticación
 
@@ -45,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
                 return;
             }
-            // Lógica del formulario (la moveremos aquí o la llamaremos)
             await handleAddClient(e, barberAuthId);
         });
     }
