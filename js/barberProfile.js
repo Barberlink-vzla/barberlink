@@ -621,7 +621,7 @@ async function handleWalkInSubmit(e) {
             cliente_id: clientToUse.id, // <-- ¡Usamos el ID correcto!
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
-            servicio_reservado__id: serviceData.id,
+            servicio_reservado_id: serviceData.id,
             fecha_cita: toLocalISODate(now),
             hora_inicio_cita: startTime,
             hora_fin_cita: endTime,
