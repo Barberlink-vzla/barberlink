@@ -520,7 +520,11 @@ function handleWalkInClientSelection(client) {
  * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
  * El modal de pago se mostrará automáticamente cuando el servicio termine.
  */
- 
+ /**
+ * Maneja el envío del formulario de visita inmediata.
+ * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
+ * El modal de pago se mostrará automáticamente cuando el servicio termine.
+ */
 async function handleWalkInSubmit(e) {
     e.preventDefault();
     
@@ -539,19 +543,17 @@ async function handleWalkInSubmit(e) {
     walkInStatus.className = 'status-message';
 
     try {
-        // Obtenemos los datos del servicio seleccionado
         const serviceData = JSON.parse(selectedOption.dataset.serviceData);
         
-        // Separamos el nombre y el apellido
         const nameParts = clientName.split(' ');
         const nombre = nameParts.shift() || '';
         const apellido = nameParts.join(' ');
 
         // --- INICIO DE LA CORRECCIÓN CLAVE ---
-        // En lugar de hacer un .upsert() que viola RLS, llamamos a nuestra nueva función RPC.
+        // Usamos currentBarberProfileId, que es la llave primaria de la tabla 'barberos'.
         const { data: client, error: clientError } = await supabaseClient
             .rpc('crear_cliente_desde_panel', {
-                p_barbero_id: currentBarberProfileId,
+                p_barbero_id: currentBarberProfileId, // <-- CORREGIDO
                 p_nombre: nombre,
                 p_apellido: apellido,
                 p_telefono: clientPhone
@@ -561,32 +563,31 @@ async function handleWalkInSubmit(e) {
         // --- FIN DE LA CORRECCIÓN CLAVE ---
 
         if (clientError) {
-            // Este error ahora será más detallado si la función RPC falla.
             throw new Error(`Error al guardar cliente: ${clientError.message}`);
         }
 
-        // Disparamos un evento para que el módulo de clientes se actualice solo.
         document.dispatchEvent(new CustomEvent('clientListChanged'));
         
-        // El resto de la lógica para crear la cita permanece igual
         const now = new Date();
         const startTime = now.toTimeString().slice(0, 8);
         const duration = serviceData.duracion_minutos || 30;
         const endTime = new Date(now.getTime() + duration * 60000).toTimeString().slice(0, 8);
 
         const newCita = {
-            barbero_id: currentBarberProfileId, // El ID de autenticación del barbero
-            cliente_id: client.id,     // El ID del cliente que nos devolvió la función RPC
+            barbero_id: currentBarberProfileId,
+            cliente_id: client.id,
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
             servicio_reservado_id: serviceData.id,
             fecha_cita: toLocalISODate(now),
             hora_inicio_cita: startTime,
             hora_fin_cita: endTime,
-            estado: APPOINTMENT_STATUS.IN_PROGRESS, // Se marca como "en proceso" directamente
+            estado: APPOINTMENT_STATUS.IN_PROGRESS,
             metodo_pago: null,
             estado_pago: 'pendiente',
-            monto: serviceData.precio
+            monto: serviceData.precio,
+            // Aseguramos que la moneda de la cita se guarde correctamente
+            moneda: currencyManager.primaryCurrency 
         };
 
         const { data: insertedCita, error: citaError } = await supabaseClient
@@ -618,6 +619,7 @@ async function handleWalkInSubmit(e) {
         submitBtn.disabled = false;
     }
 }
+
 
 
 // ===== SECCIÓN DE NOTIFICACIONES Y RECORDATORIOS =====
