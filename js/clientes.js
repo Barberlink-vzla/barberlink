@@ -13,21 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Inicializa el módulo de clientes
      */
-    async function initClientModule() {
+   async function initClientModule() {
         if (typeof supabaseClient === 'undefined') {
-            console.error("Clients Error: supabaseClient no está definido. Asegúrate de que `supabaseClient.js` se cargue primero.");
+            console.error("Clients Error: supabaseClient no está definido.");
             if(clientListContainer) clientListContainer.innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
             return;
         }
         console.log("Módulo de clientes iniciado correctamente. ✅");
 
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
-            currentBarberId = user.id;
+        // --- CORRECCIÓN ---
+        // La lógica de obtener el ID se simplifica. Confiamos en que barberProfile.js
+        // ya ha establecido 'currentBarberProfileId' globalmente.
+        if (window.currentBarberProfileId) {
             await fetchAndRenderClients();
             setupEventListeners();
         } else {
-            console.warn("Usuario no autenticado. El módulo de clientes no se cargará.");
+            // Este es un fallback en caso de que el módulo se cargue inesperadamente solo.
+            console.warn("ID de perfil de barbero no encontrado. El módulo de clientes esperará al evento 'clientListChanged'.");
+            setupEventListeners(); // Aun así configuramos los listeners.
         }
     }
 
@@ -36,12 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * incluyendo su estado de deuda.
      */
     async function fetchAndRenderClients() {
-        if (!currentBarberId || !clientListContainer) return;
+        // --- CORRECCIÓN ---
+        // Usamos la variable global correcta.
+        if (!window.currentBarberProfileId || !clientListContainer) return;
 
         clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
 
         const { data: clients, error } = await supabaseClient
-            .rpc('get_clients_with_debt_status', { p_barber_id: currentBarberId });
+            .rpc('get_clients_with_debt_status', { p_barber_id: window.currentBarberProfileId });
 
         if (error) {
             console.error('Error cargando clientes con estado de deuda:', error);
@@ -54,75 +59,70 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        clientListContainer.innerHTML = ''; // Limpiar el contenedor
+        clientListContainer.innerHTML = '';
         clients.forEach(client => {
             clientListContainer.innerHTML += createClientCardHTML(client);
         });
     }
 
-  // En tu archivo: js/clientes.js
+    // ... (la función createClientCardHTML no necesita cambios) ...
+    function createClientCardHTML(client) {
+        const defaultPhoto = 'https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg';
+        const photoUrl = client.foto_perfil_url || defaultPhoto;
 
-/**
- * Genera el HTML para la tarjeta de un cliente, incluyendo la alerta de deuda si es necesario.
- * @param {object} client - El objeto del cliente desde Supabase, con la propiedad `has_debt`.
- */
-function createClientCardHTML(client) {
-    const defaultPhoto = 'https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg';
-    const photoUrl = client.foto_perfil_url || defaultPhoto;
+        const debtAlertHTML = client.has_debt 
+            ? `<div class="client-debt-alert"><i class="fas fa-exclamation-circle"></i> Pago pendiente</div>`
+            : '';
 
-    const debtAlertHTML = client.has_debt 
-        ? `<div class="client-debt-alert"><i class="fas fa-exclamation-circle"></i> Pago pendiente</div>`
-        : '';
-
-    return `
-        <div class="client-card ${client.has_debt ? 'has-debt' : ''}" id="client-card-${client.id}" data-client-id="${client.id}">
-            ${debtAlertHTML}
-            
-            <div class="client-card-content">
-                <div class="client-photo">
-                    <img src="${photoUrl}" alt="Foto de ${client.nombre}">
-                    <input type="file" class="edit-client-photo-input" accept="image/*" style="display:none;">
-                </div>
-                <div class="client-details">
-                    <div class="client-view-mode">
-                        <h3 class="client-name">${client.nombre} ${client.apellido || ''}</h3>
-                        <p class="client-phone"><i class="fas fa-phone"></i> ${client.telefono || 'No disponible'}</p>
-                        <p class="client-topics-title">Temas de Conversación:</p>
-                        <p class="client-topics-text">${client.temas_conversacion || 'Añade notas para conectar mejor.'}</p>
+        return `
+            <div class="client-card ${client.has_debt ? 'has-debt' : ''}" id="client-card-${client.id}" data-client-id="${client.id}">
+                ${debtAlertHTML}
+                
+                <div class="client-card-content">
+                    <div class="client-photo">
+                        <img src="${photoUrl}" alt="Foto de ${client.nombre}">
+                        <input type="file" class="edit-client-photo-input" accept="image/*" style="display:none;">
                     </div>
-                    
-                    <div class="client-edit-mode" style="display:none;">
-                        <input type="text" class="edit-client-name" id="edit-client-name-${client.id}" name="client-name-${client.id}" value="${client.nombre}">
-                        <input type="text" class="edit-client-lastname" id="edit-client-lastname-${client.id}" name="client-lastname-${client.id}" value="${client.apellido || ''}">
-                        <input type="tel" class="edit-client-phone" id="edit-client-phone-${client.id}" name="client-phone-${client.id}" value="${client.telefono || ''}">
-                        <textarea class="edit-client-topics" id="edit-client-topics-${client.id}" name="client-topics-${client.id}">${client.temas_conversacion || ''}</textarea>
+                    <div class="client-details">
+                        <div class="client-view-mode">
+                            <h3 class="client-name">${client.nombre} ${client.apellido || ''}</h3>
+                            <p class="client-phone"><i class="fas fa-phone"></i> ${client.telefono || 'No disponible'}</p>
+                            <p class="client-topics-title">Temas de Conversación:</p>
+                            <p class="client-topics-text">${client.temas_conversacion || 'Añade notas para conectar mejor.'}</p>
+                        </div>
+                        
+                        <div class="client-edit-mode" style="display:none;">
+                            <input type="text" class="edit-client-name" id="edit-client-name-${client.id}" name="client-name-${client.id}" value="${client.nombre}">
+                            <input type="text" class="edit-client-lastname" id="edit-client-lastname-${client.id}" name="client-lastname-${client.id}" value="${client.apellido || ''}">
+                            <input type="tel" class="edit-client-phone" id="edit-client-phone-${client.id}" name="client-phone-${client.id}" value="${client.telefono || ''}">
+                            <textarea class="edit-client-topics" id="edit-client-topics-${client.id}" name="client-topics-${client.id}">${client.temas_conversacion || ''}</textarea>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="client-actions">
-                <button class="client-action-btn edit-btn"><i class="fas fa-edit"></i> Editar</button>
-                <button class="client-action-btn save-btn" style="display:none;"><i class="fas fa-save"></i> Guardar</button>
-                <button class="client-action-btn delete-btn"><i class="fas fa-trash"></i></button>
-            </div>
-            
-            <div class="client-card-overlay">
-                <div class="overlay-content">
-                    <p class="progress-status-text">Iniciando...</p>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill"></div>
+                <div class="client-actions">
+                    <button class="client-action-btn edit-btn"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="client-action-btn save-btn" style="display:none;"><i class="fas fa-save"></i> Guardar</button>
+                    <button class="client-action-btn delete-btn"><i class="fas fa-trash"></i></button>
+                </div>
+                
+                <div class="client-card-overlay">
+                    <div class="overlay-content">
+                        <p class="progress-status-text">Iniciando...</p>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 
 
     /**
      * Configura los listeners de eventos para todo el módulo
      */
-    function setupEventListeners() {
+ function setupEventListeners() {
         if (addClientForm) {
             addClientForm.addEventListener('submit', handleAddClient);
         }
@@ -149,55 +149,54 @@ function createClientCardHTML(client) {
             });
         }
         
-        // ======================================================================
-        // INICIO DE LA CORRECCIÓN: Este es el código que faltaba.
-        // Ahora, este módulo "escuchará" cuando se cree un cliente desde cualquier
-        // otro lugar (como el modal de Visita Inmediata) y se actualizará solo.
-        // ======================================================================
         document.addEventListener('clientListChanged', () => {
             console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
             fetchAndRenderClients();
         });
-        // ======================================================================
-        // FIN DE LA CORRECCIÓN
-        // ======================================================================
     }
 
     /**
      * Maneja el envío del formulario para añadir un nuevo cliente
      */
-    async function handleAddClient(e) {
-    e.preventDefault();
+async function handleAddClient(e) {
+        e.preventDefault();
 
-    // Ya no se usa FormData, se obtienen los valores por su ID único
-    const newClient = {
-        nombre: document.getElementById('add-client-nombre').value,
-        apellido: document.getElementById('add-client-apellido').value,
-        telefono: document.getElementById('add-client-telefono').value,
-        temas_conversacion: document.getElementById('add-client-temas').value,
-        barbero_id: currentBarberId
-    };
+        // --- CORRECCIÓN ---
+        // Usamos la variable global correcta.
+        if (!window.currentBarberProfileId) {
+            alert("Error: No se pudo identificar al barbero. Recarga la página.");
+            return;
+        }
 
-    if (!newClient.nombre || !newClient.telefono) {
-        alert("El nombre y el teléfono son obligatorios.");
-        return;
+        const newClient = {
+            nombre: document.getElementById('add-client-nombre').value,
+            apellido: document.getElementById('add-client-apellido').value,
+            telefono: document.getElementById('add-client-telefono').value,
+            temas_conversacion: document.getElementById('add-client-temas').value,
+            barbero_id: window.currentBarberProfileId // <-- CORREGIDO
+        };
+
+        if (!newClient.nombre || !newClient.telefono) {
+            alert("El nombre y el teléfono son obligatorios.");
+            return;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('clientes')
+            .insert(newClient)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error añadiendo cliente:", error);
+            alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
+            return;
+        }
+
+        await fetchAndRenderClients();
+        addClientForm.reset();
     }
-
-    const { data, error } = await supabaseClient
-        .from('clientes')
-        .insert(newClient)
-        .select()
-        .single();
-
-    if (error) {
-        console.error("Error añadiendo cliente:", error);
-        alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
-        return;
-    }
-
-    await fetchAndRenderClients();
-    addClientForm.reset(); // Esto seguirá funcionando para limpiar el formulario
-}
+    
     
     /**
      * Activa o desactiva el modo de edición para una tarjeta de cliente
