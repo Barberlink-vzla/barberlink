@@ -299,6 +299,7 @@ async function loadInitialData() {
         //
         document.dispatchEvent(new CustomEvent('profileReady', {
             detail: {
+                authId: currentUserId,
                 profileId: currentBarberProfileId
             }
         }));
