@@ -555,6 +555,13 @@ async function handleWalkInSubmit(e) {
     submitBtn.disabled = true;
     walkInStatus.textContent = 'Procesando...';
     walkInStatus.className = 'status-message';
+    
+    // --- INICIO DEL CÓDIGO DE DEPURACIÓN ---
+console.log("❗️ DEBUG: Verificando IDs antes de enviar:");
+console.log("Auth User ID (incorrecto para esto):", currentUserId);
+console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
+// --- FIN DEL CÓDIGO DE DEPURACIÓN ---
+
 
     try {
         const serviceData = JSON.parse(selectedOption.dataset.serviceData);
