@@ -298,7 +298,8 @@ async function loadInitialData() {
             
             // ====================== INICIO DE LA CORRECCIÓN CLAVE ======================
             // Usamos 'currentUserId' para que la carga coincida con el guardado.
-            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentUserId).order('dia_semana').order('hora_inicio'),
+            supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio'),
+
             // ======================= FIN DE LA CORRECCIÓN CLAVE ========================
 
             supabaseClient.from('clientes').select('id, nombre, apellido, telefono').eq('barbero_id', currentBarberProfileId)
@@ -550,7 +551,7 @@ async function handleWalkInSubmit(e) {
         // En lugar de hacer un .upsert() que viola RLS, llamamos a nuestra nueva función RPC.
         const { data: client, error: clientError } = await supabaseClient
             .rpc('crear_cliente_desde_panel', {
-                p_barbero_id: currentUserId,
+                p_barbero_id: currentBarberProfileId,
                 p_nombre: nombre,
                 p_apellido: apellido,
                 p_telefono: clientPhone
@@ -2701,7 +2702,7 @@ async function saveAvailabilityForDay(dayIndex) {
             slotsForDay.push({
                 // =============================================================
                 // AQUÍ ESTÁ LA CORRECCIÓN. DEBE SER EL ID DE AUTENTICACIÓN.
-                barbero_id: currentUserId,
+                barbero_id: currentBarberProfileId,
                 // =============================================================
                 dia_semana: dayIndex,
                 hora_inicio: start,
@@ -2713,7 +2714,7 @@ async function saveAvailabilityForDay(dayIndex) {
         const { error: deleteError } = await supabaseClient
             .from('disponibilidad')
             .delete()
-            .eq('barbero_id', currentUserId) // Aquí ya estaba bien
+            .eq('barbero_id', currentBarberProfileId) // Aquí ya estaba bien
             .eq('dia_semana', dayIndex);
 
         if (deleteError) {
