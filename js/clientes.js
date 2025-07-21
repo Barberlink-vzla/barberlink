@@ -5,69 +5,80 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const clientListContainer = document.getElementById('client-list-container');
     const addClientForm = document.getElementById('add-client-form');
-      function initClientModule() {
-        if (typeof supabaseClient === 'undefined') {
-            console.error("Clients Error: supabaseClient no está definido.");
-            if(clientListContainer) clientListContainer.innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
-            return;
-        }
-        console.log("Módulo de clientes iniciado correctamente. ✅");
-
-        // ======================= INICIO DE LA CORRECCIÓN CLAVE =======================
-        //
-        // El módulo ya no intenta adivinar cuándo cargar. En su lugar, espera el evento 'profileReady'.
-        //
-        document.addEventListener('profileReady', (e) => {
-            console.log("Evento 'profileReady' recibido en clientes.js. Cargando lista...");
-            const profileId = e.detail.profileId;
-            if (profileId) {
-                // Ahora sí, llamamos a la carga de clientes con el ID correcto.
-                fetchAndRenderClients(profileId);
-            }
-        });
-        
-        // El listener para refrescar la lista sigue siendo útil.
-        document.addEventListener('clientListChanged', () => {
-            console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
-            if(window.currentBarberProfileId) {
-                fetchAndRenderClients(window.currentBarberProfileId);
-            }
-        });
-        
-        // Configuramos el listener del formulario de añadir cliente.
-        if (addClientForm) {
-            addClientForm.addEventListener('submit', handleAddClient);
-        }
-        //
-        // ======================== FIN DE LA CORRECCIÓN CLAVE =========================
+    
+    function initClientModule() {
+    if (typeof supabaseClient === 'undefined') {
+        console.error("Clients Error: supabaseClient no está definido.");
+        if(document.getElementById('client-list-container')) document.getElementById('client-list-container').innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
+        return;
     }
+    console.log("Módulo de clientes iniciado correctamente. ✅");
 
+    let barberAuthId = null; // Variable local para guardar el ID de autenticación
 
-
-    async function fetchAndRenderClients(profileId) {
-        if (!profileId || !clientListContainer) return;
-
-        clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
-
-        const { data: clients, error } = await supabaseClient
-            .rpc('get_clients_with_debt_status', { p_barber_id: profileId });
-
-        if (error) {
-            console.error('Error cargando clientes con estado de deuda:', error);
-            clientListContainer.innerHTML = `<p class="error-msg">Error al cargar los clientes.</p>`;
-            return;
+    // 1. Escuchamos el evento 'profileReady' para obtener el ID de autenticación
+    document.addEventListener('profileReady', (e) => {
+        console.log("Evento 'profileReady' recibido en clientes.js. Cargando lista...");
+        barberAuthId = e.detail.authId; // Obtenemos y guardamos el ID de autenticación
+        
+        if (barberAuthId) {
+            fetchAndRenderClients(barberAuthId); // Cargamos los clientes con el ID correcto
+        } else {
+            console.error("No se recibió el authId en el evento 'profileReady'.");
         }
-
-        if (!clients || clients.length === 0) {
-            clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados.</p>';
-            return;
+    });
+    
+    // 2. El listener de 'clientListChanged' ahora usa la variable local segura
+    document.addEventListener('clientListChanged', () => {
+        console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
+        if (barberAuthId) {
+            fetchAndRenderClients(barberAuthId); // Refrescamos la lista con el ID correcto
         }
-
-        clientListContainer.innerHTML = '';
-        clients.forEach(client => {
-            clientListContainer.innerHTML += createClientCardHTML(client);
+    });
+    
+    // 3. El formulario para añadir clientes también debe usar el ID correcto
+    const addClientForm = document.getElementById('add-client-form');
+    if (addClientForm) {
+        addClientForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!barberAuthId) {
+                alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
+                return;
+            }
+            // Lógica del formulario (la moveremos aquí o la llamaremos)
+            await handleAddClient(e, barberAuthId);
         });
     }
+}
+
+
+
+    async function fetchAndRenderClients(authId) {
+    const clientListContainer = document.getElementById('client-list-container');
+    if (!authId || !clientListContainer) return;
+
+    clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
+    
+    // La llamada RPC ahora recibe el ID de autenticación
+    const { data: clients, error } = await supabaseClient
+        .rpc('get_clients_with_debt_status', { p_barbero_id: authId }); // <-- ID correcto usado aquí
+
+    if (error) {
+        console.error('Error cargando clientes:', error);
+        clientListContainer.innerHTML = `<p class="error-msg">Error al cargar los clientes.</p>`;
+        return;
+    }
+
+    if (!clients || clients.length === 0) {
+        clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados.</p>';
+        return;
+    }
+
+    clientListContainer.innerHTML = '';
+    clients.forEach(client => {
+        clientListContainer.innerHTML += createClientCardHTML(client);
+    });
+}
 
 
     
@@ -165,44 +176,33 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Maneja el envío del formulario para añadir un nuevo cliente
      */
-async function handleAddClient(e) {
-        e.preventDefault();
+async function handleAddClient(e, barberAuthId) {
+    const form = e.target;
+    const newClient = {
+        nombre: form.querySelector('#add-client-nombre').value,
+        apellido: form.querySelector('#add-client-apellido').value,
+        telefono: form.querySelector('#add-client-telefono').value,
+        temas_conversacion: form.querySelector('#add-client-temas').value,
+        barbero_id: barberAuthId // Usamos el ID de autenticación que recibimos
+    };
 
-        // --- CORRECCIÓN ---
-        // Usamos la variable global correcta.
-        if (!window.currentBarberProfileId) {
-            alert("Error: No se pudo identificar al barbero. Recarga la página.");
-            return;
-        }
-
-        const newClient = {
-            nombre: document.getElementById('add-client-nombre').value,
-            apellido: document.getElementById('add-client-apellido').value,
-            telefono: document.getElementById('add-client-telefono').value,
-            temas_conversacion: document.getElementById('add-client-temas').value,
-            barbero_id: window.currentBarberProfileId // <-- CORREGIDO
-        };
-
-        if (!newClient.nombre || !newClient.telefono) {
-            alert("El nombre y el teléfono son obligatorios.");
-            return;
-        }
-
-        const { data, error } = await supabaseClient
-            .from('clientes')
-            .insert(newClient)
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Error añadiendo cliente:", error);
-            alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
-            return;
-        }
-
-        await fetchAndRenderClients();
-        addClientForm.reset();
+    if (!newClient.nombre || !newClient.telefono) {
+        alert("El nombre y el teléfono son obligatorios.");
+        return;
     }
+
+    const { error } = await supabaseClient.from('clientes').insert(newClient);
+
+    if (error) {
+        console.error("Error añadiendo cliente:", error);
+        alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
+        return;
+    }
+
+    // Disparamos el evento para notificar a todos los módulos que la lista cambió
+    document.dispatchEvent(new CustomEvent('clientListChanged'));
+    form.reset();
+}
     
     
     /**
