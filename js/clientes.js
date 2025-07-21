@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientListContainer = document.getElementById('client-list-container');
     const addClientForm = document.getElementById('add-client-form');
     
+    let currentBarberProfileId = null;
+    
     // EN: clientes.js
 
 function initClientModule() {
@@ -16,57 +18,46 @@ function initClientModule() {
     }
     console.log("Módulo de clientes iniciado correctamente. ✅");
 
-    // ✅ ¡AQUÍ ESTÁ LA CORRECCIÓN!
-    // Activamos los listeners para los botones de las tarjetas (editar, borrar, etc.)
     setupEventListeners();
 
-    let barberAuthId = null; // Variable local para guardar el ID de autenticación
-
-    // 1. Escuchamos el evento 'profileReady' para obtener el ID de autenticación
+    // Escuchamos el evento para obtener AMBOS IDs, pero guardamos el de perfil.
     document.addEventListener('profileReady', (e) => {
         console.log("Evento 'profileReady' recibido en clientes.js. Cargando lista...");
-        barberAuthId = e.detail.authId; // Obtenemos y guardamos el ID de autenticación
+        // ✅ CORRECCIÓN: Guardamos el ID del perfil, que es el que necesitamos.
+        currentBarberProfileId = e.detail.profileId; 
         
-        if (barberAuthId) {
-            fetchAndRenderClients(barberAuthId); // Cargamos los clientes con el ID correcto
+        if (currentBarberProfileId) {
+            fetchAndRenderClients(currentBarberProfileId);
         } else {
-            console.error("No se recibió el authId en el evento 'profileReady'.");
+            console.error("No se recibió el profileId en el evento 'profileReady'.");
         }
     });
     
-    // 2. El listener de 'clientListChanged' ahora usa la variable local segura
     document.addEventListener('clientListChanged', () => {
         console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
-        if (barberAuthId) {
-            fetchAndRenderClients(barberAuthId); // Refrescamos la lista con el ID correcto
+        if (currentBarberProfileId) {
+            fetchAndRenderClients(currentBarberProfileId);
         }
     });
     
-    // 3. El formulario para añadir clientes también debe usar el ID correcto
     const addClientForm = document.getElementById('add-client-form');
     if (addClientForm) {
-        addClientForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!barberAuthId) {
-                alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
-                return;
-            }
-            await handleAddClient(e, barberAuthId);
-        });
+        addClientForm.addEventListener('submit', handleAddClient);
     }
 }
 
 
 
-    async function fetchAndRenderClients(authId) {
+
+   async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
     const clientListContainer = document.getElementById('client-list-container');
-    if (!authId || !clientListContainer) return;
+    if (!profileId || !clientListContainer) return;
 
     clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
     
-    // La llamada RPC ahora recibe el ID de autenticación
+    // ✅ CORRECCIÓN: La llamada RPC ahora usa el ID de perfil correcto.
     const { data: clients, error } = await supabaseClient
-        .rpc('get_clients_with_debt_status', { p_barbero_id: authId }); // <-- ID correcto usado aquí
+        .rpc('get_clients_with_debt_status', { p_barbero_id: profileId });
 
     if (error) {
         console.error('Error cargando clientes:', error);
@@ -84,6 +75,7 @@ function initClientModule() {
         clientListContainer.innerHTML += createClientCardHTML(client);
     });
 }
+
 
 
     
@@ -181,14 +173,20 @@ function initClientModule() {
     /**
      * Maneja el envío del formulario para añadir un nuevo cliente
      */
-async function handleAddClient(e, barberAuthId) {
+async function handleAddClient(e) {
+    e.preventDefault();
+    if (!currentBarberProfileId) {
+        alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
+        return;
+    }
     const form = e.target;
     const newClient = {
         nombre: form.querySelector('#add-client-nombre').value,
         apellido: form.querySelector('#add-client-apellido').value,
         telefono: form.querySelector('#add-client-telefono').value,
         temas_conversacion: form.querySelector('#add-client-temas').value,
-        barbero_id: barberAuthId // Usamos el ID de autenticación que recibimos
+        // ✅ CORRECCIÓN: Usamos el ID de perfil que guardamos antes.
+        barbero_id: currentBarberProfileId 
     };
 
     if (!newClient.nombre || !newClient.telefono) {
@@ -200,11 +198,11 @@ async function handleAddClient(e, barberAuthId) {
 
     if (error) {
         console.error("Error añadiendo cliente:", error);
-        alert("Error al guardar el cliente. Es posible que el teléfono ya exista.");
+        // El mensaje de alerta ahora será más preciso.
+        alert("Error al guardar el cliente: " + error.message);
         return;
     }
 
-    // Disparamos el evento para notificar a todos los módulos que la lista cambió
     document.dispatchEvent(new CustomEvent('clientListChanged'));
     form.reset();
 }
