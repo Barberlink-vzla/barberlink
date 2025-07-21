@@ -187,7 +187,7 @@ const fetchServicesForBarber = async () => {
             // CÓDIGO CORRECTO
             .select('*, servicios_maestro(id, nombre)') // Ya no necesitamos unir con 'barberos'
             .eq('barbero_id', barberId), // Filtra directamente por el ID de perfil del barbero
-            .eq('barberos.user_id', barberId), // La sintaxis correcta para filtrar en la tabla unida
+             
 
         supabaseClient
             .from('clientes')
