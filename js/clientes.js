@@ -173,19 +173,24 @@ function initClientModule() {
     /**
      * Maneja el envío del formulario para añadir un nuevo cliente
      */
+// js/clientes.js
+
 async function handleAddClient(e) {
     e.preventDefault();
+    
+    // Esta variable 'currentBarberProfileId' ahora es la correcta.
     if (!currentBarberProfileId) {
         alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
         return;
     }
+    
     const form = e.target;
     const newClient = {
         nombre: form.querySelector('#add-client-nombre').value,
         apellido: form.querySelector('#add-client-apellido').value,
         telefono: form.querySelector('#add-client-telefono').value,
         temas_conversacion: form.querySelector('#add-client-temas').value,
-        // ✅ CORRECCIÓN: Usamos el ID de perfil que guardamos antes.
+        // ✅ Ahora la base de datos espera y acepta el ID de perfil.
         barbero_id: currentBarberProfileId 
     };
 
@@ -198,7 +203,6 @@ async function handleAddClient(e) {
 
     if (error) {
         console.error("Error añadiendo cliente:", error);
-        // El mensaje de alerta ahora será más preciso.
         alert("Error al guardar el cliente: " + error.message);
         return;
     }
