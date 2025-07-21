@@ -519,6 +519,7 @@ function handleWalkInClientSelection(client) {
  * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
  * El modal de pago se mostrará automáticamente cuando el servicio termine.
  */
+ 
 async function handleWalkInSubmit(e) {
     e.preventDefault();
     
@@ -537,31 +538,44 @@ async function handleWalkInSubmit(e) {
     walkInStatus.className = 'status-message';
 
     try {
+        // Obtenemos los datos del servicio seleccionado
         const serviceData = JSON.parse(selectedOption.dataset.serviceData);
         
+        // Separamos el nombre y el apellido
         const nameParts = clientName.split(' ');
         const nombre = nameParts.shift() || '';
         const apellido = nameParts.join(' ');
 
-        // CÓDIGO CORREGIDO
-const { data: client, error: clientError } = await supabaseClient
-    .from('clientes')
-    .upsert({ barbero_id: currentBarberProfileId, nombre, apellido, telefono: clientPhone }, { onConflict: 'barbero_id, telefono' })
-    .select()
-    .single();
+        // --- INICIO DE LA CORRECCIÓN CLAVE ---
+        // En lugar de hacer un .upsert() que viola RLS, llamamos a nuestra nueva función RPC.
+        const { data: client, error: clientError } = await supabaseClient
+            .rpc('crear_cliente_desde_panel', {
+                p_barbero_id: currentBarberProfileId,
+                p_nombre: nombre,
+                p_apellido: apellido,
+                p_telefono: clientPhone
+            })
+            .select()
+            .single();
+        // --- FIN DE LA CORRECCIÓN CLAVE ---
 
-        if (clientError) throw new Error(`Error al guardar cliente: ${clientError.message}`);
-        
+        if (clientError) {
+            // Este error ahora será más detallado si la función RPC falla.
+            throw new Error(`Error al guardar cliente: ${clientError.message}`);
+        }
+
+        // Disparamos un evento para que el módulo de clientes se actualice solo.
         document.dispatchEvent(new CustomEvent('clientListChanged'));
         
+        // El resto de la lógica para crear la cita permanece igual
         const now = new Date();
         const startTime = now.toTimeString().slice(0, 8);
         const duration = serviceData.duracion_minutos || 30;
         const endTime = new Date(now.getTime() + duration * 60000).toTimeString().slice(0, 8);
 
         const newCita = {
-           barbero_id: currentUserId,
-            cliente_id: client.id,
+            barbero_id: currentUserId, // El ID de autenticación del barbero
+            cliente_id: client.id,     // El ID del cliente que nos devolvió la función RPC
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
             servicio_reservado_id: serviceData.id,
@@ -580,26 +594,20 @@ const { data: client, error: clientError } = await supabaseClient
             .select()
             .single();
 
-        if (citaError) throw new Error(`Error al crear la cita: ${citaError.message}`);
+        if (citaError) {
+            throw new Error(`Error al crear la cita: ${citaError.message}`);
+        }
 
         promptedConfirmationIds.add(insertedCita.id);
         
-        // --- INICIO DEL CAMBIO CLAVE ---
-
-        // 1. Mensaje de éxito actualizado: Ahora informa al barbero del nuevo comportamiento.
         walkInStatus.textContent = '¡Servicio iniciado! El pago se solicitará al finalizar.';
         walkInStatus.className = 'status-message success';
         
-        // 2. Notifica a otros módulos que los datos han cambiado (esto ya estaba y es correcto).
         document.dispatchEvent(new CustomEvent('datosCambiadosPorReserva'));
 
-        // 3. Eliminamos la llamada directa a showPaymentModal() y simplemente cerramos el modal de "visita inmediata"
-        //    después de un momento para que el barbero pueda leer el mensaje de éxito.
         setTimeout(() => {
             closeWalkInModal();
         }, 2000);
-
-        // --- FIN DEL CAMBIO CLAVE ---
 
     } catch (error) {
         console.error("Error en visita inmediata:", error);
