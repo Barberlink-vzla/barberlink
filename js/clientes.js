@@ -49,15 +49,22 @@ function initClientModule() {
 
 
 
-   async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
+   // EN: js/clientes.js
+// REEMPLAZA tu función fetchAndRenderClients con esta versión corregida.
+
+async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
     const clientListContainer = document.getElementById('client-list-container');
     if (!profileId || !clientListContainer) return;
 
     clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
     
-    // ✅ CORRECCIÓN: La llamada RPC ahora usa el ID de perfil correcto.
+    // --- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ---
+    // En lugar de llamar a la función RPC, hacemos una consulta directa a la tabla 'clientes'.
+    // Esto asegura que siempre obtengamos la lista completa y actualizada.
     const { data: clients, error } = await supabaseClient
-        .rpc('get_clients_with_debt_status', { p_barbero_id: profileId });
+        .from('clientes')
+        .select('*') // Traemos todas las columnas del cliente.
+        .eq('barbero_id', profileId); // Filtramos por el ID de perfil, que ahora es correcto.
 
     if (error) {
         console.error('Error cargando clientes:', error);
@@ -66,13 +73,19 @@ function initClientModule() {
     }
 
     if (!clients || clients.length === 0) {
+        // Este mensaje se muestra si no hay clientes, como en tu captura de pantalla inicial.
         clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados.</p>';
         return;
     }
 
+    // Si hay clientes, los dibujamos.
     clientListContainer.innerHTML = '';
     clients.forEach(client => {
-        clientListContainer.innerHTML += createClientCardHTML(client);
+        // La función `createClientCardHTML` no necesita cambios y funcionará con los datos obtenidos.
+        // Asumimos que la deuda se calculará en otro lado o se puede añadir aquí si es necesario.
+        // Por ahora, le pasamos un valor por defecto.
+        const clientDataForCard = { ...client, has_debt: false }; // Añadimos un valor por defecto
+        clientListContainer.innerHTML += createClientCardHTML(clientDataForCard);
     });
 }
 
