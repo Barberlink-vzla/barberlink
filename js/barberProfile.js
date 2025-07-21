@@ -2718,8 +2718,9 @@ async function saveAvailability() {
     }
 }
 
-// REEMPLAZA TODA TU FUNCIÓN saveAvailabilityForDay CON ESTA VERSIÓN
 
+
+// REEMPLAZA TODA TU FUNCIÓN saveAvailabilityForDay CON ESTA VERSIÓN CORREGIDA
 async function saveAvailabilityForDay(dayIndex) {
     const statusEl = document.getElementById('modal-save-status');
     const saveBtn = document.getElementById('save-day-availability-btn');
@@ -2748,7 +2749,7 @@ async function saveAvailabilityForDay(dayIndex) {
             }
             slotsForDay.push({
                 // =============================================================
-                // AQUÍ ESTÁ LA CORRECCIÓN. DEBE SER EL ID DE AUTENTICACIÓN.
+                // AQUÍ ESTÁ LA CORRECCIÓN CLAVE. DEBE SER EL ID DE AUTENTICACIÓN.
                 barbero_id: currentUserId,
                 // =============================================================
                 dia_semana: dayIndex,
@@ -2757,11 +2758,11 @@ async function saveAvailabilityForDay(dayIndex) {
             });
         }
 
-        // 2. Borrar en la DB SOLO los horarios del día que se está editando
+        // 2. Borrar en la DB SOLO los horarios del día que se está editando, usando el ID correcto.
         const { error: deleteError } = await supabaseClient
             .from('disponibilidad')
             .delete()
-            .eq('barbero_id', currentBarberProfileId) // Aquí ya estaba bien
+            .eq('barbero_id', currentUserId) // <-- CORREGIDO
             .eq('dia_semana', dayIndex);
 
         if (deleteError) {
@@ -2770,9 +2771,10 @@ async function saveAvailabilityForDay(dayIndex) {
 
         // 3. Insertar los nuevos horarios si existen
         if (slotsForDay.length > 0) {
+            // El array 'slotsForDay' ahora contiene el ID de autenticación correcto.
             const { error: insertError } = await supabaseClient
                 .from('disponibilidad')
-                .insert(slotsForDay); // Ahora el 'insert' tiene los datos correctos
+                .insert(slotsForDay); 
 
             if (insertError) {
                 throw new Error(`Error al guardar los nuevos horarios: ${insertError.message}`);
@@ -2781,7 +2783,7 @@ async function saveAvailabilityForDay(dayIndex) {
 
         // 4. Actualizar la variable global en memoria para consistencia
         weeklyAvailabilityData[dayIndex] = slotsForDay.map(s => ({
-            id: null,
+            id: null, // Los nuevos slots no tienen ID de la DB hasta recargar
             hora_inicio: s.hora_inicio,
             hora_fin: s.hora_fin
         }));
@@ -2800,7 +2802,6 @@ async function saveAvailabilityForDay(dayIndex) {
         }, 4000);
     }
 }
-
 // Pega estas dos funciones en tu archivo /js/barberProfile.js
 
 /**
