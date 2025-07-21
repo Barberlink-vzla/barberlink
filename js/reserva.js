@@ -131,11 +131,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchBarberData = async () => {
         if (!barberId) return;
 
-        const { data, error } = await supabaseClient
-            .from('barberos')
-            .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa')
-            .eq('user_id', barberId)
-            .single();
+     // CÓDIGO CORRECTO
+const { data, error } = await supabaseClient
+    .from('barberos')
+    .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa')
+    .eq('id', barberId) // Busca por 'id'
+    .single();
 
         if (error || !data) {
             console.error("Error fetching barber data:", error);
@@ -183,8 +184,9 @@ const fetchServicesForBarber = async () => {
             // 1. Seleccionamos los datos del servicio y de la tabla 'servicios_maestro'.
             // 2. Usamos !inner para asegurar que solo traiga servicios de un barbero que exista.
             // 3. Filtramos por la columna 'user_id' de la tabla relacionada 'barberos'.
-            .select('*, servicios_maestro(id, nombre), barberos!inner(user_id)')
-            .eq('is_active', true) 
+            // CÓDIGO CORRECTO
+            .select('*, servicios_maestro(id, nombre)') // Ya no necesitamos unir con 'barberos'
+            .eq('barbero_id', barberId), // Filtra directamente por el ID de perfil del barbero
             .eq('barberos.user_id', barberId), // La sintaxis correcta para filtrar en la tabla unida
 
         supabaseClient
