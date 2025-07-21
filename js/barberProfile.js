@@ -617,7 +617,7 @@ async function handleWalkInSubmit(e) {
         const endTime = new Date(now.getTime() + duration * 60000).toTimeString().slice(0, 8);
 
         const newCita = {
-            barbero_id: currentBarberProfileId,
+            barbero_id: currentUserId,
             cliente_id: clientToUse.id, // <-- ¡Usamos el ID correcto!
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
