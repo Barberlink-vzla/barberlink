@@ -522,11 +522,12 @@ async function handleWalkInSubmit(e) {
         const nombre = nameParts.shift() || '';
         const apellido = nameParts.join(' ');
 
-        const { data: client, error: clientError } = await supabaseClient
-            .from('clientes')
-            .upsert({ barbero_id: currentUserId, nombre, apellido, telefono: clientPhone }, { onConflict: 'barbero_id, telefono' })
-            .select()
-            .single();
+        // CÓDIGO CORREGIDO
+const { data: client, error: clientError } = await supabaseClient
+    .from('clientes')
+    .upsert({ barbero_id: currentBarberProfileId, nombre, apellido, telefono: clientPhone }, { onConflict: 'barbero_id, telefono' })
+    .select()
+    .single();
 
         if (clientError) throw new Error(`Error al guardar cliente: ${clientError.message}`);
         
