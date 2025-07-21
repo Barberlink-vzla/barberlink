@@ -1961,7 +1961,8 @@ function renderBookingLink(userId) {
     if (!bookingLinkContainer || !userId || !currentBarberName) return;
 
     const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-    const longBookingUrl = `${baseUrl}/reserva.html?barber_id=${userId}`;
+    // CÓDIGO CORRECTO
+const longBookingUrl = `${baseUrl}/reserva.html?barber_id=${currentBarberProfileId}`;
 
     bookingLinkContainer.innerHTML = `<p>Generando enlace corto...</p>`;
 
