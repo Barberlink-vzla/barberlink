@@ -460,28 +460,49 @@ function closeWalkInModal() {
     if(resultsList) resultsList.innerHTML = '';
 }
 
+// REEMPLAZA tu función showWalkInClientResults con esta versión mejorada
 function showWalkInClientResults(searchTerm) {
     const resultsList = document.getElementById('walk-in-client-results');
-    resultsList.innerHTML = '';
-    if (!searchTerm) {
+    
+    // Verificación de seguridad: si no hay lista de clientes, no hacer nada.
+    if (!barberClients) {
+        resultsList.innerHTML = '';
         resultsList.style.display = 'none';
         return;
     }
 
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    resultsList.innerHTML = ''; // Limpiar resultados anteriores
+
+    // Si el campo de búsqueda está vacío, ocultamos la lista.
+    if (!searchTermLower) {
+        resultsList.style.display = 'none';
+        return;
+    }
+
+    // Filtramos la lista de clientes
     const filteredClients = barberClients.filter(client =>
-        `${client.nombre} ${client.apellido || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
+        `${client.nombre} ${client.apellido || ''}`.toLowerCase().includes(searchTermLower)
     );
 
+    // --- INICIO DE LA CORRECCIÓN CLAVE ---
+    // Solo si se encuentran clientes, se construye y se muestra la lista.
     if (filteredClients.length > 0) {
         filteredClients.forEach(client => {
             const item = document.createElement('div');
             item.className = 'autocomplete-item';
             item.textContent = `${client.nombre} ${client.apellido || ''}`;
+            // Agregamos un listener para cuando se hace clic en un cliente
             item.addEventListener('click', () => handleWalkInClientSelection(client));
             resultsList.appendChild(item);
         });
+        // La lista solo se hace visible si tiene contenido.
+        resultsList.style.display = 'block';
+    } else {
+        // Si no hay resultados, nos aseguramos de que la lista esté oculta.
+        resultsList.style.display = 'none';
     }
-    resultsList.style.display = 'block';
+    // --- FIN DE LA CORRECCIÓN CLAVE ---
 }
 
 function handleWalkInClientSelection(client) {
