@@ -1212,7 +1212,7 @@ async function loadDashboardStats() {
             { data: incomeDataVes, error: incomeErrorVes }
         ] = await Promise.all([
             supabaseClient.from('citas').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId).gte('fecha_cita', today),
-            supabaseClient.from('clientes').select('*', { count: 'exact', head: true }).eq('barbero_id', currentUserId),
+            supabaseClient.from('clientes').select('*', { count: 'exact', head: true }).eq('barbero_id', currentBarberProfileId),
             
             // Sumar solo los ingresos en USD de la columna correcta
             supabaseClient.from('citas').select('monto_recibido_usd').eq('barbero_id', currentUserId).gte('fecha_cita', firstDayOfMonth).eq('estado', 'completada'),
