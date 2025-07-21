@@ -258,7 +258,6 @@ async function fetchBarberClients() {
 }
 
 
-// REEMPLAZA tu función loadInitialData completa con esta versión en js/barberProfile.js
 
 async function loadInitialData() {
     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -274,8 +273,7 @@ async function loadInitialData() {
     
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
     try {
-        const { data: barberProfile, error: barberError } = await 
-        supabaseClient
+        const { data: barberProfile, error: barberError } = await supabaseClient
             .from('barberos')
             .select('id, nombre, telefono, foto_perfil_url, porcentaje_markup_tasa')
             .eq('user_id', currentUserId)
@@ -287,21 +285,31 @@ async function loadInitialData() {
             return;
         }
 
+        // Se establecen las variables globales
         currentBarberProfileId = barberProfile.id;
+        window.currentBarberProfileId = barberProfile.id; // Aseguramos la variable global
         await currencyManager.init(supabaseClient, barberProfile);
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
+        // ======================= INICIO DE LA CORRECCIÓN CLAVE =======================
+        //
+        // Una vez que tenemos el ID del perfil, disparamos un evento personalizado.
+        // Otros módulos escucharán este evento para saber que ya pueden inicializarse.
+        //
+        document.dispatchEvent(new CustomEvent('profileReady', {
+            detail: {
+                profileId: currentBarberProfileId
+            }
+        }));
+        //
+        // ======================== FIN DE LA CORRECCIÓN CLAVE =========================
+
+
         const [masterServicesRes, barberServicesRes, availabilityRes, clientsRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
             supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentBarberProfileId),
-            
-            // ====================== INICIO DE LA CORRECCIÓN CLAVE ======================
-            // Usamos 'currentUserId' para que la carga coincida con el guardado.
             supabaseClient.from('disponibilidad').select('*').eq('barbero_id', currentBarberProfileId).order('dia_semana').order('hora_inicio'),
-
-            // ======================= FIN DE LA CORRECCIÓN CLAVE ========================
-
             supabaseClient.from('clientes').select('id, nombre, apellido, telefono').eq('barbero_id', currentBarberProfileId)
         ]);
 
@@ -347,7 +355,6 @@ async function loadInitialData() {
         if (addOtherServiceButton) addOtherServiceButton.disabled = false;
     }
 }
-
 
 // ===== INICIO: LÓGICA DEL MODAL DE VISITA INMEDIATA =====
 
@@ -525,9 +532,16 @@ function handleWalkInClientSelection(client) {
  * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
  * El modal de pago se mostrará automáticamente cuando el servicio termine.
  */
+// Reemplaza tu función handleWalkInSubmit con esta versión más segura
 async function handleWalkInSubmit(e) {
     e.preventDefault();
     
+    // Verificación de seguridad al inicio de la función
+    if (!currentBarberProfileId) {
+        alert("Error: No se pudo identificar al barbero. Por favor, recargue la página e intente de nuevo.");
+        return;
+    }
+
     const selectedOption = walkInServiceSelect.options[walkInServiceSelect.selectedIndex];
     const clientName = document.getElementById('walk-in-client-name').value.trim();
     const clientPhone = document.getElementById('walk-in-client-phone').value.trim();
@@ -549,23 +563,22 @@ async function handleWalkInSubmit(e) {
         const nombre = nameParts.shift() || '';
         const apellido = nameParts.join(' ');
 
-        // --- INICIO DE LA CORRECCIÓN CLAVE ---
-        // Usamos currentBarberProfileId, que es la llave primaria de la tabla 'barberos'.
+        // La llamada RPC ya está correcta, pero la verificación anterior añade una capa de seguridad.
         const { data: client, error: clientError } = await supabaseClient
             .rpc('crear_cliente_desde_panel', {
-                p_barbero_id: currentBarberProfileId, // <-- CORREGIDO
+                p_barbero_id: currentBarberProfileId,
                 p_nombre: nombre,
                 p_apellido: apellido,
                 p_telefono: clientPhone
             })
             .select()
             .single();
-        // --- FIN DE LA CORRECCIÓN CLAVE ---
 
         if (clientError) {
             throw new Error(`Error al guardar cliente: ${clientError.message}`);
         }
 
+        // Notificamos a otros módulos que la lista de clientes ha cambiado
         document.dispatchEvent(new CustomEvent('clientListChanged'));
         
         const now = new Date();
@@ -586,7 +599,6 @@ async function handleWalkInSubmit(e) {
             metodo_pago: null,
             estado_pago: 'pendiente',
             monto: serviceData.precio,
-            // Aseguramos que la moneda de la cita se guarde correctamente
             moneda: currencyManager.primaryCurrency 
         };
 
