@@ -151,6 +151,8 @@ const walkInCloseBtn = document.getElementById('walk-in-modal-close-btn');
 const walkInForm = document.getElementById('walk-in-form');
 const walkInServiceSelect = document.getElementById('walk-in-service-select');
 const walkInStatus = document.getElementById('walk-in-status');
+let walkInSelectedClient = null; // <--- AÑADE ESTA LÍNEA
+
 // --- FIN: Elementos del DOM para el nuevo modal ---
 
 
@@ -467,6 +469,8 @@ function closeWalkInModal() {
     if(frequentContainer) frequentContainer.style.display = 'none';
     if(detailsContainer) detailsContainer.style.display = 'none';
     if(resultsList) resultsList.innerHTML = '';
+        walkInSelectedClient = null; // Limpiamos la selección del cliente
+
 }
 
 // REEMPLAZA tu función showWalkInClientResults con esta versión mejorada
@@ -514,12 +518,21 @@ function showWalkInClientResults(searchTerm) {
     // --- FIN DE LA CORRECCIÓN CLAVE ---
 }
 
+// js/barberProfile.js
+
 function handleWalkInClientSelection(client) {
+    // 1. Guardamos el objeto completo del cliente seleccionado
+    walkInSelectedClient = client;
+
+    // 2. Rellenamos el formulario como antes
     document.getElementById('walk-in-client-name').value = `${client.nombre} ${client.apellido || ''}`.trim();
     document.getElementById('walk-in-client-phone').value = client.telefono || '';
     const resultsList = document.getElementById('walk-in-client-results');
     resultsList.innerHTML = '';
     resultsList.style.display = 'none';
+
+    // Opcional: enfocar el siguiente campo relevante
+    document.getElementById('walk-in-service-select').focus();
 }
 
 
@@ -534,10 +547,12 @@ function handleWalkInClientSelection(client) {
  * El modal de pago se mostrará automáticamente cuando el servicio termine.
  */
 // Reemplaza tu función handleWalkInSubmit con esta versión más segura
+// js/barberProfile.js
+
+// Reemplaza tu función handleWalkInSubmit con esta versión corregida
 async function handleWalkInSubmit(e) {
     e.preventDefault();
     
-    // Verificación de seguridad al inicio de la función
     if (!currentBarberProfileId) {
         alert("Error: No se pudo identificar al barbero. Por favor, recargue la página e intente de nuevo.");
         return;
@@ -556,39 +571,46 @@ async function handleWalkInSubmit(e) {
     submitBtn.disabled = true;
     walkInStatus.textContent = 'Procesando...';
     walkInStatus.className = 'status-message';
-    
-    // --- INICIO DEL CÓDIGO DE DEPURACIÓN ---
-console.log("❗️ DEBUG: Verificando IDs antes de enviar:");
-console.log("Auth User ID (incorrecto para esto):", currentUserId);
-console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
-// --- FIN DEL CÓDIGO DE DEPURACIÓN ---
-
 
     try {
         const serviceData = JSON.parse(selectedOption.dataset.serviceData);
-        
-        const nameParts = clientName.split(' ');
-        const nombre = nameParts.shift() || '';
-        const apellido = nameParts.join(' ');
+        let clientToUse; // Variable para guardar el cliente que usaremos para la cita
 
-        // La llamada RPC ya está correcta, pero la verificación anterior añade una capa de seguridad.
-        const { data: client, error: clientError } = await supabaseClient
-            .rpc('crear_cliente_desde_panel', {
-                p_barbero_id: currentBarberProfileId,
-                p_nombre: nombre,
-                p_apellido: apellido,
-                p_telefono: clientPhone
-            })
-            .select()
-            .single();
+        // ======================= INICIO DE LA LÓGICA CONDICIONAL =======================
+        if (walkInSelectedClient && walkInSelectedClient.telefono === clientPhone) {
+            // CASO 1: Se seleccionó un cliente existente y el teléfono coincide.
+            console.log(`Usando cliente existente: ${walkInSelectedClient.nombre} (ID: ${walkInSelectedClient.id})`);
+            clientToUse = walkInSelectedClient;
 
-        if (clientError) {
-            throw new Error(`Error al guardar cliente: ${clientError.message}`);
+        } else {
+            // CASO 2: Es un cliente nuevo o se modificaron los datos de uno existente.
+            console.log(`Creando o buscando nuevo cliente: ${clientName}`);
+            const nameParts = clientName.split(' ');
+            const nombre = nameParts.shift() || '';
+            const apellido = nameParts.join(' ');
+
+            // La función RPC se encargará de crear el cliente si no existe.
+            const { data: rpcClient, error: clientError } = await supabaseClient
+                .rpc('crear_cliente_desde_panel', {
+                    p_barbero_id: currentBarberProfileId,
+                    p_nombre: nombre,
+                    p_apellido: apellido,
+                    p_telefono: clientPhone
+                })
+                .select()
+                .single();
+
+            if (clientError) {
+                // Aquí es donde ocurría tu error original
+                throw new Error(`Error al guardar cliente: ${clientError.message}`);
+            }
+            clientToUse = rpcClient;
+            // Notificamos a otros módulos que la lista de clientes ha cambiado
+            document.dispatchEvent(new CustomEvent('clientListChanged'));
         }
+        // ======================== FIN DE LA LÓGICA CONDICIONAL =========================
 
-        // Notificamos a otros módulos que la lista de clientes ha cambiado
-        document.dispatchEvent(new CustomEvent('clientListChanged'));
-        
+        // Ahora, creamos la cita usando el 'clientToUse.id' que obtuvimos de cualquiera de los dos caminos
         const now = new Date();
         const startTime = now.toTimeString().slice(0, 8);
         const duration = serviceData.duracion_minutos || 30;
@@ -596,10 +618,10 @@ console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
 
         const newCita = {
             barbero_id: currentBarberProfileId,
-            cliente_id: client.id,
+            cliente_id: clientToUse.id, // <-- ¡Usamos el ID correcto!
             cliente_nombre: clientName,
             cliente_telefono: clientPhone,
-            servicio_reservado_id: serviceData.id,
+            servicio_reservado__id: serviceData.id,
             fecha_cita: toLocalISODate(now),
             hora_inicio_cita: startTime,
             hora_fin_cita: endTime,
@@ -617,6 +639,10 @@ console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
             .single();
 
         if (citaError) {
+            // Analizamos el error de la cita para dar un mensaje más claro
+            if (citaError.message.includes("citas_servicio_reservado_id_fkey")) {
+                 throw new Error(`Error al crear la cita: El servicio seleccionado no es válido o ha sido eliminado. Por favor, recarga la página.`);
+            }
             throw new Error(`Error al crear la cita: ${citaError.message}`);
         }
 
@@ -639,7 +665,6 @@ console.log("Barber Profile ID (debería ser este):", currentBarberProfileId);
         submitBtn.disabled = false;
     }
 }
-
 
 
 // ===== SECCIÓN DE NOTIFICACIONES Y RECORDATORIOS =====
