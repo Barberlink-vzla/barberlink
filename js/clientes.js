@@ -1,19 +1,11 @@
-// js/clientes.js
 
-// La variable global `supabaseClient` es inicializada por `js/supabaseClient.js`
-// La variable global `imageCompression` es inicializada por la librería que añadimos en el HTML.
 
 document.addEventListener('DOMContentLoaded', () => {
-    let currentBarberId = null;
-
-    // --- Elementos del DOM ---
+    // Eliminamos la variable local `currentBarberId`. Usaremos la que viene del evento.
+    
     const clientListContainer = document.getElementById('client-list-container');
     const addClientForm = document.getElementById('add-client-form');
-
-    /**
-     * Inicializa el módulo de clientes
-     */
-   async function initClientModule() {
+      function initClientModule() {
         if (typeof supabaseClient === 'undefined') {
             console.error("Clients Error: supabaseClient no está definido.");
             if(clientListContainer) clientListContainer.innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
@@ -21,32 +13,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         console.log("Módulo de clientes iniciado correctamente. ✅");
 
-        // --- CORRECCIÓN ---
-        // La lógica de obtener el ID se simplifica. Confiamos en que barberProfile.js
-        // ya ha establecido 'currentBarberProfileId' globalmente.
-        if (window.currentBarberProfileId) {
-            await fetchAndRenderClients();
-            setupEventListeners();
-        } else {
-            // Este es un fallback en caso de que el módulo se cargue inesperadamente solo.
-            console.warn("ID de perfil de barbero no encontrado. El módulo de clientes esperará al evento 'clientListChanged'.");
-            setupEventListeners(); // Aun así configuramos los listeners.
+        // ======================= INICIO DE LA CORRECCIÓN CLAVE =======================
+        //
+        // El módulo ya no intenta adivinar cuándo cargar. En su lugar, espera el evento 'profileReady'.
+        //
+        document.addEventListener('profileReady', (e) => {
+            console.log("Evento 'profileReady' recibido en clientes.js. Cargando lista...");
+            const profileId = e.detail.profileId;
+            if (profileId) {
+                // Ahora sí, llamamos a la carga de clientes con el ID correcto.
+                fetchAndRenderClients(profileId);
+            }
+        });
+        
+        // El listener para refrescar la lista sigue siendo útil.
+        document.addEventListener('clientListChanged', () => {
+            console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
+            if(window.currentBarberProfileId) {
+                fetchAndRenderClients(window.currentBarberProfileId);
+            }
+        });
+        
+        // Configuramos el listener del formulario de añadir cliente.
+        if (addClientForm) {
+            addClientForm.addEventListener('submit', handleAddClient);
         }
+        //
+        // ======================== FIN DE LA CORRECCIÓN CLAVE =========================
     }
 
-    /**
-     * Obtiene los clientes del barbero y los renderiza en la página,
-     * incluyendo su estado de deuda.
-     */
-    async function fetchAndRenderClients() {
-        // --- CORRECCIÓN ---
-        // Usamos la variable global correcta.
-        if (!window.currentBarberProfileId || !clientListContainer) return;
+
+
+    async function fetchAndRenderClients(profileId) {
+        if (!profileId || !clientListContainer) return;
 
         clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
 
         const { data: clients, error } = await supabaseClient
-            .rpc('get_clients_with_debt_status', { p_barber_id: window.currentBarberProfileId });
+            .rpc('get_clients_with_debt_status', { p_barber_id: profileId });
 
         if (error) {
             console.error('Error cargando clientes con estado de deuda:', error);
@@ -55,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!clients || clients.length === 0) {
-            clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados. Se añadirán automáticamente cuando hagan una reserva.</p>';
+            clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados.</p>';
             return;
         }
 
@@ -64,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
             clientListContainer.innerHTML += createClientCardHTML(client);
         });
     }
+
+
+    
 
     // ... (la función createClientCardHTML no necesita cambios) ...
     function createClientCardHTML(client) {
