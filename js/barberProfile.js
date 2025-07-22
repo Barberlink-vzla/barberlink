@@ -1,4 +1,55 @@
-// js/barberProfile.js
+// EN: js/barberProfile.js (Pega esta función cerca del inicio del archivo)
+
+/**
+ * Crea una imagen de marcador de posición en formato SVG como un Data URI.
+ * Esto elimina la dependencia de servicios externos como placehold.co.
+ * @param {string} text - El texto a mostrar en el placeholder.
+ * @returns {string} Un Data URI que puede ser usado en el atributo src de una imagen.
+ */
+function createPlaceholderSVG(text) {
+    const width = 150;
+    const height = 150;
+    const backgroundColor = '#2a2f3c'; // Color de fondo oscuro
+    const textColor = '#7e8a9b';       // Color del texto
+    const fontFamily = 'Roboto, sans-serif';
+
+    // Separa el texto en dos líneas si hay un espacio
+    const textParts = text.split(' ');
+    const tspan1 = textParts[0];
+    const tspan2 = textParts.length > 1 ? textParts.slice(1).join(' ') : '';
+
+    const svgString = `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="${backgroundColor}" />
+            <text 
+                x="50%" 
+                y="${tspan2 ? '45%' : '50%'}" 
+                dominant-baseline="middle" 
+                text-anchor="middle" 
+                fill="${textColor}" 
+                font-size="24" 
+                font-family="${fontFamily}" 
+                font-weight="500">
+                ${tspan1}
+            </text>
+            ${tspan2 ? `
+            <text 
+                x="50%" 
+                y="60%" 
+                dominant-baseline="middle" 
+                text-anchor="middle" 
+                fill="${textColor}" 
+                font-size="24" 
+                font-family="${fontFamily}" 
+                font-weight="500">
+                ${tspan2}
+            </text>` : ''}
+        </svg>
+    `;
+
+    // Codifica el SVG en Base64 y lo devuelve como un Data URI
+    return `data:image/svg+xml;base64,${btoa(svgString)}`;
+}
 
 // MEJORA: Centralizamos los estados de las citas para evitar errores de escritura.
 const APPOINTMENT_STATUS = {
@@ -1893,31 +1944,32 @@ function renderServices(barberServices) {
     standardServicesGrid.innerHTML = '';
     customServicesGrid.innerHTML = '';
 
-   // js/barberProfile.js -> dentro de renderServices
-
-// js/barberProfile.js -> dentro de renderServices
-
-// EN: js/barberProfile.js (Reemplaza esta función)
+// EN: js/barberProfile.js (Reemplaza tu función createServiceHTML actual por esta)
 
 const createServiceHTML = (service, isCustom) => {
     const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id);
     const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
-    const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
     
-    let baseUrl = service.imagen_url || placeholderUrl;
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    const finalImageUrl = `${baseUrl}${separator}t=${new Date().getTime()}`;
+    // --- INICIO DE LA MEJORA CLAVE ---
+    // 1. Genera el placeholder SVG localmente.
+    const placeholderSVG = createPlaceholderSVG('Subir Foto');
+
+    // 2. Determina qué imagen usar: la del servicio o el placeholder SVG.
+    let finalImageUrl = service.imagen_url || placeholderSVG;
+
+    // 3. Solo añade el timestamp para evitar caché a las imágenes reales, no al SVG.
+    if (service.imagen_url) {
+        finalImageUrl = `${service.imagen_url}?t=${new Date().getTime()}`;
+    }
+    // --- FIN DE LA MEJORA CLAVE ---
 
     const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
-
-    // --- INICIO DE LA MEJORA: Botón de eliminar foto añadido ---
-    const hasImage = service.imagen_url && !service.imagen_url.includes('placehold.co');
+    const hasImage = !!service.imagen_url;
     const deleteButtonHTML = `
         <button class="delete-service-img-btn" title="Eliminar foto" style="display: ${hasImage ? 'grid' : 'none'};">
             <i class="fas fa-trash-alt"></i>
         </button>
     `;
-    // --- FIN DE LA MEJORA ---
 
     return `
         <div class="service-item-with-image" ${dataAttrs}>
