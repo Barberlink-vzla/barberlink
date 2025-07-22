@@ -2256,26 +2256,17 @@ function setupCalendarActionModal() {
     });
 
    editAvailabilityBtn.addEventListener('click', () => {
-    // Se oculta la vista de botones y se muestra la de edición
     document.getElementById('modal-action-buttons-view').style.display = 'none';
     document.getElementById('modal-content-view').style.display = 'block';
     const viewer = document.querySelector('.modal-content-viewer[data-viewer="availability"]');
     viewer.classList.add('active');
 
-    // =================================================================
-    // ===== INICIO DE LA CORRECCIÓN CRÍTICA =====
-    //
-    // Esta es la línea que faltaba. Le decimos a la aplicación: "A partir de
-    // ahora, cualquier cambio de horario que se haga en este modal
-    // pertenece al día que el usuario seleccionó".
-    //
+    // ===== AQUÍ ESTÁ LA CORRECCIÓN CLAVE =====
+    // Asignamos el índice del día a la variable global ANTES de mostrar el editor.
     activeEditingDayIndex = currentActionModalDate.dayOfWeek;
-    //
-    // ===== FIN DE LA CORRECCIÓN CRÍTICA =====
-    // =================================================================
+    // =========================================
     
-    // Ahora, la función que muestra los horarios usará el índice correcto
-    // que acabamos de guardar.
+    // Ahora esta función solo muestra los datos, y el estado ya está guardado.
     displayAvailabilityForDay(activeEditingDayIndex);
 });
 
