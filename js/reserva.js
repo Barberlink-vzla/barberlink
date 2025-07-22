@@ -463,7 +463,8 @@ const fetchServicesForBarber = async () => {
             }
 
             const bookingPayload = {
-                barberId: barberData.user_id,
+                barberId: barberId, 
+
                 clientName: clientSearchInput.value.trim(),
                 clientPhone: clientPhoneInput.value.trim(),
                 serviceId: selectedService.id,
