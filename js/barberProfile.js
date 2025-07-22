@@ -1893,45 +1893,51 @@ function renderServices(barberServices) {
     standardServicesGrid.innerHTML = '';
     customServicesGrid.innerHTML = '';
 
-    // Función auxiliar para generar el HTML de una sola tarjeta (sin cambios)
-     const createServiceHTML = (service, isCustom) => {
-         const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id);
-        const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
-        const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
-        
-       const imageUrl = service.imagen_url
-    ? `${service.imagen_url}?t=${new Date().getTime()}`
-    : placeholderUrl;
+   // js/barberProfile.js -> dentro de renderServices
 
-const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
+const createServiceHTML = (service, isCustom) => {
+    const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id);
+    const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
+    const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    // 1. Determina la URL base (la imagen del servicio o el placeholder).
+    let baseUrl = service.imagen_url || placeholderUrl;
 
-return `
-    <div class="service-item-with-image" ${dataAttrs}>
-        <div class="service-image-container">
-            <img src="${imageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview" data-service-db-id="${service.id}">
-            {/* Se ha eliminado el atributo 'for' de esta etiqueta label */}
-            <label class="service-img-upload-label" title="Cambiar imagen">
-                <i class="fas fa-camera"></i>
-            </label>
-            <input type="file" id="img-upload-${serviceId}" class="service-img-upload-input" accept="image/*" style="display: none;">
-                </div>
-                <div class="service-details">
-                    <span class="service-name">${serviceName}</span>
-                    <div class="service-inputs">
-                        <div class="input-with-label">
-                            <label>Precio ($)</label>
-                            <input type="number" class="service-price-input" placeholder="Ej: 10.50" value="${service.precio || ''}" step="0.50" min="0">
-                        </div>
-                        <div class="input-with-label">
-                            <label>Duración (Min)</label>
-                            <input type="number" class="service-duration-input" placeholder="Ej: 30" value="${service.duracion_minutos || 30}" step="5" min="5">
-                        </div>
+    // 2. Añade el timestamp de forma segura para evitar el caché.
+    //    Verifica si la URL ya tiene parámetros.
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const finalImageUrl = `${baseUrl}${separator}t=${new Date().getTime()}`;
+    // --- FIN DE LA CORRECCIÓN ---
+
+    const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
+
+    return `
+        <div class="service-item-with-image" ${dataAttrs}>
+            <div class="service-image-container">
+                <img src="${finalImageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview" data-service-db-id="${service.id}">
+                <label class="service-img-upload-label" title="Cambiar imagen">
+                    <i class="fas fa-camera"></i>
+                </label>
+                <input type="file" id="img-upload-${serviceId}" class="service-img-upload-input" accept="image/*" style="display: none;">
+            </div>
+            <div class="service-details">
+                <span class="service-name">${serviceName}</span>
+                <div class="service-inputs">
+                    <div class="input-with-label">
+                        <label>Precio ($)</label>
+                        <input type="number" class="service-price-input" placeholder="Ej: 10.50" value="${service.precio || ''}" step="0.50" min="0">
+                    </div>
+                    <div class="input-with-label">
+                        <label>Duración (Min)</label>
+                        <input type="number" class="service-duration-input" placeholder="Ej: 30" value="${service.duracion_minutos || 30}" step="5" min="5">
                     </div>
                 </div>
-                ${isCustom ? `<button class="remove-custom-service" data-id="${service.id}"><i class="fas fa-times"></i></button>` : ''}
             </div>
-        `;
-    };
+            ${isCustom ? `<button class="remove-custom-service" data-id="${service.id}"><i class="fas fa-times"></i></button>` : ''}
+        </div>
+    `;
+};
     
     // Lógica para separar servicios estándar de personalizados
     const standardServices = masterServices.map(ms => {
