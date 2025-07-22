@@ -128,35 +128,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const fetchBarberData = async () => {
-        if (!barberId) return;
+   // CÓDIGO CORREGIDO para js/reserva.js
 
-     // CÓDIGO CORRECTO
-const { data, error } = await supabaseClient
-    .from('barberos')
-    .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa')
-    .eq('id', barberId) // Busca por 'id'
-    .single();
+const fetchBarberData = async () => {
+    if (!barberId) return;
 
-        if (error || !data) {
-            console.error("Error fetching barber data:", error);
-            coverBarberName.textContent = "Barbero no encontrado";
-            barberNameTitle.textContent = "Barbero no encontrado";
-            return;
-        }
+    // --- ¡CORRECCIÓN CLAVE! ---
+    // Ahora seleccionamos también el 'user_id', que es el ID de autenticación.
+    const { data, error } = await supabaseClient
+        .from('barberos')
+        .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa, user_id') // <--- AÑADIMOS user_id
+        .eq('id', barberId) // Seguimos buscando por el 'id' de perfil que viene en la URL
+        .single();
 
-        barberData = data;
-        await currencyManager.init(supabaseClient, barberData);
+    if (error || !data) {
+        console.error("Error fetching barber data:", error);
+        coverBarberName.textContent = "Barbero no encontrado";
+        barberNameTitle.textContent = "Barbero no encontrado";
+        // Es crucial que la variable barberData no se asigne si hay un error.
+        barberData = null; 
+        return;
+    }
 
-        // --- MODIFICADO: Poblamos los datos de la nueva portada ---
-        coverBarberName.textContent = `Barbero: ${data.nombre}`;
-        if (data.foto_perfil_url) {
-            coverBarberProfileImg.src = data.foto_perfil_url;
-        }
+    // Guardamos todos los datos del barbero, incluyendo su ID de autenticación.
+    barberData = data; 
+    console.log("Datos del barbero cargados, incluido el user_id:", barberData.user_id);
 
-        // También poblamos el título del formulario para cuando se muestre
-        barberNameTitle.textContent = `Reservar con ${data.nombre}`;
-    };
+    await currencyManager.init(supabaseClient, barberData);
+
+    coverBarberName.textContent = `Barbero: ${data.nombre}`;
+    if (data.foto_perfil_url) {
+        coverBarberProfileImg.src = data.foto_perfil_url;
+    }
+    barberNameTitle.textContent = `Reservar con ${data.nombre}`;
+};
     
     // EN: js/reserva.js
 // REEMPLAZA TODA LA FUNCIÓN fetchServicesForBarber
@@ -445,6 +450,11 @@ const fetchServicesForBarber = async () => {
                 if (submitButton) submitButton.disabled = false;
                 return;
             }
+            
+             // Nos aseguramos de que barberData y su user_id existen antes de continuar.
+        if (!barberData || !barberData.user_id) {
+            throw new Error("No se pudo obtener la identificación del barbero para crear la reserva. Por favor, recarga la página.");
+        }
 
             const selectedCurrency = document.querySelector('input[name="payment_currency"]:checked').value;
             const basePriceUSD = selectedService.precio || 0;
@@ -457,7 +467,7 @@ const fetchServicesForBarber = async () => {
             }
 
             const bookingPayload = {
-                barberId: barberId,
+                barberId: barberData.user_id,
                 clientName: clientSearchInput.value.trim(),
                 clientPhone: clientPhoneInput.value.trim(),
                 serviceId: selectedService.id,
