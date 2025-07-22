@@ -2702,14 +2702,14 @@ async function saveAvailability() {
                     validationErrorMsg = `Horario inválido para ${daysOfWeek[dayIndex]}: la hora de inicio debe ser anterior a la de fin.`;
                 }
                 
-                slotsToInsert.push({ barbero_id: currentUserId, dia_semana: dayIndex, hora_inicio: slot.hora_inicio, hora_fin: slot.hora_fin });
+                slotsToInsert.push({ barbero_id: currentBarberProfileId, dia_semana: dayIndex, hora_inicio: slot.hora_inicio, hora_fin: slot.hora_fin });
             }
         });
     });
     if (validationErrorMsg) throw new Error(validationErrorMsg);
     
     
-    const { error: deleteError } = await supabaseClient.from('disponibilidad').delete().eq('barbero_id', currentUserId);
+    const { error: deleteError } = await supabaseClient.from('disponibilidad').delete().eq('barbero_id', currentBarberProfileId);
     if (deleteError) throw new Error(`Disponibilidad (borrado): ${deleteError.message}`);
     
     if (slotsToInsert.length > 0) {
@@ -2750,7 +2750,7 @@ async function saveAvailabilityForDay(dayIndex) {
             slotsForDay.push({
                 // =============================================================
                 // AQUÍ ESTÁ LA CORRECCIÓN CLAVE. DEBE SER EL ID DE AUTENTICACIÓN.
-                barbero_id: currentUserId,
+                barbero_id: currentBarberProfileId,
                 // =============================================================
                 dia_semana: dayIndex,
                 hora_inicio: start,
@@ -2762,7 +2762,7 @@ async function saveAvailabilityForDay(dayIndex) {
         const { error: deleteError } = await supabaseClient
             .from('disponibilidad')
             .delete()
-            .eq('barbero_id', currentUserId) // <-- CORREGIDO
+            .eq('barbero_id', currentBarberProfileId) // <-- CORREGIDO
             .eq('dia_semana', dayIndex);
 
         if (deleteError) {
