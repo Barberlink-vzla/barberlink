@@ -1895,18 +1895,22 @@ function renderServices(barberServices) {
 
    // js/barberProfile.js -> dentro de renderServices
 
+// js/barberProfile.js -> dentro de renderServices
+
 const createServiceHTML = (service, isCustom) => {
     const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id);
     const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
     const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
     
     // --- INICIO DE LA CORRECCIÓN ---
-    // 1. Determina la URL base (la imagen del servicio o el placeholder).
+    // 1. Determina la URL base (la imagen del servicio guardada o el placeholder por defecto).
     let baseUrl = service.imagen_url || placeholderUrl;
 
-    // 2. Añade el timestamp de forma segura para evitar el caché.
-    //    Verifica si la URL ya tiene parámetros.
+    // 2. Añade un timestamp único para evitar problemas de caché, pero de forma segura.
+    //    Primero, verifica si la URL ya contiene parámetros.
     const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    // 3. Construye la URL final y segura.
     const finalImageUrl = `${baseUrl}${separator}t=${new Date().getTime()}`;
     // --- FIN DE LA CORRECCIÓN ---
 
