@@ -242,6 +242,7 @@ async function initProfileModule() {
     setupReminderModalListeners(); 
     setupAlertModalListeners(); 
     setupPasswordConfirmModalListeners();
+   setupServiceImageListeners();
 
     startAppointmentChecker();
 
@@ -1944,27 +1945,23 @@ function renderServices(barberServices) {
     standardServicesGrid.innerHTML = '';
     customServicesGrid.innerHTML = '';
 
-// EN: js/barberProfile.js (Reemplaza tu función createServiceHTML actual por esta)
+
 
 const createServiceHTML = (service, isCustom) => {
     const serviceId = isCustom ? `custom-${service.id}` : (service.servicio_id || service.id);
+    const serviceDbId = service.id; // ¡Importante! El ID real de la base de datos.
     const serviceName = isCustom ? service.nombre_personalizado : service.servicios_maestro?.nombre;
     
-    // --- INICIO DE LA MEJORA CLAVE ---
-    // 1. Genera el placeholder SVG localmente.
+    // Genera un placeholder localmente en SVG para no depender de servicios externos.
     const placeholderSVG = createPlaceholderSVG('Subir Foto');
 
-    // 2. Determina qué imagen usar: la del servicio o el placeholder SVG.
-    let finalImageUrl = service.imagen_url || placeholderSVG;
-
-    // 3. Solo añade el timestamp para evitar caché a las imágenes reales, no al SVG.
-    if (service.imagen_url) {
-        finalImageUrl = `${service.imagen_url}?t=${new Date().getTime()}`;
-    }
-    // --- FIN DE LA MEJORA CLAVE ---
+    // Usa la imagen del servicio si existe, si no, usa el placeholder.
+    let finalImageUrl = service.imagen_url ? `${service.imagen_url}?t=${new Date().getTime()}` : placeholderSVG;
 
     const dataAttrs = `data-service-id="${serviceId}" data-is-custom="${isCustom}"`;
     const hasImage = !!service.imagen_url;
+
+    // El botón de eliminar solo se muestra si hay una imagen.
     const deleteButtonHTML = `
         <button class="delete-service-img-btn" title="Eliminar foto" style="display: ${hasImage ? 'grid' : 'none'};">
             <i class="fas fa-trash-alt"></i>
@@ -1974,7 +1971,7 @@ const createServiceHTML = (service, isCustom) => {
     return `
         <div class="service-item-with-image" ${dataAttrs}>
             <div class="service-image-container">
-                <img src="${finalImageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview" data-service-db-id="${service.id}">
+                <img src="${finalImageUrl}" alt="Imagen de ${serviceName}" id="img-preview-${serviceId}" class="service-img-preview" data-service-db-id="${serviceDbId}">
                 
                 <label class="service-img-upload-label" title="Cambiar imagen">
                     <i class="fas fa-camera"></i>
@@ -2631,9 +2628,10 @@ async function uploadServiceImageToCloudinary(file, barberId, serviceId) {
 
 // EN: js/barberProfile.js
 
+// EN: js/barberProfile.js (Reemplaza tu función saveServices actual por esta)
+
 async function saveServices() {
-    // Asegura que tenemos el ID de usuario para crear la carpeta
-    if (!currentUserId) {
+    if (!currentUserId || !currentBarberProfileId) {
         throw new Error("No se pudo identificar al barbero para guardar los servicios.");
     }
 
@@ -2641,121 +2639,97 @@ async function saveServices() {
     const servicesToUpsert = [];
     const errors = [];
 
-    // Usamos un bucle for...of para poder usar 'await' dentro de él
     for (const item of serviceItems) {
         const priceInput = item.querySelector('.service-price-input');
         const durationInput = item.querySelector('.service-duration-input');
+        const imgPreview = item.querySelector('.service-img-preview');
+        const serviceDbId = imgPreview?.dataset.serviceDbId; // ID de la tabla barbero_servicios
         
-        if (!priceInput?.value || !durationInput?.value) {
-            continue;
-        }
+        // Ignora servicios sin datos básicos
+        if (!priceInput?.value || !durationInput?.value || !serviceDbId) continue;
 
         const price = parseFloat(priceInput.value);
         const duration = parseInt(durationInput.value, 10);
-        if (isNaN(price) || price <= 0 || isNaN(duration) || duration <= 0) {
-            continue; // Ignora servicios con datos inválidos
-        }
+        if (isNaN(price) || isNaN(duration)) continue;
 
- 
+        let imageUrl = imgPreview?.src;
+        const blobToUpload = imgPreview?.blob_to_upload;
 
-// ESTE ES EL CÓDIGO NUEVO
-const serviceIdRaw = item.dataset.serviceId;
-const isCustom = item.dataset.isCustom === 'true';
-const imgPreview = item.querySelector('.service-img-preview');
-let imageUrl = imgPreview?.src;
+        // Si hay una nueva imagen recortada para subir...
+        if (blobToUpload) {
+            try {
+                if (saveStatus) saveStatus.textContent = 'Comprimiendo y subiendo imagen...';
 
-// Verificamos si hay un blob recortado adjunto a nuestra imagen de vista previa
-const blobToUpload = imgPreview.blob_to_upload;
+                const compressedFile = await imageCompression(blobToUpload, {
+                    maxSizeMB: 0.4,
+                    maxWidthOrHeight: 800,
+                    useWebWorker: true,
+                    fileType: 'image/jpeg'
+                });
 
-if (blobToUpload) {
-    try {
-        if (saveStatus) saveStatus.textContent = 'Comprimiendo imagen...';
+                // --- ¡AQUÍ LA MAGIA! ---
+                // La ruta es constante: ID_Usuario / ID_Servicio_DB / nombre_fijo.jpg
+                // Esto asegura que al subir, se reemplace la imagen anterior.
+                const filePath = `${currentUserId}/${serviceDbId}/image.jpg`;
 
-        // Usamos el blob recortado directamente con image-compression
-        const compressedFile = await imageCompression(blobToUpload, {
-            maxSizeMB: 0.3,
-            maxWidthOrHeight: 600,
-            // Le damos un nombre de archivo genérico ya que el blob no tiene uno
-            initialQuality: 0.9,
-            fileType: 'image/jpeg'
-        });
-
-                // Se crea una ruta única: ID_DEL_BARBERO/ID_DEL_SERVICIO_timestamp.jpg
-                const filePath = `${currentUserId}/${serviceIdRaw}_${Date.now()}_${compressedFile.name}`;
-
-                if (saveStatus) saveStatus.textContent = 'Subiendo imagen...';
-                
-                const { error: uploadError } = await supabaseClient.storage
-                    .from('service-photos') // Nombre del bucket
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('service-photos')
                     .upload(filePath, compressedFile, { upsert: true });
 
                 if (uploadError) throw uploadError;
 
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Esta es la línea clave. Obtenemos la URL pública *correcta* desde Supabase.
-                imageUrl = supabaseClient.storage.from('service-photos').getPublicUrl(filePath).data.publicUrl;
-                // --- FIN DE LA CORRECCIÓN ---
+                // Obtenemos la URL pública correcta, añadiendo un timestamp para evitar caché del navegador.
+                imageUrl = `${supabaseClient.storage.from('service-photos').getPublicUrl(uploadData.path).data.publicUrl}?t=${new Date().getTime()}`;
+                
+                // Limpiamos el blob para no resubirlo si se guarda de nuevo sin cambiar la imagen.
+                delete imgPreview.blob_to_upload;
 
             } catch (uploadError) {
-                console.error(`Error subiendo imagen para el servicio ${serviceIdRaw}:`, uploadError);
-                errors.push(`Error al subir imagen para el servicio ${item.querySelector('.service-name').textContent}.`);
+                const serviceName = item.querySelector('.service-name').textContent;
+                console.error(`Error subiendo imagen para ${serviceName}:`, uploadError);
+                errors.push(`Error al subir imagen para ${serviceName}.`);
                 continue; // Pasa al siguiente servicio si este falla
             }
         }
         
-        // Prepara los datos para guardar en la DB
+        const isCustom = item.dataset.isCustom === 'true';
         const serviceData = {
             barbero_id: currentBarberProfileId,
             precio: price,
             duracion_minutos: duration,
-            // Nos aseguramos de guardar la URL solo si es una URL válida de Supabase/Cloudinary
-            imagen_url: imageUrl?.startsWith('http') ? imageUrl : null, 
+            imagen_url: imageUrl?.startsWith('http') ? imageUrl.split('?t=')[0] : null,
         };
 
         if (isCustom) {
-            // Para servicios personalizados, necesitamos el ID de la fila
-            serviceData.id = serviceIdRaw.replace('custom-', '');
+            serviceData.id = serviceDbId;
             serviceData.nombre_personalizado = item.querySelector('.service-name').textContent;
-            serviceData.servicio_id = null; // No tiene ID de servicio maestro
         } else {
-            // Para servicios estándar, usamos el ID del servicio maestro
-            serviceData.servicio_id = serviceIdRaw;
+            // Para servicios estándar, el 'id' es el de la fila, y 'servicio_id' el de la tabla maestra
+            serviceData.id = serviceDbId;
+            serviceData.servicio_id = item.dataset.serviceId;
         }
         
         servicesToUpsert.push(serviceData);
     }
     
     if (errors.length > 0) {
-        throw new Error(`Ocurrieron errores al subir imágenes: ${errors.join('. ')}`);
+        throw new Error(`Ocurrieron errores: ${errors.join('. ')}`);
     }
 
     if (servicesToUpsert.length > 0) {
-        if (saveStatus) saveStatus.textContent = 'Guardando información...';
+        if (saveStatus) saveStatus.textContent = 'Guardando información de servicios...';
         
-        // Separamos los servicios para hacer un 'upsert' con la clave correcta para cada tipo
-        const customServices = servicesToUpsert.filter(s => s.nombre_personalizado);
-        const standardServices = servicesToUpsert.filter(s => !s.nombre_personalizado);
+        // Hacemos el "upsert" que crea o actualiza los registros en la base de datos.
+        const { error } = await supabaseClient.from('barbero_servicios').upsert(servicesToUpsert, { onConflict: 'id' });
 
-        // Guardamos los personalizados usando su 'id' único
-        if (customServices.length > 0) {
-            const { error } = await supabaseClient.from('barbero_servicios').upsert(customServices, { onConflict: 'id' });
-            if (error) errors.push(`Error al guardar servicios personalizados: ${error.message}`);
-        }
-        // Guardamos los estándar usando la combinación 'barbero_id' y 'servicio_id'
-        if (standardServices.length > 0) {
-        
-        // --- INICIO DE LA LÍNEA DE DEPURACIÓN ---
-            // Esta línea imprimirá en la consola la lista de servicios que se intentan guardar.
-            console.log("Datos a enviar (Servicios Estándar):", JSON.stringify(standardServices, null, 2));
-            // --- FIN DE LA LÍNEA DE DEPURACIÓN ---
-            const { error } = await supabaseClient.from('barbero_servicios').upsert(standardServices, { onConflict: 'barbero_id, servicio_id' });
-            if (error) errors.push(`Error al guardar servicios estándar: ${error.message}`);
+        if (error) {
+            console.error("Error al guardar servicios en DB:", error);
+            errors.push(`Error al guardar en base de datos: ${error.message}`);
         }
     }
 
-    // Si hubo algún error en el proceso de guardado en la DB, lo lanzamos
     if (errors.length > 0) {
-        throw new Error(`Ocurrieron errores al guardar en la base de datos: ${errors.join(', ')}`);
+        throw new Error(errors.join(', '));
     }
 }
 
@@ -3511,85 +3485,89 @@ function handleUrlActions() {
 // Llama a la función cuando el DOM esté completamente cargado.
 document.addEventListener('DOMContentLoaded', handleUrlActions);
 
-// Archivo: barberProfile.js
+
 
 // EN: js/barberProfile.js (Reemplaza el último bloque 'DOMContentLoaded' por este)
+function setupServiceImageListeners() {
+    const servicesContainer = document.getElementById('services-section');
+    if (!servicesContainer) return;
 
-document.addEventListener('DOMContentLoaded', () => {
+    // Se usa "event delegation" para manejar clics en toda la sección de servicios.
+    // Esto funciona para elementos presentes y futuros.
+    servicesContainer.addEventListener('click', async (event) => {
+        const cameraLabel = event.target.closest('.service-img-upload-label');
+        const deleteBtn = event.target.closest('.delete-service-img-btn');
 
-    // Se usa event delegation para manejar todos los clics en la sección de servicios
-    document.getElementById('services-section')?.addEventListener('click', async (event) => {
-        const cameraIcon = event.target.closest('.service-img-upload-label');
-        const deleteIcon = event.target.closest('.delete-service-img-btn');
-
-        // --- LÓGICA PARA CAMBIAR FOTO (ACCIÓN DIRECTA) ---
-        if (cameraIcon) {
-            // Busca el input de archivo correspondiente y simula un clic en él
-            const serviceItem = cameraIcon.closest('.service-item-with-image');
-            const fileInput = serviceItem?.querySelector('.service-img-upload-input');
-            if (fileInput) {
-                fileInput.click(); // Esto abre el gestor de archivos inmediatamente
-            }
+        // --- LÓGICA PARA SUBIR/CAMBIAR FOTO ---
+        if (cameraLabel) {
+            // Busca el input de archivo oculto y simula un clic para abrir el explorador de archivos.
+            const fileInput = cameraLabel.closest('.service-image-container').querySelector('.service-img-upload-input');
+            fileInput?.click(); // ¡Esto ahora funciona!
         }
 
         // --- LÓGICA PARA ELIMINAR FOTO ---
-        if (deleteIcon) {
-            if (!confirm('¿Estás seguro de que quieres eliminar la foto de este servicio?')) {
+        if (deleteBtn) {
+            if (!confirm('¿Seguro que quieres eliminar la foto de este servicio? La imagen se borrará permanentemente.')) {
                 return;
             }
 
-            const serviceItem = deleteIcon.closest('.service-item-with-image');
-            const imgPreview = serviceItem?.querySelector('.service-img-preview');
+            const imgPreview = deleteBtn.closest('.service-image-container').querySelector('.service-img-preview');
             const serviceDbId = imgPreview?.dataset.serviceDbId;
 
-            if (!imgPreview || !serviceDbId) {
+            if (!imgPreview || !serviceDbId || !currentUserId) {
                 alert("Error: No se pudo identificar el servicio para eliminar la imagen.");
                 return;
             }
 
             try {
-                // Actualizar la base de datos para quitar la URL de la imagen
+                if(saveStatus) saveStatus.textContent = "Eliminando foto...";
+                
+                // 1. Reconstruimos la ruta del archivo en el bucket
+                const filePath = `${currentUserId}/${serviceDbId}/image.jpg`;
+
+                // 2. Borramos el archivo del bucket de Supabase
+                const { error: storageError } = await supabaseClient.storage.from('service-photos').remove([filePath]);
+                if (storageError) console.warn("Advertencia al borrar de Storage:", storageError.message); // Advertimos pero no detenemos
+
+                // 3. Actualizamos la base de datos para quitar la URL
                 const { error: dbError } = await supabaseClient
                     .from('barbero_servicios')
                     .update({ imagen_url: null })
                     .eq('id', serviceDbId);
-
                 if (dbError) throw dbError;
 
-                // Actualizar la interfaz para mostrar la imagen por defecto
-                const placeholderUrl = 'https://placehold.co/150x150/2a2f3c/7e8a9b?text=Subir\\nFoto';
-                imgPreview.src = `${placeholderUrl}&t=${new Date().getTime()}`;
-                deleteIcon.style.display = 'none'; // Oculta el botón de borrar
-
-                alert('Imagen eliminada correctamente. Guarda los cambios para que sea permanente.');
+                // 4. Actualizamos la interfaz
+                imgPreview.src = createPlaceholderSVG('Subir Foto');
+                deleteBtn.style.display = 'none'; // Oculta el botón de borrar
+                if(saveStatus) saveStatus.textContent = "Foto eliminada con éxito.";
 
             } catch (error) {
                 console.error('Error al eliminar la imagen:', error);
-                alert(`Ocurrió un error: ${error.message}`);
+                if(saveStatus) saveStatus.textContent = `Error: ${error.message}`;
+            } finally {
+                 setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 3000);
             }
         }
     });
 
-    // Esta lógica para el Cropper se mantiene igual, ya que se activa
-    // cuando el input de archivo (que ahora sí se abre) detecta un cambio.
-    document.querySelectorAll('.service-img-upload-input').forEach(input => {
-        input.addEventListener('change', (e) => {
-            const file = e.target.files[0];
+    // La lógica del Cropper se activa con el evento 'change' del input.
+    // Como ahora el clic en el ícono funciona, este evento se disparará correctamente.
+    servicesContainer.addEventListener('change', (event) => {
+        if (event.target.classList.contains('service-img-upload-input')) {
+            const file = event.target.files[0];
             if (!file) return;
 
-            const serviceId = e.target.id.replace('img-upload-', '');
-            const imgPreview = document.getElementById(`img-preview-${serviceId}`);
+            const serviceItem = event.target.closest('.service-item-with-image');
+            const imgPreview = serviceItem.querySelector('.service-img-preview');
+            const deleteBtn = serviceItem.querySelector('.delete-service-img-btn');
             
             ImageCropper.open(file, (croppedBlob) => {
                 imgPreview.src = URL.createObjectURL(croppedBlob);
-                imgPreview.blob_to_upload = croppedBlob;
-
-                // Muestra el botón de eliminar porque ahora hay una imagen
-                const deleteBtn = imgPreview.closest('.service-image-container').querySelector('.delete-service-img-btn');
-                if (deleteBtn) deleteBtn.style.display = 'grid';
-
-                e.target.value = '';
+                imgPreview.blob_to_upload = croppedBlob; // Adjuntamos el blob para guardarlo después
+                if (deleteBtn) deleteBtn.style.display = 'grid'; // Mostramos el botón de borrar
+                event.target.value = ''; // Reseteamos para poder subir la misma imagen otra vez
             });
-        });
+        }
     });
-});
+}
+
