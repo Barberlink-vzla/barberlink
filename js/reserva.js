@@ -130,93 +130,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
    // CÓDIGO CORREGIDO para js/reserva.js
 
+// REEMPLAZA ESTA FUNCIÓN en js/reserva.js
+
 const fetchBarberData = async () => {
     if (!barberId) return;
 
-    // --- ¡CORRECCIÓN CLAVE! ---
-    // Ahora seleccionamos también el 'user_id', que es el ID de autenticación.
-    const { data, error } = await supabaseClient
-        .from('barberos')
-        .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa, user_id') // <--- AÑADIMOS user_id
-        .eq('id', barberId) // Seguimos buscando por el 'id' de perfil que viene en la URL
-        .single();
-
-    if (error || !data) {
-        console.error("Error fetching barber data:", error);
+    // Hacemos ambas peticiones en paralelo para la portada
+    const [barberResponse, clientsResponse] = await Promise.all([
+        supabaseClient
+            .from('barberos')
+            .select('nombre, telefono, foto_perfil_url, moneda_primaria, moneda_secundaria, porcentaje_markup_tasa, user_id')
+            .eq('id', barberId) // Busca el perfil del barbero por su ID de perfil
+            .single(),
+        supabaseClient
+            .from('clientes')
+            .select('id, nombre, telefono')
+            .eq('barbero_id', barberId) // Busca los clientes asociados a ese ID de perfil
+    ]);
+    
+    // Manejo de error del barbero
+    if (barberResponse.error || !barberResponse.data) {
+        console.error("Error fetching barber data:", barberResponse.error);
         coverBarberName.textContent = "Barbero no encontrado";
         barberNameTitle.textContent = "Barbero no encontrado";
-        // Es crucial que la variable barberData no se asigne si hay un error.
         barberData = null; 
         return;
     }
-
-    // Guardamos todos los datos del barbero, incluyendo su ID de autenticación.
-    barberData = data; 
+    
+    // Guardamos los datos del barbero
+    barberData = barberResponse.data;
     console.log("Datos del barbero cargados, incluido el user_id:", barberData.user_id);
+    
+    // Manejo de error y guardado de los clientes
+    if (clientsResponse.error) {
+        console.error('Error fetching clients:', clientsResponse.error);
+        barberClients = [];
+    } else {
+        barberClients = clientsResponse.data || [];
+    }
 
+    // Inicializamos el currency manager y actualizamos la UI de la portada
     await currencyManager.init(supabaseClient, barberData);
 
-    coverBarberName.textContent = `Barbero: ${data.nombre}`;
-    if (data.foto_perfil_url) {
-        coverBarberProfileImg.src = data.foto_perfil_url;
+    coverBarberName.textContent = `Barbero: ${barberData.nombre}`;
+    if (barberData.foto_perfil_url) {
+        coverBarberProfileImg.src = barberData.foto_perfil_url;
     }
-    barberNameTitle.textContent = `Reservar con ${data.nombre}`;
+    barberNameTitle.textContent = `Reservar con ${barberData.nombre}`;
 };
     
-    // EN: js/reserva.js
-// REEMPLAZA TODA LA FUNCIÓN fetchServicesForBarber
+    
 
-// EN: js/reserva.js
-// REEMPLAZA LA FUNCIÓN fetchServicesForBarber CON ESTA VERSIÓN
+
+// REEMPLAZA ESTA OTRA FUNCIÓN en js/reserva.js
 
 const fetchServicesForBarber = async () => {
     if (!barberId || !selectedServiceType) return;
     
-    // El nombre de la tabla de servicios
     const serviceTableName = 'barbero_servicios';
-    console.log(`Cargando servicios desde la tabla: ${serviceTableName}`);
+    console.log(`Cargando servicios desde la tabla: ${serviceTableName} para el barbero con ID de perfil: ${barberId}`);
     
     const carousel = document.getElementById('service-carousel');
     if (carousel) {
         carousel.innerHTML = '<p>Cargando servicios...</p>';
     }
 
-    // Hacemos ambas peticiones en paralelo para mejorar la velocidad
-    const [servicesResponse, clientsResponse] = await Promise.all([
-        supabaseClient
-            .from(serviceTableName)
-            // AQUÍ LA CORRECCIÓN:
-            // 1. Seleccionamos los datos del servicio y de la tabla 'servicios_maestro'.
-            // 2. Usamos !inner para asegurar que solo traiga servicios de un barbero que exista.
-            // 3. Filtramos por la columna 'user_id' de la tabla relacionada 'barberos'.
-            // CÓDIGO CORRECTO
-            .select('*, servicios_maestro(id, nombre)') // Ya no necesitamos unir con 'barberos'
-            .eq('barbero_id', barberId), // Filtra directamente por el ID de perfil del barbero
-             
+    // Consulta simplificada y directa para obtener los servicios del barbero
+    const { data: services, error } = await supabaseClient
+        .from(serviceTableName)
+        .select('*, servicios_maestro(id, nombre)')
+        .eq('barbero_id', barberId); // 'barberId' es el ID de perfil de la URL
 
-        supabaseClient
-            .from('clientes')
-            .select('id, nombre, telefono')
-            .eq('barbero_id', barberId) // Asumiendo que 'clientes' se relaciona con el user_id
-    ]);
-
-    // El resto de la función maneja los errores y puebla el carrusel
-    if (servicesResponse.error) {
-        console.error(`Error cargando servicios:`, servicesResponse.error);
+    if (error) {
+        console.error(`Error cargando servicios:`, error);
         if (carousel) {
-            carousel.innerHTML = `<p class="error-msg">Error al cargar los servicios. La relación en la base de datos parece correcta, pero algo falló.</p>`;
+            carousel.innerHTML = `<p class="error-msg">Error al cargar los servicios.</p>`;
         }
         statusMessage.textContent = `Error al cargar servicios.`;
         statusMessage.className = 'status-message error';
-    } else {
-        populateServiceCarousel(servicesResponse.data);
+        return;
     }
-
-    if (clientsResponse.error) {
-        console.error('Error fetching clients:', clientsResponse.error);
-    } else {
-        barberClients = clientsResponse.data || [];
-    }
+    
+    // Si la consulta fue exitosa, poblamos el carrusel
+    populateServiceCarousel(services);
 };
 
 
