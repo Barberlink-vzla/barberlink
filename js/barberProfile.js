@@ -2024,34 +2024,7 @@ const createServiceHTML = (service, isCustom) => {
         customServicesGrid.innerHTML = '<p>No has añadido servicios personalizados.</p>';
     }
     
-    // Volver a añadir los listeners a los nuevos elementos
-   // DENTRO DE la función renderServices en barberProfile.js
-
-// ESTE ES EL CÓDIGO NUEVO Y MEJORADO:
-document.querySelectorAll('.service-img-upload-input').forEach(input => {
-    input.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const serviceId = e.target.id.replace('img-upload-', '');
-        const imgPreview = document.getElementById(`img-preview-${serviceId}`);
-
-        // 1. Abrimos nuestro modal de recorte con el archivo seleccionado
-        ImageCropper.open(file, (croppedBlob) => {
-            // 2. Esta función se ejecuta CUANDO el barbero hace clic en "Recortar y Guardar"
-
-            // Creamos una URL local para mostrar la vista previa inmediata
-            imgPreview.src = URL.createObjectURL(croppedBlob);
-
-            // 3. (¡CLAVE!) Adjuntamos el blob recortado directamente al elemento
-            // de la imagen para poder encontrarlo y subirlo después al guardar todo.
-            imgPreview.blob_to_upload = croppedBlob;
-
-            // Reseteamos el valor del input para poder seleccionar la misma imagen otra vez si es necesario
-            e.target.value = ''; 
-        });
-    });
-});
+    
     
     document.querySelectorAll('.remove-custom-service').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -2937,6 +2910,94 @@ async function fetchCitaAndShowModal(citaId, modalFunction) {
     }
 }
 
+// EN: js/barberProfile.js (Añade esta nueva función)
+
+function setupServiceImageListeners() {
+    // Busca el contenedor de más alto nivel que envuelve todos los servicios.
+    const configSection = document.getElementById('configuracion');
+    if (!configSection) return;
+
+    // 1. Delegación de CLIC para los íconos de CÁMARA y BASURA
+    configSection.addEventListener('click', async (event) => {
+        const cameraLabel = event.target.closest('.service-img-upload-label');
+        const deleteBtn = event.target.closest('.delete-service-img-btn');
+
+        // --- Lógica para SUBIR/CAMBIAR foto ---
+        if (cameraLabel) {
+            // Busca el input de archivo oculto que es hermano del label y simula un clic.
+            const fileInput = cameraLabel.closest('.service-image-container').querySelector('.service-img-upload-input');
+            if (fileInput) {
+                fileInput.click(); // ¡Esto abrirá el explorador de archivos!
+            }
+        }
+
+        // --- Lógica para ELIMINAR foto ---
+        if (deleteBtn) {
+            if (!confirm('¿Seguro que quieres eliminar la foto de este servicio? La imagen se borrará permanentemente.')) {
+                return;
+            }
+
+            const imgPreview = deleteBtn.closest('.service-image-container').querySelector('.service-img-preview');
+            const serviceDbId = imgPreview?.dataset.serviceDbId;
+
+            if (!imgPreview || !serviceDbId || !currentUserId) {
+                alert("Error: No se pudo identificar el servicio para eliminar la imagen.");
+                return;
+            }
+
+            if(saveStatus) saveStatus.textContent = "Eliminando foto...";
+            
+            try {
+                // Reconstruimos la ruta del archivo en Supabase Storage
+                const filePath = `${currentUserId}/${serviceDbId}/image.jpg`;
+
+                // Borramos el archivo del bucket
+                await supabaseClient.storage.from('service-photos').remove([filePath]);
+
+                // Actualizamos la base de datos para quitar la URL de la imagen
+                const { error: dbError } = await supabaseClient
+                    .from('barbero_servicios')
+                    .update({ imagen_url: null })
+                    .eq('id', serviceDbId);
+
+                if (dbError) throw dbError;
+
+                // Actualizamos la interfaz inmediatamente
+                imgPreview.src = createPlaceholderSVG('Subir Foto'); // Vuelve al placeholder
+                deleteBtn.style.display = 'none'; // Oculta el botón de borrar
+                if(saveStatus) saveStatus.textContent = "Foto eliminada con éxito.";
+
+            } catch (error) {
+                console.error('Error al eliminar la imagen:', error);
+                if(saveStatus) saveStatus.textContent = `Error: ${error.message}`;
+            } finally {
+                 setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 3000);
+            }
+        }
+    });
+
+    // 2. Delegación de CAMBIO para cuando se selecciona un archivo
+    configSection.addEventListener('change', (event) => {
+        // Se activa cuando el usuario elige un archivo en el explorador.
+        if (event.target.classList.contains('service-img-upload-input')) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const serviceItem = event.target.closest('.service-item-with-image');
+            const imgPreview = serviceItem.querySelector('.service-img-preview');
+            const deleteBtn = serviceItem.querySelector('.delete-service-img-btn');
+            
+            // Llama a tu módulo ImageCropper para que haga el recorte
+            ImageCropper.open(file, (croppedBlob) => {
+                imgPreview.src = URL.createObjectURL(croppedBlob);
+                imgPreview.blob_to_upload = croppedBlob; // Adjuntamos el archivo recortado para guardarlo después
+                if (deleteBtn) deleteBtn.style.display = 'grid'; // Mostramos el botón de borrar
+                event.target.value = ''; // Reseteamos el input
+            });
+        }
+    });
+}
+
 
 // --- INICIAR ---
 document.addEventListener('DOMContentLoaded', initProfileModule);
@@ -3487,87 +3548,7 @@ document.addEventListener('DOMContentLoaded', handleUrlActions);
 
 
 
-// EN: js/barberProfile.js (Reemplaza el último bloque 'DOMContentLoaded' por este)
-function setupServiceImageListeners() {
-    const servicesContainer = document.getElementById('services-section');
-    if (!servicesContainer) return;
 
-    // Se usa "event delegation" para manejar clics en toda la sección de servicios.
-    // Esto funciona para elementos presentes y futuros.
-    servicesContainer.addEventListener('click', async (event) => {
-        const cameraLabel = event.target.closest('.service-img-upload-label');
-        const deleteBtn = event.target.closest('.delete-service-img-btn');
 
-        // --- LÓGICA PARA SUBIR/CAMBIAR FOTO ---
-        if (cameraLabel) {
-            // Busca el input de archivo oculto y simula un clic para abrir el explorador de archivos.
-            const fileInput = cameraLabel.closest('.service-image-container').querySelector('.service-img-upload-input');
-            fileInput?.click(); // ¡Esto ahora funciona!
-        }
 
-        // --- LÓGICA PARA ELIMINAR FOTO ---
-        if (deleteBtn) {
-            if (!confirm('¿Seguro que quieres eliminar la foto de este servicio? La imagen se borrará permanentemente.')) {
-                return;
-            }
-
-            const imgPreview = deleteBtn.closest('.service-image-container').querySelector('.service-img-preview');
-            const serviceDbId = imgPreview?.dataset.serviceDbId;
-
-            if (!imgPreview || !serviceDbId || !currentUserId) {
-                alert("Error: No se pudo identificar el servicio para eliminar la imagen.");
-                return;
-            }
-
-            try {
-                if(saveStatus) saveStatus.textContent = "Eliminando foto...";
-                
-                // 1. Reconstruimos la ruta del archivo en el bucket
-                const filePath = `${currentUserId}/${serviceDbId}/image.jpg`;
-
-                // 2. Borramos el archivo del bucket de Supabase
-                const { error: storageError } = await supabaseClient.storage.from('service-photos').remove([filePath]);
-                if (storageError) console.warn("Advertencia al borrar de Storage:", storageError.message); // Advertimos pero no detenemos
-
-                // 3. Actualizamos la base de datos para quitar la URL
-                const { error: dbError } = await supabaseClient
-                    .from('barbero_servicios')
-                    .update({ imagen_url: null })
-                    .eq('id', serviceDbId);
-                if (dbError) throw dbError;
-
-                // 4. Actualizamos la interfaz
-                imgPreview.src = createPlaceholderSVG('Subir Foto');
-                deleteBtn.style.display = 'none'; // Oculta el botón de borrar
-                if(saveStatus) saveStatus.textContent = "Foto eliminada con éxito.";
-
-            } catch (error) {
-                console.error('Error al eliminar la imagen:', error);
-                if(saveStatus) saveStatus.textContent = `Error: ${error.message}`;
-            } finally {
-                 setTimeout(() => { if (saveStatus) saveStatus.textContent = "" }, 3000);
-            }
-        }
-    });
-
-    // La lógica del Cropper se activa con el evento 'change' del input.
-    // Como ahora el clic en el ícono funciona, este evento se disparará correctamente.
-    servicesContainer.addEventListener('change', (event) => {
-        if (event.target.classList.contains('service-img-upload-input')) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const serviceItem = event.target.closest('.service-item-with-image');
-            const imgPreview = serviceItem.querySelector('.service-img-preview');
-            const deleteBtn = serviceItem.querySelector('.delete-service-img-btn');
-            
-            ImageCropper.open(file, (croppedBlob) => {
-                imgPreview.src = URL.createObjectURL(croppedBlob);
-                imgPreview.blob_to_upload = croppedBlob; // Adjuntamos el blob para guardarlo después
-                if (deleteBtn) deleteBtn.style.display = 'grid'; // Mostramos el botón de borrar
-                event.target.value = ''; // Reseteamos para poder subir la misma imagen otra vez
-            });
-        }
-    });
-}
 
