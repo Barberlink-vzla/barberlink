@@ -2051,6 +2051,41 @@ const createServiceHTML = (service, isCustom) => {
     });
 }
 
+
+
+
+
+/**
+ * Vuelve a cargar todos los servicios del barbero desde la base de datos
+ * y los renderiza en la pantalla. Garantiza que la UI refleje el estado real de la DB.
+ */
+async function reloadAndRenderServices() {
+    if (!currentBarberProfileId) {
+        console.error("No se puede recargar: falta el ID de perfil del barbero.");
+        return;
+    }
+
+    // 1. Pide los datos frescos desde Supabase
+    const { data: freshServicesData, error } = await supabaseClient
+        .from('barbero_servicios')
+        .select('*, servicios_maestro(*)')
+        .eq('barbero_id', currentBarberProfileId);
+
+    if (error) {
+        console.error("Error al recargar los servicios después de guardar:", error);
+        // Opcional: mostrar un mensaje de error al usuario
+        if(saveStatus) saveStatus.textContent = "Error al refrescar la lista de servicios.";
+        return;
+    }
+
+    // 2. Actualiza la variable global con los datos frescos
+    barberServicesData = freshServicesData || [];
+
+    // 3. Llama a la función que dibuja los servicios en la pantalla
+    renderServices(barberServicesData);
+}
+
+
 // EN: js/barberProfile.js
 function renderBookingLink(userId) {
     if (!bookingLinkContainer || !userId || !currentBarberName) return;
@@ -2425,29 +2460,23 @@ async function logout() {
     }
 }
 
-// REEMPLAZA ESTA FUNCIÓN en barberProfile.js
-
-// REEMPLAZA esta función en barberProfile.js
+// REEMPLAZA tu función saveAllChanges con esta versión corregida
 
 async function saveAllChanges() {
     if (saveStatus) saveStatus.textContent = "Guardando...";
     if (saveAllButton) saveAllButton.disabled = true;
 
     try {
+        // Ejecuta todas las operaciones de guardado como antes
         const updatedProfile = await saveBasicProfile();
-        await saveServices(); // Sube la imagen y guarda los datos
+        await saveServices();
         await saveAvailability();
         await saveCurrencySettings();
 
-        // --- INICIO DE LA MEJORA DE EXPERIENCIA ---
-        // 1. Volvemos a pedir los datos de los servicios desde Supabase para obtener las nuevas URLs.
-        const { data: newServicesData, error } = await supabaseClient.from('barbero_servicios').select('*, servicios_maestro(*)').eq('barbero_id', currentUserId);
-        if (error) throw new Error("No se pudieron recargar los servicios después de guardar.");
-        
-        // 2. Actualizamos la variable global y volvemos a renderizar la sección de servicios.
-        barberServicesData = newServicesData || [];
-        renderServices(barberServicesData);
-        // --- FIN DE LA MEJORA DE EXPERIENCIA ---
+        // ---- ¡ESTA ES LA CORRECCIÓN CLAVE! ----
+        // En lugar de usar datos viejos, forzamos una recarga desde la base de datos.
+        await reloadAndRenderServices();
+        // -----------------------------------------
 
         if (updatedProfile) {
             renderBarberForm(updatedProfile);
