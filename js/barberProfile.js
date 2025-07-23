@@ -81,6 +81,8 @@ let monthlyBookingsMap = new Map();
 
 // Variables para recordatorios y confirmaciones
 
+let reminderCountdownInterval = null; 
+
 let confirmationCheckInterval = null; 
 let paymentCheckInterval = null; 
 const promptedConfirmationIds = new Set(); 
@@ -91,6 +93,8 @@ const notifiedAppointmentIds = new Set(); // Guarda IDs de citas ya notificadas 
 
 const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const monthsOfYear = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+
 
 
 // EN: js/barberProfile.js (Pega esto cerca del inicio)
@@ -745,13 +749,52 @@ async function checkUpcomingAppointments() {
         }
     });
 }
-
+// REEMPLAZA tu función showReminderAlert con esta versión
 function showReminderAlert(cita) {
     const overlay = document.getElementById('appointment-alert-overlay');
     const title = document.getElementById('alert-modal-title');
     const messageTextarea = document.getElementById('alert-modal-message');
     const whatsappBtn = document.getElementById('alert-modal-whatsapp-btn');
-    if (!overlay || !title || !messageTextarea || !whatsappBtn) return;
+    const countdownEl = document.getElementById('alert-modal-countdown'); // NUEVO: Elemento del reloj
+
+    if (!overlay || !title || !messageTextarea || !whatsappBtn || !countdownEl) return;
+
+    // --- INICIO DE LA NUEVA LÓGICA DEL TEMPORIZADOR ---
+
+    // 1. Limpiar cualquier temporizador anterior por seguridad
+    if (reminderCountdownInterval) {
+        clearInterval(reminderCountdownInterval);
+    }
+
+    // 2. Calcular la hora de finalización de la cuenta regresiva (la hora de la cita)
+    const appointmentTime = new Date(`${cita.fecha_cita}T${cita.hora_inicio_cita}`);
+    const endTime = appointmentTime.getTime();
+
+    // 3. Función que actualiza el reloj cada segundo
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+
+        // Si el tiempo se acabó
+        if (distance < 0) {
+            clearInterval(reminderCountdownInterval);
+            countdownEl.innerHTML = `La cita ha comenzado`;
+            return;
+        }
+
+        // Calcular minutos y segundos restantes
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Mostrar en el elemento HTML, con un 0 a la izquierda para los segundos si es necesario
+        countdownEl.innerHTML = `<i class="fas fa-clock"></i> ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // 4. Iniciar el temporizador
+    updateCountdown(); // Llamar una vez inmediatamente para no esperar 1 segundo
+    reminderCountdownInterval = setInterval(updateCountdown, 1000);
+
+    // --- FIN DE LA NUEVA LÓGICA DEL TEMPORIZADOR ---
 
     title.textContent = `¡Cita en ~30 min con ${cita.cliente_nombre}!`;
     messageTextarea.value = `Hola ${cita.cliente_nombre}, te escribo para recordarte que nuestra cita es dentro de unos 30 minutos. ¡Por favor, confírmame tu asistencia!`;
@@ -774,13 +817,28 @@ function showReminderAlert(cita) {
     audio.play().catch(e => console.log("No se pudo reproducir sonido de alerta.", e));
 }
 
+
+
 function setupAlertModalListeners() {
     const overlay = document.getElementById('appointment-alert-overlay');
     const closeBtn = document.getElementById('alert-modal-close-btn');
     const modal = document.getElementById('appointment-alert-modal');
-    const closeModal = () => { if (overlay) overlay.classList.remove('active'); };
+
+    const closeModal = () => {
+        if (overlay) overlay.classList.remove('active');
+
+        // ▼▼▼ LÍNEA AÑADIDA Y CRUCIAL ▼▼▼
+        // Detiene el temporizador cuando el modal se cierra.
+        if (reminderCountdownInterval) {
+            clearInterval(reminderCountdownInterval);
+        }
+        // ▲▲▲ FIN LÍNEA AÑADIDA ▲▲▲
+    };
+
     if (overlay) overlay.addEventListener('click', closeModal);
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    // Evita que el modal se cierre al hacer clic dentro de él
     if(modal) modal.addEventListener('click', (e) => e.stopPropagation());
 }
 
