@@ -1,99 +1,76 @@
-
+// js/clientes.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Eliminamos la variable local `currentBarberId`. Usaremos la que viene del evento.
-    
     const clientListContainer = document.getElementById('client-list-container');
     const addClientForm = document.getElementById('add-client-form');
     
+    // ✅ CORRECCIÓN 1: Declaramos las dos variables de ID que necesita el módulo.
     let currentBarberProfileId = null;
-    
-    // EN: clientes.js
+    let currentAuthId = null; 
 
-function initClientModule() {
-    if (typeof supabaseClient === 'undefined') {
-        console.error("Clients Error: supabaseClient no está definido.");
-        if(document.getElementById('client-list-container')) document.getElementById('client-list-container').innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
-        return;
-    }
-    console.log("Módulo de clientes iniciado correctamente. ✅");
+    function initClientModule() {
+        if (typeof supabaseClient === 'undefined') {
+            console.error("Clients Error: supabaseClient no está definido.");
+            if(document.getElementById('client-list-container')) document.getElementById('client-list-container').innerHTML = '<p class="error-msg">Error crítico de conexión.</p>';
+            return;
+        }
+        console.log("Módulo de clientes iniciado correctamente. ✅");
 
-    setupEventListeners();
+        setupEventListeners();
 
-    // Escuchamos el evento para obtener AMBOS IDs, pero guardamos el de perfil.
-    document.addEventListener('profileReady', (e) => {
-        console.log("Evento 'profileReady' recibido en clientes.js. Cargando lista...");
-        // ✅ CORRECCIÓN: Guardamos el ID del perfil, que es el que necesitamos.
-        currentBarberProfileId = e.detail.profileId; 
+        // ✅ CORRECCIÓN 2: Escuchamos el evento y guardamos AMBOS IDs.
+        document.addEventListener('profileReady', (e) => {
+            console.log("Evento 'profileReady' recibido en clientes.js. Cargando lista...");
+            currentBarberProfileId = e.detail.profileId; 
+            currentAuthId = e.detail.authId; // Guardamos el ID de autenticación.
+            
+            if (currentBarberProfileId) {
+                fetchAndRenderClients(currentBarberProfileId);
+            } else {
+                console.error("No se recibió el profileId en el evento 'profileReady'.");
+            }
+        });
         
-        if (currentBarberProfileId) {
-            fetchAndRenderClients(currentBarberProfileId);
-        } else {
-            console.error("No se recibió el profileId en el evento 'profileReady'.");
+        document.addEventListener('clientListChanged', () => {
+            console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
+            if (currentBarberProfileId) {
+                fetchAndRenderClients(currentBarberProfileId);
+            }
+        });
+        
+        if (addClientForm) {
+            addClientForm.addEventListener('submit', handleAddClient);
         }
-    });
-    
-    document.addEventListener('clientListChanged', () => {
-        console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
-        if (currentBarberProfileId) {
-            fetchAndRenderClients(currentBarberProfileId);
+    }
+
+    async function fetchAndRenderClients(profileId) {
+        if (!profileId || !clientListContainer) return;
+
+        clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
+        
+        const { data: clients, error } = await supabaseClient
+            .from('clientes')
+            .select('*')
+            .eq('barbero_id', profileId)
+            .order('nombre', { ascending: true });
+
+        if (error) {
+            console.error('Error cargando clientes:', error);
+            clientListContainer.innerHTML = `<p class="error-msg">Error al cargar los clientes.</p>`;
+            return;
         }
-    });
-    
-    const addClientForm = document.getElementById('add-client-form');
-    if (addClientForm) {
-        addClientForm.addEventListener('submit', handleAddClient);
-    }
-}
 
+        if (!clients || clients.length === 0) {
+            clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados.</p>';
+            return;
+        }
 
-
-
-   // EN: js/clientes.js
-// REEMPLAZA tu función fetchAndRenderClients con esta versión corregida.
-
-async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
-    const clientListContainer = document.getElementById('client-list-container');
-    if (!profileId || !clientListContainer) return;
-
-    clientListContainer.innerHTML = '<p>Cargando clientes...</p>';
-    
-    // --- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ---
-    // En lugar de llamar a la función RPC, hacemos una consulta directa a la tabla 'clientes'.
-    // Esto asegura que siempre obtengamos la lista completa y actualizada.
-    const { data: clients, error } = await supabaseClient
-        .from('clientes')
-        .select('*') // Traemos todas las columnas del cliente.
-        .eq('barbero_id', profileId); // Filtramos por el ID de perfil, que ahora es correcto.
-
-    if (error) {
-        console.error('Error cargando clientes:', error);
-        clientListContainer.innerHTML = `<p class="error-msg">Error al cargar los clientes.</p>`;
-        return;
+        clientListContainer.innerHTML = '';
+        clients.forEach(client => {
+            clientListContainer.innerHTML += createClientCardHTML(client);
+        });
     }
 
-    if (!clients || clients.length === 0) {
-        // Este mensaje se muestra si no hay clientes, como en tu captura de pantalla inicial.
-        clientListContainer.innerHTML = '<p>Aún no tienes clientes registrados.</p>';
-        return;
-    }
-
-    // Si hay clientes, los dibujamos.
-    clientListContainer.innerHTML = '';
-    clients.forEach(client => {
-        // La función `createClientCardHTML` no necesita cambios y funcionará con los datos obtenidos.
-        // Asumimos que la deuda se calculará en otro lado o se puede añadir aquí si es necesario.
-        // Por ahora, le pasamos un valor por defecto.
-        const clientDataForCard = { ...client, has_debt: false }; // Añadimos un valor por defecto
-        clientListContainer.innerHTML += createClientCardHTML(clientDataForCard);
-    });
-}
-
-
-
-    
-
-    // ... (la función createClientCardHTML no necesita cambios) ...
     function createClientCardHTML(client) {
         const defaultPhoto = 'https://static.vecteezy.com/system/resources/previews/009/292/244/original/default-avatar-icon-of-social-media-user-vector.jpg';
         const photoUrl = client.foto_perfil_url || defaultPhoto;
@@ -109,7 +86,7 @@ async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
                 <div class="client-card-content">
                     <div class="client-photo">
                         <img src="${photoUrl}" alt="Foto de ${client.nombre}">
-                        <input type="file" class="edit-client-photo-input" accept="image/*" style="display:none;">
+                        <input type="file" class="edit-client-photo-input" data-client-id-for-photo="${client.id}" accept="image/*" style="display:none;">
                     </div>
                     <div class="client-details">
                         <div class="client-view-mode">
@@ -120,10 +97,10 @@ async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
                         </div>
                         
                         <div class="client-edit-mode" style="display:none;">
-                            <input type="text" class="edit-client-name" id="edit-client-name-${client.id}" name="client-name-${client.id}" value="${client.nombre}">
-                            <input type="text" class="edit-client-lastname" id="edit-client-lastname-${client.id}" name="client-lastname-${client.id}" value="${client.apellido || ''}">
-                            <input type="tel" class="edit-client-phone" id="edit-client-phone-${client.id}" name="client-phone-${client.id}" value="${client.telefono || ''}">
-                            <textarea class="edit-client-topics" id="edit-client-topics-${client.id}" name="client-topics-${client.id}">${client.temas_conversacion || ''}</textarea>
+                            <input type="text" class="edit-client-name" value="${client.nombre}">
+                            <input type="text" class="edit-client-lastname" value="${client.apellido || ''}">
+                            <input type="tel" class="edit-client-phone" value="${client.telefono || ''}">
+                            <textarea class="edit-client-topics">${client.temas_conversacion || ''}</textarea>
                         </div>
                     </div>
                 </div>
@@ -146,11 +123,7 @@ async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
         `;
     }
 
-
-    /**
-     * Configura los listeners de eventos para todo el módulo
-     */
- function setupEventListeners() {
+    function setupEventListeners() {
         if (addClientForm) {
             addClientForm.addEventListener('submit', handleAddClient);
         }
@@ -175,59 +148,61 @@ async function fetchAndRenderClients(profileId) { // Recibe el ID de perfil
                     clientCard.querySelector('.edit-client-photo-input').click();
                 }
             });
+
+            // ✅ CORRECCIÓN 3: Añadimos un listener de 'change' para la previsualización de la foto.
+            clientListContainer.addEventListener('change', (e) => {
+                if (e.target.classList.contains('edit-client-photo-input')) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const clientCard = e.target.closest('.client-card');
+                        const imgPreview = clientCard.querySelector('.client-photo img');
+                        
+                        // Usamos FileReader para leer el archivo y mostrarlo
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            imgPreview.src = event.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+        }
+    }
+    
+    async function handleAddClient(e) {
+        e.preventDefault();
+        
+        if (!currentBarberProfileId) {
+            alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
+            return;
         }
         
-        document.addEventListener('clientListChanged', () => {
-            console.log("Evento 'clientListChanged' detectado en clientes.js. Refrescando la lista...");
-            fetchAndRenderClients();
-        });
+        const form = e.target;
+        const newClient = {
+            nombre: form.querySelector('#add-client-nombre').value,
+            apellido: form.querySelector('#add-client-apellido').value,
+            telefono: form.querySelector('#add-client-telefono').value,
+            temas_conversacion: form.querySelector('#add-client-temas').value,
+            barbero_id: currentBarberProfileId 
+        };
+
+        if (!newClient.nombre || !newClient.telefono) {
+            alert("El nombre y el teléfono son obligatorios.");
+            return;
+        }
+
+        const { error } = await supabaseClient.from('clientes').insert(newClient);
+
+        if (error) {
+            console.error("Error añadiendo cliente:", error);
+            alert("Error al guardar el cliente: " + error.message);
+            return;
+        }
+
+        document.dispatchEvent(new CustomEvent('clientListChanged'));
+        form.reset();
     }
-
-    /**
-     * Maneja el envío del formulario para añadir un nuevo cliente
-     */
-// js/clientes.js
-
-async function handleAddClient(e) {
-    e.preventDefault();
     
-    // Esta variable 'currentBarberProfileId' ahora es la correcta.
-    if (!currentBarberProfileId) {
-        alert("Error: No se puede añadir el cliente. La identificación del barbero no está disponible. Recarga la página.");
-        return;
-    }
-    
-    const form = e.target;
-    const newClient = {
-        nombre: form.querySelector('#add-client-nombre').value,
-        apellido: form.querySelector('#add-client-apellido').value,
-        telefono: form.querySelector('#add-client-telefono').value,
-        temas_conversacion: form.querySelector('#add-client-temas').value,
-        // ✅ Ahora la base de datos espera y acepta el ID de perfil.
-        barbero_id: currentBarberProfileId 
-    };
-
-    if (!newClient.nombre || !newClient.telefono) {
-        alert("El nombre y el teléfono son obligatorios.");
-        return;
-    }
-
-    const { error } = await supabaseClient.from('clientes').insert(newClient);
-
-    if (error) {
-        console.error("Error añadiendo cliente:", error);
-        alert("Error al guardar el cliente: " + error.message);
-        return;
-    }
-
-    document.dispatchEvent(new CustomEvent('clientListChanged'));
-    form.reset();
-}
-    
-    
-    /**
-     * Activa o desactiva el modo de edición para una tarjeta de cliente
-     */
     function toggleEditMode(clientCard, isEditing) {
         clientCard.classList.toggle('is-editing', isEditing);
         
@@ -241,9 +216,6 @@ async function handleAddClient(e) {
         clientCard.querySelector('.delete-btn').style.display = isEditing ? 'none' : 'inline-flex';
     }
 
-    /**
-     * Guarda los cambios de un cliente
-     */
     async function handleSaveClient(clientId) {
         const clientCard = document.getElementById(`client-card-${clientId}`);
         if (!clientCard) return;
@@ -275,8 +247,9 @@ async function handleAddClient(e) {
 
                 statusText.textContent = 'Subiendo foto...';
                 progressBar.style.width = '50%';
-
-                const filePath = `${currentBarberId}/${Date.now()}_${compressedFile.name}`;
+                
+                // ✅ CORRECCIÓN 4: Usamos `currentAuthId`, que ahora sí existe y tiene el valor correcto.
+                const filePath = `${currentAuthId}/${Date.now()}_${compressedFile.name}`;
                 const { error: uploadError } = await supabaseClient.storage
                     .from('client-photos')
                     .upload(filePath, compressedFile, { upsert: true });
@@ -326,9 +299,6 @@ async function handleAddClient(e) {
         }
     }
     
-    /**
-     * Elimina un cliente y su foto de perfil del almacenamiento.
-     */
     async function handleDeleteClient(clientId) {
         if (!confirm("¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer y borrará también su foto de perfil.")) {
             return;
@@ -341,7 +311,7 @@ async function handleAddClient(e) {
                 .eq('id', clientId)
                 .single();
 
-            if (fetchError && fetchError.code !== 'PGRST116') { // Ignorar si el cliente no se encuentra
+            if (fetchError && fetchError.code !== 'PGRST116') { 
                 throw new Error("No se pudo obtener la información del cliente para el borrado.");
             }
 
