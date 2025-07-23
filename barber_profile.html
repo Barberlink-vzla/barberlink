@@ -847,6 +847,20 @@ input:checked + .slider:before {
     color: var(--login-primary-accent);
     font-weight: bold;
 }
+/* Pega esto al final de tu etiqueta <style> en barber_profile.html */
+#alert-modal-countdown {
+    font-size: 2.2em;
+    font-weight: 700;
+    color: var(--login-primary-accent);
+    text-align: center;
+    margin: 10px 0 20px 0;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 2px;
+}
+#alert-modal-countdown i {
+    margin-right: 10px;
+    font-size: 0.8em;
+}
         
     </style>
 </head>
@@ -866,6 +880,7 @@ input:checked + .slider:before {
         <h3 id="alert-modal-title">Recordatorio de Cita</h3>
         <p id="alert-modal-subtitle">Dentro de 30 minutos tienes una cita. Puedes editar el mensaje de recordatorio para tu cliente a continuación.</p>
         
+            <div id="alert-modal-countdown"></div>
         <textarea id="alert-modal-message" rows="4" aria-label="Mensaje de recordatorio"></textarea>
         
         <a href="#" id="alert-modal-whatsapp-btn" target="_blank" class="style-button whatsapp-button" role="button">
