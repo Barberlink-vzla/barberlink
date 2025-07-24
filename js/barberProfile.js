@@ -1683,6 +1683,7 @@ function renderReportCharts(data) {
 }
 
 // REEMPLAZA tu función renderTransactionList completa con esta versión
+// REEMPLAZA tu función renderTransactionList completa con esta versión
 function renderTransactionList(appointmentsToRender) {
     const listEl = document.getElementById('transaction-list');
     if (!listEl) return;
@@ -1724,30 +1725,42 @@ function renderTransactionList(appointmentsToRender) {
             
         const isDebt = item.estado_pago === 'pendiente';
         
-        // --- INICIO DE LA MEJORA: LÓGICA DE MONEDA EXPLÍCITA ---
         let amountDisplay = '';
-
         if (isDebt) {
-            // Para las deudas, mostramos el monto de referencia en la moneda principal (USD).
             const debtAmount = item.monto || 0;
             amountDisplay = `<span class="amount-value debt">${currencyManager.primaryCurrency} ${debtAmount.toFixed(2)}</span>`;
         } else {
-            // Para transacciones pagadas, verificamos en qué moneda se registró.
             if (item.monto_recibido_usd && item.monto_recibido_usd > 0) {
                 amountDisplay = `<span class="amount-value success">+ USD ${item.monto_recibido_usd.toFixed(2)}</span>`;
             } else if (item.monto_recibido_ves && item.monto_recibido_ves > 0) {
                 amountDisplay = `<span class="amount-value success">+ VES ${item.monto_recibido_ves.toFixed(2)}</span>`;
             } else {
-                // Fallback si no se encuentra un monto específico.
                 const fallbackAmount = item.monto || 0;
                 amountDisplay = `<span class="amount-value success">+ ${currencyManager.primaryCurrency} ${fallbackAmount.toFixed(2)}</span>`;
             }
         }
-        // --- FIN DE LA MEJORA ---
 
-        const actionHtml = isDebt
-            ? `<div class="transaction-action"><button class="cancel-debt-btn" data-cita='${JSON.stringify(item)}'>Registrar Pago</button></div>`
-            : `<div class="transaction-status">${item.estado_pago === 'pagado' ? 'Pagado' : '--'}</div>`;
+        // --- INICIO DE LA MEJORA ---
+        // Ahora, 'actionHtml' incluirá la fecha límite de pago si es una deuda.
+        let actionHtml;
+        if (isDebt) {
+            // Verificamos si la cita tiene una fecha límite de pago
+            const dueDateHtml = item.fecha_limite_pago
+                ? `<div class="transaction-due-date">
+                       <i class="fas fa-calendar-alt"></i> Vence: ${new Date(item.fecha_limite_pago + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                   </div>`
+                : ''; // Si no hay fecha, no se muestra nada.
+
+            actionHtml = `
+                <div class="transaction-action">
+                    ${dueDateHtml}
+                    <button class="cancel-debt-btn" data-cita='${JSON.stringify(item)}'>Registrar Pago</button>
+                </div>`;
+        } else {
+            // La lógica para citas pagadas no cambia
+            actionHtml = `<div class="transaction-status">Pagado</div>`;
+        }
+        // --- FIN DE LA MEJORA ---
         
         const itemClass = isDebt ? 'transaction-item is-debt' : 'transaction-item';
 
