@@ -39,11 +39,11 @@ function initAuthModule() {
     
     console.log("Módulo de autenticación iniciado correctamente. ✅");
 
-    // MODIFICADO: Ahora el listener gestiona el estado de recuperación de contraseña.
+    // El listener ahora gestiona el estado de recuperación de contraseña.
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
         console.log('Cambio en estado de autenticación:', event, session);
 
-        // --- LÓGICA CLAVE PARA LA RECUPERACIÓN ---
+        // Lógica para la recuperación de contraseña
         if (event === 'PASSWORD_RECOVERY') {
             console.log('Modo de recuperación de contraseña detectado.');
             // Ocultamos el formulario de login/registro y mostramos el de nueva contraseña.
@@ -90,7 +90,10 @@ if (notificationCloseBtn) {
     });
 }
 
-// MODIFICADO: Ahora la función recibe la sesión para evitar llamadas extra.
+/**
+ * Actualiza la interfaz de usuario basada en la sesión del usuario.
+ * @param {object} session - El objeto de sesión de Supabase.
+ */
 async function updateAuthUI(session) {
     const user = session?.user;
 
@@ -111,7 +114,7 @@ async function updateAuthUI(session) {
     }
 }
 
-// Event Listener para el registro (sin cambios)
+// Event Listener para el formulario de registro
 if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -129,15 +132,8 @@ if (registerForm) {
             console.error('Error de registro:', error.message);
         } else if (data.user) {
             
-            const { error: profileError } = await supabaseClient
-                .from('barberos')
-                .insert({ user_id: data.user.id, nombre: data.user.email, telefono: 'No especificado' });
-
-            if (profileError) {
-                console.error('Error creando el perfil del barbero:', profileError);
-                showNotification('Error Crítico', 'Tu cuenta fue creada, pero no pudimos inicializar tu perfil. Por favor, contacta a soporte.', 'error');
-                return;
-            }
+            // CORRECTO: La creación del perfil ya no está aquí.
+            // Se hará en barberProfile.js la primera vez que el usuario inicie sesión.
 
             if (data.user.identities && data.user.identities.length === 0 && !data.session) {
                 showNotification('Verificación Pendiente', `Ya existe una cuenta con <strong>${email}</strong> pendiente de confirmación.<br>Revisa tu correo para activar la cuenta.`, 'info');
@@ -156,7 +152,7 @@ if (registerForm) {
     });
 }
 
-// Event Listener para el inicio de sesión (sin cambios)
+// Event Listener para el formulario de inicio de sesión
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -204,7 +200,7 @@ if (loginForm) {
     });
 }
 
-// Event Listener para cerrar sesión (sin cambios)
+// Event Listener para cerrar sesión
 if (logoutButton) {
     logoutButton.addEventListener('click', async () => {
         const { error } = await supabaseClient.auth.signOut();
@@ -221,7 +217,7 @@ if (logoutButton) {
 }
 
 
-// --- NUEVO: EVENT LISTENER PARA EL ENLACE DE "OLVIDÉ MI CONTRASEÑA" ---
+// Event Listener para el enlace de "Olvidé mi contraseña"
 if (forgotPasswordLink) {
     forgotPasswordLink.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -232,23 +228,20 @@ if (forgotPasswordLink) {
             return;
         }
 
-        // Esta es la función de Supabase para enviar el correo de recuperación.
         const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-            // Es crucial indicar a dónde debe redirigir al usuario después de hacer clic en el enlace del correo.
             redirectTo: window.location.origin + window.location.pathname,
         });
 
         if (error) {
             showNotification('Error', `No se pudo enviar el correo: ${error.message}`, 'error');
         } else {
-            // Por seguridad, no confirmamos si el correo existe o no.
             showNotification('Correo Enviado', 'Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña en breve.', 'success');
         }
     });
 }
 
 
-// --- NUEVO: EVENT LISTENER PARA EL FORMULARIO DE RESTABLECIMIENTO DE CONTRASEÑA ---
+// Event Listener para el formulario de restablecimiento de contraseña
 if (passwordResetForm) {
     passwordResetForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -259,7 +252,6 @@ if (passwordResetForm) {
             return;
         }
 
-        // Cuando el usuario está en modo "PASSWORD_RECOVERY", esta función actualiza su contraseña.
         const { data, error } = await supabaseClient.auth.updateUser({
             password: newPassword
         });
@@ -268,10 +260,8 @@ if (passwordResetForm) {
             showNotification('Error', `No se pudo actualizar la contraseña: ${error.message}`, 'error');
         } else {
             showNotification('¡Éxito!', 'Tu contraseña ha sido actualizada correctamente. Serás redirigido al panel.', 'success');
-            // La lógica de `onAuthStateChange` y `updateAuthUI` se encargará de la redirección automática.
             if(passwordResetForm) passwordResetForm.reset();
 
-            // Forzamos una actualización de la UI para que detecte la nueva sesión y redirija
             setTimeout(async () => {
                const { data: { session } } = await supabaseClient.auth.getSession();
                await updateAuthUI(session);
@@ -280,7 +270,7 @@ if (passwordResetForm) {
     });
 }
 
-// CSS para el botón de reenviar (sin cambios)
+// Estilo para el botón de reenviar
 const style = document.createElement('style');
 style.textContent = `
     .link-button { background: none; border: none; color: var(--login-primary-accent); text-decoration: underline; cursor: pointer; padding: 0; font-size: inherit; font-family: inherit; }
