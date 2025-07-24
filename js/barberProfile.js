@@ -317,6 +317,8 @@ async function fetchBarberClients() {
 
 
 
+// EN: js/barberProfile.js
+
 async function loadInitialData() {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
@@ -325,45 +327,75 @@ async function loadInitialData() {
     }
     currentUserId = user.id;
 
+    // El resto de la inicialización que ya tienes
     setupPushNotificationButton();
     registerServiceWorker();
     startConfirmationChecker();
     
     if (saveStatus) saveStatus.textContent = "Cargando datos...";
+    
     try {
-        const { data: barberProfile, error: barberError } = await supabaseClient
+        // ======================= INICIO DE LA CORRECCIÓN =======================
+        //
+        // 1. Intentamos obtener el perfil del barbero.
+        let { data: barberProfile, error: barberError } = await supabaseClient
             .from('barberos')
             .select('id, nombre, telefono, foto_perfil_url, porcentaje_markup_tasa')
             .eq('user_id', currentUserId)
             .single();
 
-        if (barberError || !barberProfile) {
-            console.error('Error crítico: No se encontró el perfil de barbero.', barberError);
-            if (saveStatus) saveStatus.textContent = "Error: Perfil de barbero no encontrado.";
-            return;
-        }
+        // 2. Si el perfil NO EXISTE (es un usuario nuevo), lo creamos.
+        // El error "PGRST116" es normal cuando .single() no encuentra filas.
+        if (barberError && barberError.code === 'PGRST116') {
+            console.log("Perfil no encontrado, creando uno nuevo para el usuario:", currentUserId);
+            
+            // Insertamos el perfil básico. Como el usuario ya está logueado,
+            // esta operación SÍ tendrá los permisos necesarios.
+            const { data: newProfile, error: createError } = await supabaseClient
+                .from('barberos')
+                .insert({ 
+                    user_id: currentUserId, 
+                    nombre: user.email.split('@')[0], // Un nombre por defecto
+                    telefono: 'N/A' 
+                })
+                .select()
+                .single();
 
-        // Se establecen las variables globales
+            if (createError) {
+                // Si incluso aquí falla, es un problema más serio.
+                throw new Error(`Error crítico al crear el perfil: ${createError.message}`);
+            }
+            
+            // Usamos el perfil recién creado para continuar.
+            barberProfile = newProfile;
+            console.log("Nuevo perfil creado con éxito:", barberProfile);
+
+        } else if (barberError) {
+            // Si es otro tipo de error, lo lanzamos.
+            throw barberError;
+        }
+        
+        // Si el perfil ya existía o se acaba de crear, 'barberProfile' tendrá los datos.
+        if (!barberProfile) {
+            throw new Error("No se pudo cargar ni crear el perfil del barbero.");
+        }
+        //
+        // ======================== FIN DE LA CORRECCIÓN =========================
+
+        // El resto de la función continúa desde aquí usando la variable 'barberProfile'
+        
         currentBarberProfileId = barberProfile.id;
-        window.currentBarberProfileId = barberProfile.id; // Aseguramos la variable global
+        window.currentBarberProfileId = barberProfile.id; 
         await currencyManager.init(supabaseClient, barberProfile);
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
-        // ======================= INICIO DE LA CORRECCIÓN CLAVE =======================
-        //
-        // Una vez que tenemos el ID del perfil, disparamos un evento personalizado.
-        // Otros módulos escucharán este evento para saber que ya pueden inicializarse.
-        //
         document.dispatchEvent(new CustomEvent('profileReady', {
             detail: {
                 authId: currentUserId,
                 profileId: currentBarberProfileId
             }
         }));
-        //
-        // ======================== FIN DE LA CORRECCIÓN CLAVE =========================
-
 
         const [masterServicesRes, barberServicesRes, availabilityRes, clientsRes] = await Promise.all([
             supabaseClient.from('servicios_maestro').select('*').order('nombre'),
@@ -414,6 +446,7 @@ async function loadInitialData() {
         if (addOtherServiceButton) addOtherServiceButton.disabled = false;
     }
 }
+
 
 // ===== INICIO: LÓGICA DEL MODAL DE VISITA INMEDIATA =====
 
