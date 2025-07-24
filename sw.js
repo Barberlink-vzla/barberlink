@@ -5,18 +5,13 @@ self.addEventListener('push', function(event) {
     
     const data = event.data ? event.data.json() : {};
 
-    // ✅ --- INICIO DE LA MEJORA --- ✅
-    // Obtenemos la imagen del cliente desde el payload.
-    // Si no viene, usamos un ícono por defecto para asegurar que siempre haya una imagen.
-    const imageIcon = data.clientImage || 'images/icons/icon-192x192.png';
-    // ✅ --- FIN DE LA MEJORA --- ✅
-
-    const title = data.title || 'Barber App';
+    const title = data.title || 'BarberLink';
     const options = {
         body: data.body || 'Tienes una nueva notificación.',
         
-        // Aquí usamos la imagen del cliente (o la de por defecto)
-        icon: imageIcon,
+        // ✅ MEJORA: Usa el ícono que viene en el payload. 
+        // Si por alguna razón no viene, usa uno por defecto.
+        icon: data.icon || 'images/icons/icon-192x192.png',
         
         badge: 'images/icons/badge-72x72.png',
         vibrate: [200, 100, 200],
