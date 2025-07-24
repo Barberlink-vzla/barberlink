@@ -592,19 +592,9 @@ function handleWalkInClientSelection(client) {
 }
 
 
-/**
- * Maneja el envío del formulario de visita inmediata.
- * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
- * El modal de pago se mostrará automáticamente cuando el servicio termine.
- */
- /**
- * Maneja el envío del formulario de visita inmediata.
- * Crea el cliente (si es nuevo), crea la cita y la deja "en proceso".
- * El modal de pago se mostrará automáticamente cuando el servicio termine.
- */
-// Reemplaza tu función handleWalkInSubmit con esta versión más segura
-// js/barberProfile.js
 
+
+// Reemplaza tu función handleWalkInSubmit con esta versión corregida
 // Reemplaza tu función handleWalkInSubmit con esta versión corregida
 async function handleWalkInSubmit(e) {
     e.preventDefault();
@@ -630,43 +620,51 @@ async function handleWalkInSubmit(e) {
 
     try {
         const serviceData = JSON.parse(selectedOption.dataset.serviceData);
-        let clientToUse; // Variable para guardar el cliente que usaremos para la cita
+        let clientToUse; 
 
-        // ======================= INICIO DE LA LÓGICA CONDICIONAL =======================
         if (walkInSelectedClient && walkInSelectedClient.telefono === clientPhone) {
-            // CASO 1: Se seleccionó un cliente existente y el teléfono coincide.
             console.log(`Usando cliente existente: ${walkInSelectedClient.nombre} (ID: ${walkInSelectedClient.id})`);
             clientToUse = walkInSelectedClient;
 
         } else {
-            // CASO 2: Es un cliente nuevo o se modificaron los datos de uno existente.
-            console.log(`Creando o buscando nuevo cliente: ${clientName}`);
+            console.log(`Creando nuevo cliente: ${clientName}`);
             const nameParts = clientName.split(' ');
             const nombre = nameParts.shift() || '';
             const apellido = nameParts.join(' ');
 
-            // La función RPC se encargará de crear el cliente si no existe.
-            const { data: rpcClient, error: clientError } = await supabaseClient
-                .rpc('crear_cliente_desde_panel', {
-                    p_barbero_id: currentBarberProfileId,
-                    p_nombre: nombre,
-                    p_apellido: apellido,
-                    p_telefono: clientPhone
+            // ======================= INICIO DE LA CORRECCIÓN =======================
+            //
+            // REEMPLAZAMOS la llamada RPC por una operación estándar de INSERT.
+            // El método .insert().select().single() es la forma estándar y fiable
+            // de crear un registro y obtenerlo de vuelta en una sola operación.
+            //
+            const { data: newClient, error: clientError } = await supabaseClient
+                .from('clientes')
+                .insert({
+                    barbero_id: currentBarberProfileId,
+                    nombre: nombre,
+                    apellido: apellido,
+                    telefono: clientPhone
                 })
                 .select()
                 .single();
 
             if (clientError) {
-                // Aquí es donde ocurría tu error original
-                throw new Error(`Error al guardar cliente: ${clientError.message}`);
+                // Si hay un error, lo lanzamos para que se muestre en la UI.
+                throw new Error(`Error al guardar el nuevo cliente: ${clientError.message}`);
             }
-            clientToUse = rpcClient;
+            
+            clientToUse = newClient;
+            console.log("Cliente nuevo creado con éxito:", clientToUse);
+
             // Notificamos a otros módulos que la lista de clientes ha cambiado
             document.dispatchEvent(new CustomEvent('clientListChanged'));
+             // ======================== FIN DE LA CORRECCIÓN =========================
         }
-        // ======================== FIN DE LA LÓGICA CONDICIONAL =========================
 
-        // Ahora, creamos la cita usando el 'clientToUse.id' que obtuvimos de cualquiera de los dos caminos
+        // El resto de la lógica para crear la cita permanece igual,
+        // ya que 'clientToUse' ahora siempre será un objeto válido.
+
         const now = new Date();
         const startTime = now.toTimeString().slice(0, 8);
         const duration = serviceData.duracion_minutos || 30;
@@ -674,9 +672,9 @@ async function handleWalkInSubmit(e) {
 
         const newCita = {
             barbero_id: currentUserId,
-            cliente_id: clientToUse.id, // <-- ¡Usamos el ID correcto!
-            cliente_nombre: clientName,
-            cliente_telefono: clientPhone,
+            cliente_id: clientToUse.id,
+            cliente_nombre: `${clientToUse.nombre} ${clientToUse.apellido || ''}`.trim(),
+            cliente_telefono: clientToUse.telefono,
             servicio_reservado_id: serviceData.id,
             fecha_cita: toLocalISODate(now),
             hora_inicio_cita: startTime,
@@ -695,7 +693,6 @@ async function handleWalkInSubmit(e) {
             .single();
 
         if (citaError) {
-            // Analizamos el error de la cita para dar un mensaje más claro
             if (citaError.message.includes("citas_servicio_reservado_id_fkey")) {
                  throw new Error(`Error al crear la cita: El servicio seleccionado no es válido o ha sido eliminado. Por favor, recarga la página.`);
             }
