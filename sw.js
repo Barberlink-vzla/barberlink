@@ -9,9 +9,11 @@ self.addEventListener('push', function(event) {
     const options = {
         body: data.body || 'Tienes una nueva notificación.',
         
-        // ✅ MEJORA: Usa el ícono que viene en el payload. 
-        // Si por alguna razón no viene, usa uno por defecto.
+        // El ícono pequeño (sin cambios)
         icon: data.icon || 'images/icons/icon-192x192.png',
+
+        // ✅ AÑADIDO: Le decimos al navegador que use la imagen grande del payload
+        image: data.image,
         
         badge: 'images/icons/badge-72x72.png',
         vibrate: [200, 100, 200],
