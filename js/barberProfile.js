@@ -397,7 +397,7 @@ async function loadInitialData() {
         currentBarberProfileId = barberProfile.id;
         window.currentBarberProfileId = barberProfile.id; 
         await currencyManager.init(supabaseClient, barberProfile);
-                updateCurrencyExampleText(); 
+                
 
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
@@ -447,7 +447,11 @@ async function loadInitialData() {
         
         initCalendar();
         loadDashboardStats();
+        updateCurrencyExampleText(); 
+
+
         document.querySelector('.menu-link[data-target="dashboard"]').dataset.loaded = true;
+        
         if (saveStatus) saveStatus.textContent = "";
 
     } catch (error) {
