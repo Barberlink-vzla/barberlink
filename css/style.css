@@ -667,17 +667,15 @@ body.barber-profile-page {
     color: var(--login-primary-accent);
 }
 .barber-profile-page .input-group label {
-    position: absolute;
-    left: 45px;
-    top: 14px;
+   top: -10px;
+    left: 10px;
+    font-size: 0.85em;
+    background: var(--login-card-bg); /* O el color de fondo correcto */
     color: var(--login-primary-accent);
-    opacity: 0.8;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    background: transparent;
-    padding: 0;
-    font-size: 1em;
+    padding: 0 5px;
+    z-index: 2;
 }
+
 
 .profile-img-preview {
     width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
