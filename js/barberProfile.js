@@ -340,7 +340,7 @@ async function loadInitialData() {
         // 1. Intentamos obtener el perfil del barbero.
         let { data: barberProfile, error: barberError } = await supabaseClient
             .from('barberos')
-            .select('id, nombre, telefono, foto_perfil_url, porcentaje_markup_tasa')
+            .select('id, nombre, telefono, foto_perfil_url, porcentaje_markup_tasa, enlace_reserva_corto')
             .eq('user_id', currentUserId)
             .single();
 
@@ -356,7 +356,7 @@ async function loadInitialData() {
                 .insert({ 
                     user_id: currentUserId, 
                     nombre: user.email.split('@')[0], // Un nombre por defecto
-                    telefono: null 
+                    telefono: 'N/A' 
                 })
                 .select()
                 .single();
@@ -426,7 +426,7 @@ async function loadInitialData() {
 
         renderBarberForm(barberProfile); 
         renderServices(barberServicesData);
-        renderBookingLink(currentUserId); 
+        renderBookingLink(barberProfile) 
         
         const markupInput = document.getElementById('tasa-markup');
         if (markupInput && barberProfile.porcentaje_markup_tasa != null) {
@@ -2183,32 +2183,63 @@ async function reloadAndRenderServices() {
 }
 
 
-// EN: js/barberProfile.js
-function renderBookingLink(userId) {
-    if (!bookingLinkContainer || !userId || !currentBarberName) return;
+// EN: js/barberProfile.js (REEMPLAZA tu función renderBookingLink actual por esta)
+
+async function renderBookingLink(barberProfile) {
+    if (!bookingLinkContainer || !barberProfile || !currentBarberProfileId) return;
+
+    // Si el barbero ya tiene un enlace corto guardado, lo mostramos y terminamos.
+    if (barberProfile.enlace_reserva_corto) {
+        console.log("Enlace corto encontrado en la base de datos. Mostrando:", barberProfile.enlace_reserva_corto);
+        bookingLinkContainer.innerHTML = `
+            <a href="${barberProfile.enlace_reserva_corto}" target="_blank">${barberProfile.enlace_reserva_corto}</a>
+            <br><br>
+            <button id="copy-link-btn" class="profile-action-btn" style="width:auto;padding:8px 15px;font-size:0.9em;">
+                <i class="fas fa-copy"></i> Copiar Enlace
+            </button>`;
+
+        document.getElementById('copy-link-btn')?.addEventListener('click', () => {
+            navigator.clipboard.writeText(barberProfile.enlace_reserva_corto)
+                .then(() => alert('¡Enlace copiado!'))
+                .catch(err => alert('Error al copiar el enlace.'));
+        });
+        return; // ¡Importante! Salimos para no llamar a la API.
+    }
+
+    // Si no hay enlace guardado, procedemos a crearlo.
+    bookingLinkContainer.innerHTML = `<p>Generando enlace de reserva por primera vez...</p>`;
 
     const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-    // CÓDIGO CORRECTO
-const longBookingUrl = `${baseUrl}/reserva.html?barber_id=${currentBarberProfileId}`;
+    const longBookingUrl = `${baseUrl}/reserva.html?barber_id=${currentBarberProfileId}`;
 
-    bookingLinkContainer.innerHTML = `<p>Generando enlace corto...</p>`;
-
-    // Llama a la Edge Function 'shorten-link'
-    supabaseClient.functions.invoke('shorten-link', {
-        body: {
-            longUrl: longBookingUrl,
-            barberName: currentBarberName
-        },
-    }).then(({ data, error }) => {
-        let finalUrl = longBookingUrl; // Usar la URL larga como respaldo
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('shorten-link', {
+            body: {
+                longUrl: longBookingUrl,
+                barberName: barberProfile.nombre || 'barbero'
+            },
+        });
 
         if (error) {
-            console.error('Error al invocar la Edge Function:', error);
-        } else if (data && data.shortUrl) {
-            finalUrl = data.shortUrl; // Éxito: usar la URL corta de Bitly
+            // Si la API de Bitly falla (por ejemplo, por el límite), mostramos el enlace largo.
+            throw error;
         }
 
-        // Renderiza el resultado final
+        const finalUrl = data.shortUrl;
+        console.log("Enlace corto creado y será guardado:", finalUrl);
+
+        // --- ¡PASO CLAVE! Guardamos el enlace recién creado en la base de datos ---
+        const { error: updateError } = await supabaseClient
+            .from('barberos')
+            .update({ enlace_reserva_corto: finalUrl })
+            .eq('id', currentBarberProfileId);
+
+        if (updateError) {
+            console.error("Error al guardar el enlace corto en la base de datos:", updateError);
+            // No lanzamos un error, simplemente mostramos el enlace aunque no se haya guardado.
+        }
+
+        // Renderizamos el resultado final
         bookingLinkContainer.innerHTML = `
             <a href="${finalUrl}" target="_blank">${finalUrl}</a>
             <br><br>
@@ -2221,7 +2252,22 @@ const longBookingUrl = `${baseUrl}/reserva.html?barber_id=${currentBarberProfile
                 .then(() => alert('¡Enlace copiado!'))
                 .catch(err => alert('Error al copiar el enlace.'));
         });
-    });
+
+    } catch (invokeError) {
+        console.error('Error al invocar la Edge Function. Mostrando enlace largo como respaldo:', invokeError);
+        // Fallback: Si todo falla, muestra el enlace largo para que el barbero no se quede sin nada.
+        bookingLinkContainer.innerHTML = `
+            <p style="color: var(--warning-color); font-size: 0.9em;">No se pudo generar el enlace corto. Usa este enlace largo mientras tanto:</p>
+            <a href="${longBookingUrl}" target="_blank" style="word-break: break-all;">${longBookingUrl}</a>
+            <br><br>
+            <button id="copy-link-btn" class="profile-action-btn" style="width:auto;padding:8px 15px;font-size:0.9em;">
+                <i class="fas fa-copy"></i> Copiar Enlace
+            </button>`;
+
+        document.getElementById('copy-link-btn')?.addEventListener('click', () => {
+            navigator.clipboard.writeText(longBookingUrl).then(() => alert('¡Enlace largo copiado!'));
+        });
+    }
 }
 
 function renderSlotInput(id, start, end) {
