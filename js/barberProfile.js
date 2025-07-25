@@ -127,6 +127,16 @@ const currencyManager = {
             this.finalRate = 0;
         }
     },
+    
+     // ▼▼▼ AÑADE ESTE NUEVO MÉTODO ▼▼▼
+    updateMarkup(newMarkupPercentage) {
+        this.markup = newMarkupPercentage;
+        this.finalRate = this.rate * (1 + this.markup / 100);
+        console.log(`Markup actualizado a ${this.markup}%. Nueva tasa final: ${this.finalRate.toFixed(2)}`);
+        // Opcional: actualiza el texto de ejemplo cada vez que se guarda.
+        updateCurrencyExampleText();
+    },
+    
 
     /**
      * Formatea un precio en USD a un string con ambas monedas.
@@ -387,6 +397,8 @@ async function loadInitialData() {
         currentBarberProfileId = barberProfile.id;
         window.currentBarberProfileId = barberProfile.id; 
         await currencyManager.init(supabaseClient, barberProfile);
+                updateCurrencyExampleText(); 
+
 
         console.log(`✅ IDs recuperados: Auth User ID -> ${currentUserId}, Barber Profile ID -> ${currentBarberProfileId}`);
 
@@ -1340,13 +1352,16 @@ async function saveCurrencySettings() {
     const { error } = await supabaseClient
         .from('barberos')
         .update({ porcentaje_markup_tasa: markupValue })
-        .eq('user_id', currentUserId); // O usa currentBarberProfileId si lo prefieres
+        .eq('user_id', currentUserId);
 
     if (error) {
         throw new Error(`Error al guardar configuración de moneda: ${error.message}`);
     }
-}
 
+    // --- ¡AQUÍ ESTÁ LA MAGIA! ---
+    // Después de guardar en la base de datos, actualizamos el estado en el frontend.
+    currencyManager.updateMarkup(markupValue);
+}
 
 // js/barberProfile.js
 
@@ -2441,6 +2456,12 @@ function setupEventListeners() {
     }
     
     // --- FIN DEL BLOQUE DE CÓDIGO CORRECTO ---
+    
+     // ▼▼▼ AÑADE ESTE BLOQUE AL FINAL DE LA FUNCIÓN ▼▼▼
+    const markupInput = document.getElementById('tasa-markup');
+    if (markupInput) {
+        markupInput.addEventListener('input', updateCurrencyExampleText);
+    }
 }
 
 
@@ -3322,6 +3343,25 @@ function setupPushNotificationButton() {
     if (enablePushBtn) {
         enablePushBtn.addEventListener('click', subscribeUserToPush);
     }
+}
+
+// Pega esta función en cualquier lugar de js/barberProfile.js
+function updateCurrencyExampleText() {
+    const exampleTextEl = document.getElementById('currency-example-text');
+    const markupInput = document.getElementById('tasa-markup');
+    if (!exampleTextEl || !markupInput || !currencyManager) return;
+
+    const bcvRate = currencyManager.rate;
+    const markupPercent = parseFloat(markupInput.value) || 0;
+
+    if (bcvRate <= 0) {
+        exampleTextEl.textContent = "No se pudo obtener la tasa de cambio del BCV para el ejemplo.";
+        return;
+    }
+
+    const finalRate = bcvRate * (1 + markupPercent / 100);
+
+    exampleTextEl.innerHTML = `Ejemplo: Con la tasa BCV actual de <strong>${bcvRate.toFixed(2)}</strong> y tu <strong>${markupPercent}%</strong>, el cálculo se hará con <strong>${finalRate.toFixed(2)} VES</strong> por cada dólar.`;
 }
 
 /**
