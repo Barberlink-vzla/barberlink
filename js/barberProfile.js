@@ -2455,13 +2455,12 @@ function setupEventListeners() {
         });
     }
     
-    // --- FIN DEL BLOQUE DE CÓDIGO CORRECTO ---
     
-     // ▼▼▼ AÑADE ESTE BLOQUE AL FINAL DE LA FUNCIÓN ▼▼▼
     const markupInput = document.getElementById('tasa-markup');
     if (markupInput) {
         markupInput.addEventListener('input', updateCurrencyExampleText);
-    }
+       }
+       
 }
 
 
@@ -3347,13 +3346,15 @@ function setupPushNotificationButton() {
 
 
 
+// EN: js/barberProfile.js
+
 function updateCurrencyExampleText() {
     const exampleTextEl = document.getElementById('currency-example-text');
     const markupInput = document.getElementById('tasa-markup');
     if (!exampleTextEl || !markupInput || !currencyManager) return;
 
     const bcvRate = currencyManager.rate;
-    // Esta línea lee el valor actual del campo de entrada en tiempo real
+    // ¡CORRECCIÓN CLAVE! Lee el valor del input en tiempo real y lo convierte a número.
     const markupPercent = parseFloat(markupInput.value) || 0;
 
     if (bcvRate <= 0) {
@@ -3363,7 +3364,7 @@ function updateCurrencyExampleText() {
 
     const finalRate = bcvRate * (1 + markupPercent / 100);
 
-    // Se actualiza el HTML para mostrar los valores dinámicos y la nueva línea
+    // El HTML ahora usa las variables dinámicas 'markupPercent' y 'finalRate'.
     exampleTextEl.innerHTML = `
         Ejemplo: Con la tasa BCV actual de <strong>${bcvRate.toFixed(2)}</strong> y tu <strong>${markupPercent}%</strong>, el cálculo se hará con <strong>${finalRate.toFixed(2)} VES</strong> por cada dólar.
         <br>
