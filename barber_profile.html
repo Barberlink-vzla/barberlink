@@ -874,6 +874,18 @@ input:checked + .slider:before {
     justify-content: center;
     gap: 5px;
 }
+
+
+.input-group input:not(:placeholder-shown) + label,
+.input-group input:focus + label {
+    top: -10px;
+    left: 10px;
+    font-size: 0.85em;
+    background: var(--login-card-bg); /* O el color de fondo correcto */
+    color: var(--login-primary-accent);
+    padding: 0 5px;
+    z-index: 2;
+}
         
     </style>
 </head>
