@@ -3345,23 +3345,30 @@ function setupPushNotificationButton() {
     }
 }
 
-// Pega esta función en cualquier lugar de js/barberProfile.js
+
+
 function updateCurrencyExampleText() {
     const exampleTextEl = document.getElementById('currency-example-text');
     const markupInput = document.getElementById('tasa-markup');
     if (!exampleTextEl || !markupInput || !currencyManager) return;
 
     const bcvRate = currencyManager.rate;
+    // Esta línea lee el valor actual del campo de entrada en tiempo real
     const markupPercent = parseFloat(markupInput.value) || 0;
 
     if (bcvRate <= 0) {
-        exampleTextEl.textContent = "No se pudo obtener la tasa de cambio del BCV para el ejemplo.";
+        exampleTextEl.innerHTML = "No se pudo obtener la tasa de cambio del BCV para el ejemplo. <br> <strong style='color: var(--danger-color);'>Recibes el dólar a: 0.00 VES</strong>";
         return;
     }
 
     const finalRate = bcvRate * (1 + markupPercent / 100);
 
-    exampleTextEl.innerHTML = `Ejemplo: Con la tasa BCV actual de <strong>${bcvRate.toFixed(2)}</strong> y tu <strong>${markupPercent}%</strong>, el cálculo se hará con <strong>${finalRate.toFixed(2)} VES</strong> por cada dólar.`;
+    // Se actualiza el HTML para mostrar los valores dinámicos y la nueva línea
+    exampleTextEl.innerHTML = `
+        Ejemplo: Con la tasa BCV actual de <strong>${bcvRate.toFixed(2)}</strong> y tu <strong>${markupPercent}%</strong>, el cálculo se hará con <strong>${finalRate.toFixed(2)} VES</strong> por cada dólar.
+        <br>
+        <strong style="color: var(--success-color); font-size: 1.1em; margin-top: 5px; display: inline-block;">Recibes el dólar a: ${finalRate.toFixed(2)} VES</strong>
+    `;
 }
 
 /**
