@@ -356,7 +356,7 @@ async function loadInitialData() {
                 .insert({ 
                     user_id: currentUserId, 
                     nombre: user.email.split('@')[0], // Un nombre por defecto
-                    telefono: 'N/A' 
+                    telefono: null 
                 })
                 .select()
                 .single();
